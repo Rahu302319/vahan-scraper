@@ -234,6 +234,7 @@ class VahanScraper:
         # Dynamic component IDs (automatically discovered during init_session)
         self.state_select_id: str = "j_idt38"
         self.refresh_btn_id: str = "j_idt68"
+        self.filter_btn_id: str = "j_idt73"
 
     def _get_headers(self, is_ajax: bool = False) -> Dict[str, str]:
         headers = {
@@ -291,9 +292,20 @@ class VahanScraper:
                     self.refresh_btn_id = m.group(1)
                     break
 
+        # Dynamically discover filter panel refresh button ID (inside filterLayout with combTablePnl in onclick)
+        filter_div = soup.find("div", id="filterLayout")
+        if filter_div:
+            for btn in filter_div.find_all("button"):
+                onclick = btn.get("onclick", "")
+                if "combTablePnl" in onclick:
+                    f_id = btn.get("id", "")
+                    if f_id:
+                        self.filter_btn_id = f_id
+                        break
+
         logger.info(
             f"Session established. ViewState: {self.view_state[:25]}... "
-            f"(StateSelectID: {self.state_select_id}, RefreshBtnID: {self.refresh_btn_id})"
+            f"(StateSelectID: {self.state_select_id}, RefreshBtnID: {self.refresh_btn_id}, FilterBtnID: {self.filter_btn_id})"
         )
         return self.view_state
 
@@ -433,8 +445,8 @@ class VahanScraper:
         if vs_elem and vs_elem.text.strip():
             self.view_state = vs_elem.text.strip()
 
-        # Step 2: Trigger dynamic Refresh button with filters
-        refresh_payload = [
+        # Step 2a: Trigger main toolbar Refresh button to initialize vhCatgPnl and component tree
+        init_payload = [
             ("javax.faces.partial.ajax", "true"),
             ("javax.faces.source", self.refresh_btn_id),
             ("javax.faces.partial.execute", "@all"),
@@ -447,27 +459,50 @@ class VahanScraper:
             ("xaxisVar_input", xaxis),
             ("selectedYearType_input", year_type),
             ("selectedYear_input", year),
+            ("javax.faces.ViewState", self.view_state),
+        ]
+        resp_init = self.session.post(
+            self.BASE_URL, headers=self._get_headers(is_ajax=True), data=init_payload, timeout=self.timeout
+        )
+        resp_init.raise_for_status()
+        vs_elem1 = BeautifulSoup(resp_init.text, "xml").find("update", {"id": re.compile(r"ViewState")})
+        if vs_elem1 and vs_elem1.text.strip():
+            self.view_state = vs_elem1.text.strip()
+
+        # Step 2b: Trigger filter panel refresh button (self.filter_btn_id) to apply VhCatg, fuel, norms, VhClass
+        filter_payload = [
+            ("javax.faces.partial.ajax", "true"),
+            ("javax.faces.source", self.filter_btn_id),
+            ("javax.faces.partial.execute", "@all"),
+            ("javax.faces.partial.render", "combTablePnl"),
+            (self.filter_btn_id, self.filter_btn_id),
+            ("masterLayout_formlogin", "masterLayout_formlogin"),
+            (f"{self.state_select_id}_input", self.current_state or "KL"),
+            ("selectedRto_input", rto_value),
+            ("yaxisVar_input", yaxis),
+            ("xaxisVar_input", xaxis),
+            ("selectedYearType_input", year_type),
+            ("selectedYear_input", year),
         ]
         for vc in vh_catg:
-            refresh_payload.append(("VhCatg", vc))
+            filter_payload.append(("VhCatg", vc))
         for f in fuels:
-            refresh_payload.append(("fuel", f))
+            filter_payload.append(("fuel", f))
         if norms:
             for n in norms:
-                refresh_payload.append(("norms", n))
+                filter_payload.append(("norms", n))
         if vh_class:
             for c in vh_class:
-                refresh_payload.append(("VhClass", c))
-        refresh_payload.append(("groupingTable_scrollState", "0,0"))
-        refresh_payload.append(("javax.faces.ViewState", self.view_state))
+                filter_payload.append(("VhClass", c))
+        filter_payload.append(("javax.faces.ViewState", self.view_state))
 
-        resp_refresh = self.session.post(
-            self.BASE_URL, headers=self._get_headers(is_ajax=True), data=refresh_payload, timeout=self.timeout
+        resp_filter = self.session.post(
+            self.BASE_URL, headers=self._get_headers(is_ajax=True), data=filter_payload, timeout=self.timeout
         )
-        resp_refresh.raise_for_status()
+        resp_filter.raise_for_status()
 
         # Extract updated ViewState and rendered table HTML
-        upd_soup = BeautifulSoup(resp_refresh.text, "xml")
+        upd_soup = BeautifulSoup(resp_filter.text, "xml")
         vs_elem2 = upd_soup.find("update", {"id": re.compile(r"ViewState")})
         if vs_elem2 and vs_elem2.text.strip():
             self.view_state = vs_elem2.text.strip()
@@ -495,7 +530,6 @@ class VahanScraper:
         if vh_class:
             for c in vh_class:
                 export_payload.append(("VhClass", c))
-        export_payload.append(("groupingTable_scrollState", "0,0"))
         export_payload.append(("javax.faces.ViewState", self.view_state))
         export_payload.append(("groupingTable:xls", "groupingTable:xls"))
 
@@ -562,7 +596,7 @@ class VahanScraper:
             if val and str(val).strip():
                 months.append(str(val).strip())
 
-        header_val = sheet.cell(4, 2).value
+        header_val = sheet.cell(2, 2).value or sheet.cell(4, 2).value
         if header_val and str(header_val).strip() and "S NO" not in str(header_val).upper():
             primary_col = str(header_val).strip()
         else:
