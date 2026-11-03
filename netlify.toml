@@ -1,0 +1,9 @@
+# Root Netlify configuration pointing to the Next.js web application
+[build]
+  base = "vahan-web"
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
