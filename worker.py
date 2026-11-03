@@ -89,6 +89,8 @@ class VahanFetchWorker(QThread):
         year_type = str(self.config.get("year_type", "C"))
         vh_catg = self.config.get("vh_catg")
         fuels = self.config.get("fuels")
+        norms = self.config.get("norms")
+        vh_class = self.config.get("vh_class")
         output_dir = self.config.get("output_dir", os.path.join(os.getcwd(), "output"))
 
         raw_xlsx_dir = os.path.join(output_dir, "raw_xlsx")
@@ -165,6 +167,8 @@ class VahanFetchWorker(QThread):
                             year_type=year_type,
                             vh_catg=vh_catg,
                             fuels=fuels,
+                            norms=norms,
+                            vh_class=vh_class,
                         )
 
                         # Save files immediately

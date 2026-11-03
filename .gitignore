@@ -29,6 +29,7 @@ ENV/
 output/
 *.xlsx
 *.csv
+*.zip
 
 # Node & Next.js
 node_modules/

@@ -8,8 +8,8 @@ import {
   CheckCircle2, Folder, FolderOpen, ExternalLink, HardDrive, ShieldCheck, Zap
 } from "lucide-react";
 import {
-  RTOItem, RTORowData, DEFAULT_VH_CATG, ALL_VH_CATG,
-  DEFAULT_FUELS, ALL_FUELS_DICT
+  RTOItem, RTORowData, DEFAULT_VH_CATG, ALL_VH_CATG, ALL_VH_CATG_DICT,
+  DEFAULT_FUELS, ALL_FUELS_DICT, ALL_NORMS_DICT, ALL_VHCLASS_DICT, YAXIS_OPTIONS
 } from "@/lib/vahan";
 
 interface RTORecordState {
@@ -26,6 +26,7 @@ export default function VahanDashboardPage() {
   const [rtos, setRtos] = useState<RTORecordState[]>([]);
   const [selectedRtoTarget, setSelectedRtoTarget] = useState<string>("ALL");
   const [year, setYear] = useState<string>("2026");
+  const [yaxis, setYaxis] = useState<string>("Maker");
   const [concurrency, setConcurrency] = useState<number>(6);
   const [selectedRtosMap, setSelectedRtosMap] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -39,7 +40,10 @@ export default function VahanDashboardPage() {
   // Filter state
   const [vhCatg, setVhCatg] = useState<string[]>(DEFAULT_VH_CATG);
   const [fuels, setFuels] = useState<string[]>(DEFAULT_FUELS);
+  const [norms, setNorms] = useState<string[]>([]);
+  const [vhClass, setVhClass] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const [filterTab, setFilterTab] = useState<"catg" | "fuels" | "norms" | "class">("catg");
 
   // Scraper execution state
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -262,8 +266,11 @@ export default function VahanDashboardPage() {
                 rtoCode: target.item.code,
                 rtoName: target.item.name,
                 year,
+                yaxis,
                 vhCatg,
                 fuels,
+                norms,
+                vhClass,
                 outputDir: outputPath, // Real-time disk writing!
               }),
             });
@@ -533,6 +540,25 @@ export default function VahanDashboardPage() {
             </select>
           </div>
 
+          {/* Dimension (Y-Axis) */}
+          <div className="md:col-span-2 flex flex-col gap-1">
+            <label className="text-[10px] font-extrabold text-[#38bdf8] uppercase tracking-wider">
+              Dimension (Y-Axis):
+            </label>
+            <select
+              value={yaxis}
+              onChange={(e) => setYaxis(e.target.value)}
+              disabled={isRunning}
+              className="w-full bg-[#070d1a] border border-[#1f2f4c] rounded px-2 py-1.5 text-xs font-semibold text-[#38bdf8] focus:border-[#38bdf8] focus:outline-none"
+            >
+              {YAXIS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* C. Speed Engine */}
           <div className="md:col-span-2 flex flex-col gap-1">
             <label className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider">
@@ -551,20 +577,22 @@ export default function VahanDashboardPage() {
             </select>
           </div>
 
-          {/* D. Auto-Retry Policy & Filters */}
+          {/* D. Filter Parameters (Vehicle Categories & Fuels) */}
           <div className="md:col-span-2 flex flex-col gap-1">
             <label className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider">
-              Auto-Retry & Filters:
+              Filter Parameters:
             </label>
             <button
               onClick={() => setIsFilterOpen(true)}
               className="flex items-center justify-between w-full bg-[#152238] hover:bg-[#1e3152] border border-[#253757] rounded px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition"
             >
-              <span className="flex items-center gap-1.5 text-[11px]">
-                <RotateCw className="w-3 h-3 text-[#38bdf8]" />
-                Auto-Retry: 3x
+              <span className="flex items-center gap-1.5 text-[11px] truncate">
+                <Settings className="w-3.5 h-3.5 text-[#38bdf8]" />
+                Filters ({vhCatg.length} Catg, {fuels.length} Fuels)
               </span>
-              <Settings className="w-3.5 h-3.5 text-[#94a3b8]" />
+              <span className="text-[9px] bg-[#0284c7]/20 text-[#38bdf8] px-1 py-0.5 rounded font-bold">
+                LMV+LPV
+              </span>
             </button>
           </div>
 
@@ -862,7 +890,7 @@ export default function VahanDashboardPage() {
                 </div>
                 <div className="p-2 bg-gradient-to-r from-[#0c1424] to-[#101b33] border-l-2 border-[#a78bfa] border border-[#1e2e4f] rounded">
                   <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider block">
-                    Active Makers
+                    Active {yaxis}s
                   </span>
                   <span className="text-sm font-extrabold text-[#a78bfa]">
                     {currentPreviewData.length}
@@ -878,11 +906,11 @@ export default function VahanDashboardPage() {
                 </div>
                 <div className="p-2 bg-gradient-to-r from-[#0c1424] to-[#101b33] border-l-2 border-[#fbbf24] border border-[#1e2e4f] rounded">
                   <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider block">
-                    Top Brand
+                    Top {yaxis}
                   </span>
                   <span className="text-sm font-extrabold text-[#fbbf24] truncate block">
                     {currentPreviewData.length > 0
-                      ? currentPreviewData[0].Maker?.substring(0, 16)
+                      ? (currentPreviewData[0][yaxis] || currentPreviewData[0].Maker)?.substring(0, 20)
                       : "N/A"}
                   </span>
                 </div>
@@ -895,7 +923,7 @@ export default function VahanDashboardPage() {
                     <thead className="sticky top-0 bg-[#0e172a] text-[#818cf8] font-bold border-b border-[#243555] z-10 text-[10px]">
                       <tr>
                         <th className="p-1.5 text-center w-10">#</th>
-                        <th className="p-1.5">Maker (Brand)</th>
+                        <th className="p-1.5">{yaxis}</th>
                         {["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].map(
                           (m) => (
                             <th key={m} className="p-1.5 text-right w-11">
@@ -917,8 +945,8 @@ export default function VahanDashboardPage() {
                           <td className="p-1.5 text-center text-[#64748b] font-mono text-[10px]">
                             {row.S_No}
                           </td>
-                          <td className="p-1.5 font-semibold text-white truncate max-w-[170px] text-[11px]">
-                            {row.Maker}
+                          <td className="p-1.5 font-semibold text-white truncate max-w-[200px] text-[11px]">
+                            {row[yaxis] || row.Maker}
                           </td>
                           <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.JAN || 0}</td>
                           <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.FEB || 0}</td>
@@ -1088,7 +1116,7 @@ export default function VahanDashboardPage() {
       {/* Filter Modal Dialog */}
       {isFilterOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0b1222] border border-[#1c2a44] rounded-xl max-w-2xl w-full p-4 shadow-2xl flex flex-col gap-3 max-h-[85vh]">
+          <div className="bg-[#0b1222] border border-[#1c2a44] rounded-xl max-w-3xl w-full p-4 shadow-2xl flex flex-col gap-3 max-h-[88vh]">
             <div className="flex items-center justify-between border-b border-[#162238] pb-2">
               <h2 className="text-sm font-extrabold text-[#38bdf8] flex items-center gap-2">
                 <Settings className="w-4 h-4 text-[#38bdf8]" />
@@ -1102,50 +1130,245 @@ export default function VahanDashboardPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-auto flex flex-col gap-4 pr-1 text-xs">
-              <div>
-                <h3 className="font-bold text-[#cbd5e1] mb-1.5 uppercase text-[10px] text-[#818cf8]">
-                  Vehicle Categories ({vhCatg.length} active)
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 bg-[#070d18] p-2.5 rounded border border-[#1a2842]">
-                  {ALL_VH_CATG.map((catg) => (
-                    <label key={catg} className="flex items-center gap-1.5 cursor-pointer text-[11px]">
-                      <input
-                        type="checkbox"
-                        checked={vhCatg.includes(catg)}
-                        onChange={(e) => {
-                          if (e.target.checked) setVhCatg([...vhCatg, catg]);
-                          else setVhCatg(vhCatg.filter((c) => c !== catg));
-                        }}
-                        className="rounded border-[#1f2f4c] text-[#0284c7]"
-                      />
-                      {catg}
-                    </label>
-                  ))}
-                </div>
-              </div>
+            {/* Filter Sub-Tabs */}
+            <div className="flex gap-1 border-b border-[#1c2a44] pb-1">
+              <button
+                onClick={() => setFilterTab("catg")}
+                className={`px-3 py-1 rounded text-xs font-bold transition ${
+                  filterTab === "catg"
+                    ? "bg-[#0284c7] text-white"
+                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                }`}
+              >
+                Vehicle Categories ({vhCatg.length})
+              </button>
+              <button
+                onClick={() => setFilterTab("fuels")}
+                className={`px-3 py-1 rounded text-xs font-bold transition ${
+                  filterTab === "fuels"
+                    ? "bg-[#0284c7] text-white"
+                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                }`}
+              >
+                Fuel Types ({fuels.length})
+              </button>
+              <button
+                onClick={() => setFilterTab("norms")}
+                className={`px-3 py-1 rounded text-xs font-bold transition ${
+                  filterTab === "norms"
+                    ? "bg-[#0284c7] text-white"
+                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                }`}
+              >
+                Norms ({norms.length > 0 ? `${norms.length} filtered` : "All"})
+              </button>
+              <button
+                onClick={() => setFilterTab("class")}
+                className={`px-3 py-1 rounded text-xs font-bold transition ${
+                  filterTab === "class"
+                    ? "bg-[#0284c7] text-white"
+                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                }`}
+              >
+                Vehicle Classes ({vhClass.length > 0 ? `${vhClass.length} filtered` : "All"})
+              </button>
+            </div>
 
-              <div>
-                <h3 className="font-bold text-[#cbd5e1] mb-1.5 uppercase text-[10px] text-[#818cf8]">
-                  Fuel Types ({fuels.length} active)
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 bg-[#070d18] p-2.5 rounded border border-[#1a2842] max-h-48 overflow-auto">
-                  {Object.entries(ALL_FUELS_DICT).map(([code, name]) => (
-                    <label key={code} className="flex items-center gap-1.5 cursor-pointer text-[11px]">
-                      <input
-                        type="checkbox"
-                        checked={fuels.includes(code)}
-                        onChange={(e) => {
-                          if (e.target.checked) setFuels([...fuels, code]);
-                          else setFuels(fuels.filter((f) => f !== code));
-                        }}
-                        className="rounded border-[#1f2f4c] text-[#0284c7]"
-                      />
-                      {name}
-                    </label>
-                  ))}
+            <div className="flex-1 overflow-auto flex flex-col gap-3 pr-1 text-xs">
+              {/* Tab 1: Vehicle Categories */}
+              {filterTab === "catg" && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="p-2.5 bg-[#0284c7]/10 border border-[#0284c7]/40 rounded text-[11px] text-[#7dd3fc] font-semibold flex items-center justify-between">
+                    <span>
+                      ⭐ <strong>Default Required:</strong> LIGHT MOTOR VEHICLE (LMV) & LIGHT PASSENGER VEHICLE (LPV)
+                    </span>
+                    <button
+                      onClick={() => setVhCatg(DEFAULT_VH_CATG)}
+                      className="px-2 py-0.5 bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold rounded text-[10px]"
+                    >
+                      Reset to LMV + LPV
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setVhCatg(ALL_VH_CATG)}
+                      className="px-2 py-1 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                    >
+                      Select All ({ALL_VH_CATG.length})
+                    </button>
+                    <button
+                      onClick={() => setVhCatg([])}
+                      className="px-2 py-1 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
+                    {/* Priority LMV & LPV first */}
+                    {(['LMV', 'LPV', ...ALL_VH_CATG.filter(c => !['LMV', 'LPV'].includes(c))]).map((catg) => {
+                      const isDefault = DEFAULT_VH_CATG.includes(catg);
+                      const fullName = ALL_VH_CATG_DICT[catg] || catg;
+                      return (
+                        <label
+                          key={catg}
+                          className={`flex items-center gap-2 p-1.5 rounded cursor-pointer text-[11px] border transition ${
+                            isDefault
+                              ? "bg-[#0e1f38] border-[#0284c7]/50 text-[#38bdf8] font-bold"
+                              : "bg-[#0b1424] border-[#16233a] text-[#cbd5e1] hover:border-[#253757]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={vhCatg.includes(catg)}
+                            onChange={(e) => {
+                              if (e.target.checked) setVhCatg([...vhCatg, catg]);
+                              else setVhCatg(vhCatg.filter((c) => c !== catg));
+                            }}
+                            className="rounded border-[#1f2f4c] text-[#0284c7]"
+                          />
+                          <span className="truncate">
+                            {isDefault ? "⭐ " : ""}{fullName} ({catg})
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Tab 2: Fuel Types */}
+              {filterTab === "fuels" && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#818cf8] uppercase">
+                      Select Fuel Types ({fuels.length} / {Object.keys(ALL_FUELS_DICT).length} Active)
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFuels(DEFAULT_FUELS)}
+                        className="px-2 py-0.5 bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold rounded text-[10px]"
+                      >
+                        Reset to 34 Fuels
+                      </button>
+                      <button
+                        onClick={() => setFuels(Object.keys(ALL_FUELS_DICT))}
+                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setFuels([])}
+                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
+                    {Object.entries(ALL_FUELS_DICT).map(([code, name]) => (
+                      <label key={code} className="flex items-center gap-1.5 p-1 rounded hover:bg-[#0f1b30] cursor-pointer text-[11px] text-[#cbd5e1]">
+                        <input
+                          type="checkbox"
+                          checked={fuels.includes(code)}
+                          onChange={(e) => {
+                            if (e.target.checked) setFuels([...fuels, code]);
+                            else setFuels(fuels.filter((f) => f !== code));
+                          }}
+                          className="rounded border-[#1f2f4c] text-[#0284c7]"
+                        />
+                        <span className="truncate">{name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 3: Norms */}
+              {filterTab === "norms" && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#818cf8] uppercase">
+                      Emission Norms ({norms.length > 0 ? `${norms.length} filtered` : "All Norms"})
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setNorms(Object.keys(ALL_NORMS_DICT))}
+                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setNorms([])}
+                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      >
+                        Clear All (No Filter)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
+                    {Object.entries(ALL_NORMS_DICT).map(([code, name]) => (
+                      <label key={code} className="flex items-center gap-1.5 p-1 rounded hover:bg-[#0f1b30] cursor-pointer text-[11px] text-[#cbd5e1]">
+                        <input
+                          type="checkbox"
+                          checked={norms.includes(code)}
+                          onChange={(e) => {
+                            if (e.target.checked) setNorms([...norms, code]);
+                            else setNorms(norms.filter((n) => n !== code));
+                          }}
+                          className="rounded border-[#1f2f4c] text-[#0284c7]"
+                        />
+                        <span className="truncate">{name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 4: Vehicle Classes */}
+              {filterTab === "class" && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#818cf8] uppercase">
+                      Vehicle Classes ({vhClass.length > 0 ? `${vhClass.length} filtered` : "All Classes"})
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setVhClass(Object.keys(ALL_VHCLASS_DICT))}
+                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setVhClass([])}
+                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      >
+                        Clear All (No Filter)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
+                    {Object.entries(ALL_VHCLASS_DICT).map(([code, name]) => (
+                      <label key={code} className="flex items-center gap-1.5 p-1 rounded hover:bg-[#0f1b30] cursor-pointer text-[11px] text-[#cbd5e1]">
+                        <input
+                          type="checkbox"
+                          checked={vhClass.includes(code)}
+                          onChange={(e) => {
+                            if (e.target.checked) setVhClass([...vhClass, code]);
+                            else setVhClass(vhClass.filter((c) => c !== code));
+                          }}
+                          className="rounded border-[#1f2f4c] text-[#0284c7]"
+                        />
+                        <span className="truncate">{name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#162238]">
@@ -1153,16 +1376,18 @@ export default function VahanDashboardPage() {
                 onClick={() => {
                   setVhCatg(DEFAULT_VH_CATG);
                   setFuels(DEFAULT_FUELS);
+                  setNorms([]);
+                  setVhClass([]);
                 }}
                 className="px-3 py-1 bg-[#152238] hover:bg-[#1e3152] text-xs font-semibold rounded text-[#94a3b8]"
               >
-                Reset curl Defaults
+                Reset Required Defaults (LMV+LPV)
               </button>
               <button
                 onClick={() => setIsFilterOpen(false)}
                 className="px-4 py-1 bg-[#0284c7] hover:bg-[#0369a1] text-xs font-bold rounded text-white"
               >
-                Save & Close
+                Save & Apply Filters
               </button>
             </div>
           </div>

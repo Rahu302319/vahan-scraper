@@ -73,10 +73,146 @@ ALL_FUELS_DICT = {
     '25': 'STRONG HYBRID EV'
 }
 
+# Vehicle Categories - LMV & LPV are the required defaults
 DEFAULT_VH_CATG = ['LMV', 'LPV']
-ALL_VH_CATG = [
-    '2WIC', '2WN', '2WT', '3WIC', '3WN', '3WT', '4WIC',
-    'HGV', 'HMV', 'HPV', 'LGV', 'LMV', 'LPV', 'MGV', 'MMV', 'MPV', 'OTH'
+
+ALL_VH_CATG_DICT = {
+    'LMV': 'LIGHT MOTOR VEHICLE',
+    'LPV': 'LIGHT PASSENGER VEHICLE',
+    '2WIC': 'TWO WHEELER (INVALID CARRIAGE)',
+    '2WN': 'TWO WHEELER (NON-TRANSPORT)',
+    '2WT': 'TWO WHEELER (TRANSPORT)',
+    '3WIC': 'THREE WHEELER (INVALID CARRIAGE)',
+    '3WN': 'THREE WHEELER (NON-TRANSPORT)',
+    '3WT': 'THREE WHEELER (TRANSPORT)',
+    '4WIC': 'FOUR WHEELER (INVALID CARRIAGE)',
+    'HGV': 'HEAVY GOODS VEHICLE',
+    'HMV': 'HEAVY MOTOR VEHICLE',
+    'HPV': 'HEAVY PASSENGER VEHICLE',
+    'LGV': 'LIGHT GOODS VEHICLE',
+    'MGV': 'MEDIUM GOODS VEHICLE',
+    'MMV': 'MEDIUM MOTOR VEHICLE',
+    'MPV': 'MEDIUM PASSENGER VEHICLE',
+    'OTH': 'OTHER'
+}
+
+ALL_VH_CATG = list(ALL_VH_CATG_DICT.keys())
+
+ALL_NORMS_DICT = {
+    '15': 'BHARAT STAGE VI',
+    '4':  'BHARAT STAGE IV',
+    '3':  'BHARAT STAGE III',
+    '2':  'BHARAT STAGE II',
+    '1':  'BHARAT STAGE I',
+    '11': 'BHARAT STAGE III/IV',
+    '18': 'BHARAT STAGE III (CEV)',
+    '5':  'BHARAT (TREM) STAGE III',
+    '6':  'BHARAT (TREM) STAGE III A',
+    '26': 'BHARAT (TREM) STAGE III AA',
+    '12': 'BHARAT (TREM) STAGE III B',
+    '24': 'CEV STAGE IV',
+    '25': 'CEV STAGE V',
+    '17': 'EURO 6',
+    '19': 'EURO 6A',
+    '20': 'EURO 6B',
+    '21': 'EURO 6C',
+    '22': 'EURO 6D',
+    '23': 'EURO 6AD',
+    '10': 'EURO 4',
+    '9':  'EURO 3',
+    '8':  'EURO 2',
+    '7':  'EURO 1',
+    '13': 'TREM STAGE IV',
+    '14': 'TREM STAGE V',
+    '98': 'NOT APPLICABLE',
+    '99': 'NOT AVAILABLE'
+}
+
+ALL_VHCLASS_DICT = {
+    "1": "M-CYCLE/SCOOTER",
+    "2": "M-CYCLE/SCOOTER-WITH SIDE CAR",
+    "3": "MOPED",
+    "4": "MOTORISED CYCLE (CC > 25CC)",
+    "5": "ADAPTED VEHICLE",
+    "6": "THREE WHEELER (PERSONAL)",
+    "7": "MOTOR CAR",
+    "8": "FORK LIFT",
+    "9": "VEHICLE FITTED WITH RIG",
+    "10": "VEHICLE FITTED WITH GENERATOR",
+    "11": "VEHICLE FITTED WITH COMPRESSOR",
+    "12": "CRANE MOUNTED VEHICLE",
+    "13": "AGRICULTURAL TRACTOR",
+    "14": "POWER TILLER",
+    "15": "PRIVATE SERVICE VEHICLE (INDIVIDUAL USE)",
+    "16": "CAMPER VAN / TRAILER (PRIVATE USE)",
+    "17": "TOW TRUCK",
+    "18": "BREAKDOWN VAN",
+    "19": "RECOVERY VEHICLE",
+    "20": "TOWER WAGON",
+    "21": "TREE TRIMMING VEHICLE",
+    "22": "CONSTRUCTION EQUIPMENT VEHICLE",
+    "23": "OMNI BUS (PRIVATE USE)",
+    "24": "ROAD ROLLER",
+    "25": "EXCAVATOR (NT)",
+    "26": "BULLDOZER",
+    "27": "HARVESTER",
+    "28": "TRAILER (AGRICULTURAL)",
+    "29": "EARTH MOVING EQUIPMENT",
+    "30": "TRAILER FOR PERSONAL USE",
+    "31": "QUADRICYCLE (PRIVATE)",
+    "32": "ARMOURED/SPECIALISED VEHICLE",
+    "33": "MOTOR CARAVAN",
+    "51": "MOTOR CYCLE/SCOOTER-SIDECAR(T)",
+    "52": "MOTOR CYCLE/SCOOTER-WITH TRAILER",
+    "53": "MOTOR CYCLE/SCOOTER-USED FOR HIRE",
+    "54": "E-RICKSHAW WITH CART (G)",
+    "55": "E-RICKSHAW(P)",
+    "56": "LUXURY CAB",
+    "57": "THREE WHEELER (PASSENGER)",
+    "58": "THREE WHEELER (GOODS)",
+    "59": "GOODS CARRIER",
+    "62": "POWER TILLER (COMMERCIAL)",
+    "63": "TRACTOR (COMMERCIAL)",
+    "64": "MOBILE CLINIC",
+    "65": "X-RAY VAN",
+    "66": "LIBRARY VAN",
+    "67": "MOBILE WORKSHOP",
+    "68": "MOBILE CANTEEN",
+    "69": "PRIVATE SERVICE VEHICLE",
+    "70": "MAXI CAB",
+    "71": "MOTOR CAB",
+    "72": "PULLER TRACTOR",
+    "73": "BUS",
+    "74": "SCHOOL BUS",
+    "75": "EDUCATIONAL INSTITUTION BUS",
+    "76": "AMBULANCE",
+    "77": "ANIMAL AMBULANCE",
+    "78": "CAMPER VAN / TRAILER",
+    "79": "CASH VAN",
+    "80": "FIRE TENDERS",
+    "81": "SNORKED LADDERS",
+    "82": "AUXILIARY TRAILER",
+    "83": "FIRE FIGHTING VEHICLE",
+    "84": "ARTICULATED VEHICLE",
+    "85": "HEARSES",
+    "86": "OMNI BUS",
+    "87": "DUMPER",
+    "88": "EXCAVATOR (COMMERCIAL)",
+    "89": "TRAILER (COMMERCIAL)",
+    "90": "TRACTOR-TROLLEY(COMMERCIAL)",
+    "91": "SEMI-TRAILER (COMMERCIAL)",
+    "92": "CONSTRUCTION EQUIPMENT VEHICLE (COMMERCIAL)",
+    "93": "QUADRICYCLE (COMMERCIAL)",
+    "94": "MODULAR HYDRAULIC TRAILER",
+    "157": "VINTAGE MOTOR VEHICLE"
+}
+
+YAXIS_OPTIONS = [
+    "Maker",
+    "Vehicle Category",
+    "Norms",
+    "Vehicle Class",
+    "Fuel"
 ]
 
 
@@ -254,6 +390,8 @@ class VahanScraper:
         year_type: str = "C",
         vh_catg: Optional[List[str]] = None,
         fuels: Optional[List[str]] = None,
+        norms: Optional[List[str]] = None,
+        vh_class: Optional[List[str]] = None,
     ) -> Tuple[bytes, pd.DataFrame]:
         """
         Fetches registration data for a single RTO.
@@ -314,6 +452,12 @@ class VahanScraper:
             refresh_payload.append(("VhCatg", vc))
         for f in fuels:
             refresh_payload.append(("fuel", f))
+        if norms:
+            for n in norms:
+                refresh_payload.append(("norms", n))
+        if vh_class:
+            for c in vh_class:
+                refresh_payload.append(("VhClass", c))
         refresh_payload.append(("groupingTable_scrollState", "0,0"))
         refresh_payload.append(("javax.faces.ViewState", self.view_state))
 
@@ -345,6 +489,12 @@ class VahanScraper:
             export_payload.append(("VhCatg", vc))
         for f in fuels:
             export_payload.append(("fuel", f))
+        if norms:
+            for n in norms:
+                export_payload.append(("norms", n))
+        if vh_class:
+            for c in vh_class:
+                export_payload.append(("VhClass", c))
         export_payload.append(("groupingTable_scrollState", "0,0"))
         export_payload.append(("javax.faces.ViewState", self.view_state))
         export_payload.append(("groupingTable:xls", "groupingTable:xls"))
@@ -365,6 +515,7 @@ class VahanScraper:
                 rto_name=rto_name,
                 state=self.current_state or "KL",
                 year=year,
+                yaxis=yaxis,
             )
         else:
             # Resilient Fallback: Parse table directly from combTablePnl HTML
@@ -378,6 +529,7 @@ class VahanScraper:
                 rto_name=rto_name,
                 state=self.current_state or "KL",
                 year=year,
+                yaxis=yaxis,
             )
 
             # Generate XLSX bytes from DataFrame so output files remain intact
@@ -395,9 +547,11 @@ class VahanScraper:
         rto_name: str = "",
         state: str = "KL",
         year: str = "2026",
+        yaxis: str = "Maker",
     ) -> pd.DataFrame:
         """
         Parses official Vahan Excel byte stream into a structured DataFrame.
+        Dynamically adapts primary dimension column to Maker, Vehicle Category, Norms, etc.
         """
         wb = openpyxl.load_workbook(io.BytesIO(xlsx_bytes), data_only=True)
         sheet = wb.active
@@ -408,20 +562,26 @@ class VahanScraper:
             if val and str(val).strip():
                 months.append(str(val).strip())
 
-        col_names = ["S_No", "Maker"] + months + ["TOTAL"]
+        header_val = sheet.cell(4, 2).value
+        if header_val and str(header_val).strip() and "S NO" not in str(header_val).upper():
+            primary_col = str(header_val).strip()
+        else:
+            primary_col = yaxis or "Maker"
+
+        col_names = ["S_No", primary_col] + months + ["TOTAL"]
         data_rows = []
 
         for row_idx in range(5, sheet.max_row + 1):
             s_no = sheet.cell(row_idx, 1).value
-            maker = sheet.cell(row_idx, 2).value
-            if not maker or not str(maker).strip():
+            dim_val = sheet.cell(row_idx, 2).value
+            if not dim_val or not str(dim_val).strip():
                 continue
 
-            maker_clean = str(maker).strip()
-            if "TOTAL" in maker_clean.upper():
+            dim_clean = str(dim_val).strip()
+            if "TOTAL" in dim_clean.upper():
                 continue
 
-            row_data = [s_no, maker_clean]
+            row_data = [s_no, dim_clean]
             for col in range(3, sheet.max_column + 1):
                 cell_v = sheet.cell(row_idx, col).value
                 if cell_v is None:
@@ -456,10 +616,11 @@ class VahanScraper:
         rto_name: str = "",
         state: str = "KL",
         year: str = "2026",
+        yaxis: str = "Maker",
     ) -> pd.DataFrame:
         """
         Resilient parser for PrimeFaces dataTable HTML in combTablePnl.
-        Extracts months, maker names, and numbers.
+        Extracts months, primary dimension values, and numbers.
         """
         soup = BeautifulSoup(table_html, "html.parser")
         table = soup.find("table")
@@ -475,10 +636,11 @@ class VahanScraper:
         months = []
         for th in rows[1].find_all(["th", "td"]):
             t = th.text.strip()
-            if t and t.upper() not in ["S NO", "MAKER", "TOTAL", ""]:
+            if t and t.upper() not in ["S NO", "MAKER", "VEHICLE CATEGORY", "NORMS", "VEHICLE CLASS", "TOTAL", ""]:
                 months.append(t)
 
-        col_names = ["S_No", "Maker"] + months + ["TOTAL"]
+        primary_col = yaxis or "Maker"
+        col_names = ["S_No", primary_col] + months + ["TOTAL"]
         data_rows = []
 
         # Data rows start from row index 2
@@ -488,11 +650,11 @@ class VahanScraper:
                 continue
 
             s_no = cells[0]
-            maker = cells[1]
-            if not maker or "TOTAL" in maker.upper():
+            dim_val = cells[1]
+            if not dim_val or "TOTAL" in dim_val.upper():
                 continue
 
-            row_data = [s_no, maker]
+            row_data = [s_no, dim_val]
             for val in cells[2:]:
                 try:
                     clean_s = str(val).replace(",", "").strip()
@@ -524,9 +686,9 @@ def consolidate_all_rtos(
 ) -> pd.DataFrame:
     """
     Consolidates multiple RTO DataFrames into a single master Excel file with:
-    - Sheet 1: 'All_Kerala_Data' (every single maker record with RTO code & name)
-    - Sheet 2: 'RTO_Summary' (Total vehicles & maker count per RTO)
-    - Sheet 3: 'Maker_Summary' (Total market share across entire state)
+    - Sheet 1: 'All_Kerala_Data' (every single record with RTO code & name)
+    - Sheet 2: 'RTO_Summary' (Total vehicles & item count per RTO)
+    - Sheet 3: '<Dimension>_Share' (Total market share across entire state)
     """
     if not all_dfs:
         raise ValueError("No dataframes provided for consolidation.")
@@ -534,7 +696,12 @@ def consolidate_all_rtos(
     master_df = pd.concat(all_dfs, ignore_index=True)
     master_df.fillna(0, inplace=True)
 
-    non_numeric = ["State", "RTO_Code", "RTO_Name", "Year", "S_No", "Maker"]
+    # Detect primary dimension column name (col index 5: State, RTO_Code, RTO_Name, Year, S_No, <Dimension>)
+    primary_dim = "Maker"
+    if len(master_df.columns) > 5 and master_df.columns[5] not in ["TOTAL", "JAN", "FEB", "MAR", "APR", "MAY", "JUN"]:
+        primary_dim = master_df.columns[5]
+
+    non_numeric = ["State", "RTO_Code", "RTO_Name", "Year", "S_No", primary_dim]
     for col in master_df.columns:
         if col not in non_numeric:
             master_df[col] = pd.to_numeric(master_df[col], errors="coerce").fillna(0).astype(int)
@@ -542,15 +709,15 @@ def consolidate_all_rtos(
     rto_summary = (
         master_df.groupby(["RTO_Code", "RTO_Name"])
         .agg(
-            Total_Makers=("Maker", "count"),
+            Total_Items=(primary_dim, "count"),
             Total_Vehicles=("TOTAL", "sum")
         )
         .reset_index()
         .sort_values(by="Total_Vehicles", ascending=False)
     )
 
-    maker_summary = (
-        master_df.groupby("Maker")
+    dim_summary = (
+        master_df.groupby(primary_dim)
         .agg(
             Total_Registrations=("TOTAL", "sum"),
             RTO_Presence=("RTO_Code", "nunique")
@@ -558,17 +725,19 @@ def consolidate_all_rtos(
         .reset_index()
         .sort_values(by="Total_Registrations", ascending=False)
     )
-    grand_total = maker_summary["Total_Registrations"].sum()
+    grand_total = dim_summary["Total_Registrations"].sum()
     if grand_total > 0:
-        maker_summary["Market_Share_%"] = (maker_summary["Total_Registrations"] / grand_total * 100).round(2)
+        dim_summary["Market_Share_%"] = (dim_summary["Total_Registrations"] / grand_total * 100).round(2)
     else:
-        maker_summary["Market_Share_%"] = 0.0
+        dim_summary["Market_Share_%"] = 0.0
+
+    sheet_share_name = f"{primary_dim[:18]}_Share"
 
     os.makedirs(os.path.dirname(os.path.abspath(output_excel_path)), exist_ok=True)
     with pd.ExcelWriter(output_excel_path, engine="openpyxl") as writer:
         master_df.to_excel(writer, sheet_name="All_Kerala_Data", index=False)
         rto_summary.to_excel(writer, sheet_name="RTO_Summary", index=False)
-        maker_summary.to_excel(writer, sheet_name="Maker_Market_Share", index=False)
+        dim_summary.to_excel(writer, sheet_name=sheet_share_name, index=False)
 
     if output_csv_path:
         os.makedirs(os.path.dirname(os.path.abspath(output_csv_path)), exist_ok=True)

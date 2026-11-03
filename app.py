@@ -30,7 +30,9 @@ from PyQt6.QtGui import QColor, QFont, QPalette
 
 from vahan_core import (
     VahanScraper, DEFAULT_FUELS, ALL_FUELS_DICT,
-    DEFAULT_VH_CATG, ALL_VH_CATG, consolidate_all_rtos
+    DEFAULT_VH_CATG, ALL_VH_CATG, ALL_VH_CATG_DICT,
+    ALL_NORMS_DICT, ALL_VHCLASS_DICT, YAXIS_OPTIONS,
+    consolidate_all_rtos
 )
 from worker import VahanFetchWorker
 
@@ -365,20 +367,27 @@ def apply_dark_table_palette(table: QTableWidget):
 
 
 class FilterDialog(QDialog):
-    """Dialog to customize Vehicle Categories and Fuel Type filters."""
+    """Dialog to customize Vehicle Categories, Fuel Types, Norms, and Vehicle Classes."""
 
-    def __init__(self, selected_vh: List[str], selected_fuels: List[str], parent=None):
+    def __init__(
+        self,
+        selected_vh: List[str],
+        selected_fuels: List[str],
+        selected_norms: Optional[List[str]] = None,
+        selected_vh_class: Optional[List[str]] = None,
+        parent=None
+    ):
         super().__init__(parent)
-        self.setWindowTitle("Filter Configuration — Vehicle Categories & Fuel Types")
-        self.resize(720, 520)
+        self.setWindowTitle("Filter Configuration — Vehicle Categories, Fuels, Norms & Vehicle Classes")
+        self.resize(780, 560)
         self.setStyleSheet(COMBAT_COMPACT_QSS)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(8)
 
-        lbl = QLabel("Customize Vehicle Classes and Fuels to fetch (Default: LMV, LPV and 34 Fuel Types):")
-        lbl.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        lbl = QLabel("Customize Filter Parameters (LIGHT PASSENGER VEHICLE & LIGHT MOTOR VEHICLE are default required):")
+        lbl.setStyleSheet("color: #38bdf8; font-size: 11px; font-weight: 600;")
         layout.addWidget(lbl)
 
         tabs = QTabWidget()
@@ -387,25 +396,43 @@ class FilterDialog(QDialog):
         vh_tab = QWidget()
         vh_layout = QVBoxLayout(vh_tab)
         vh_layout.setContentsMargins(8, 8, 8, 8)
+
+        notice_box = QLabel("⭐ Default Required Categories: LIGHT MOTOR VEHICLE (LMV) & LIGHT PASSENGER VEHICLE (LPV)")
+        notice_box.setStyleSheet("background-color: rgba(56, 189, 248, 0.12); color: #7dd3fc; border: 1px solid #0284c7; border-radius: 4px; padding: 4px 8px; font-weight: 700;")
+        vh_layout.addWidget(notice_box)
+
         vh_scroll = QScrollArea()
         vh_scroll.setWidgetResizable(True)
         vh_w = QWidget()
         vh_w_layout = QVBoxLayout(vh_w)
         self.vh_checkboxes: Dict[str, QCheckBox] = {}
-        for catg in ALL_VH_CATG:
-            cb = QCheckBox(catg)
+
+        # Display priority: LMV and LPV first, then the rest
+        priority_order = ['LMV', 'LPV'] + [c for c in ALL_VH_CATG if c not in ['LMV', 'LPV']]
+        for catg in priority_order:
+            full_name = ALL_VH_CATG_DICT.get(catg, catg)
+            is_priority = catg in DEFAULT_VH_CATG
+            prefix = "⭐ " if is_priority else "   "
+            cb = QCheckBox(f"{prefix}{full_name} ({catg})")
+            if is_priority:
+                cb.setStyleSheet("font-weight: 700; color: #38bdf8;")
             cb.setChecked(catg in selected_vh)
             self.vh_checkboxes[catg] = cb
             vh_w_layout.addWidget(cb)
         vh_scroll.setWidget(vh_w)
 
         vh_btns = QHBoxLayout()
+        btn_def_vh = QPushButton("Reset to LMV + LPV (Default Required)")
+        btn_def_vh.setStyleSheet("font-weight: 700; background-color: #0369a1; color: #ffffff;")
+        btn_def_vh.clicked.connect(self._reset_default_vh)
         btn_sel_all_vh = QPushButton("Select All")
         btn_sel_all_vh.clicked.connect(lambda: [cb.setChecked(True) for cb in self.vh_checkboxes.values()])
-        btn_def_vh = QPushButton("Reset to LMV + LPV (Default)")
-        btn_def_vh.clicked.connect(self._reset_default_vh)
-        vh_btns.addWidget(btn_sel_all_vh)
+        btn_clr_vh = QPushButton("Clear All")
+        btn_clr_vh.clicked.connect(lambda: [cb.setChecked(False) for cb in self.vh_checkboxes.values()])
+
         vh_btns.addWidget(btn_def_vh)
+        vh_btns.addWidget(btn_sel_all_vh)
+        vh_btns.addWidget(btn_clr_vh)
         vh_layout.addLayout(vh_btns)
         vh_layout.addWidget(vh_scroll)
         tabs.addTab(vh_tab, f"Vehicle Categories ({len(ALL_VH_CATG)})")
@@ -427,15 +454,75 @@ class FilterDialog(QDialog):
         fuel_scroll.setWidget(fuel_w)
 
         fuel_btns = QHBoxLayout()
+        btn_def_f = QPushButton("Reset to 34 Fuels (Default)")
+        btn_def_f.clicked.connect(self._reset_default_fuels)
         btn_sel_all_f = QPushButton("Select All")
         btn_sel_all_f.clicked.connect(lambda: [cb.setChecked(True) for cb in self.fuel_checkboxes.values()])
-        btn_def_f = QPushButton("Reset to 34 Fuels (curl default)")
-        btn_def_f.clicked.connect(self._reset_default_fuels)
-        fuel_btns.addWidget(btn_sel_all_f)
+        btn_clr_f = QPushButton("Clear All")
+        btn_clr_f.clicked.connect(lambda: [cb.setChecked(False) for cb in self.fuel_checkboxes.values()])
+
         fuel_btns.addWidget(btn_def_f)
+        fuel_btns.addWidget(btn_sel_all_f)
+        fuel_btns.addWidget(btn_clr_f)
         fuel_layout.addLayout(fuel_btns)
         fuel_layout.addWidget(fuel_scroll)
-        tabs.addTab(fuel_tab, "Fuel Types (34 selected)")
+        tabs.addTab(fuel_tab, f"Fuel Types ({len(ALL_FUELS_DICT)})")
+
+        # Tab 3: Norms (Emission Standards)
+        norm_tab = QWidget()
+        norm_layout = QVBoxLayout(norm_tab)
+        norm_layout.setContentsMargins(8, 8, 8, 8)
+        norm_scroll = QScrollArea()
+        norm_scroll.setWidgetResizable(True)
+        norm_w = QWidget()
+        norm_w_layout = QVBoxLayout(norm_w)
+        self.norm_checkboxes: Dict[str, QCheckBox] = {}
+        sel_norms_set = set(selected_norms or [])
+        for n_code, n_name in ALL_NORMS_DICT.items():
+            cb = QCheckBox(f"{n_name} (Code: {n_code})")
+            cb.setChecked(n_code in sel_norms_set)
+            self.norm_checkboxes[n_code] = cb
+            norm_w_layout.addWidget(cb)
+        norm_scroll.setWidget(norm_w)
+
+        norm_btns = QHBoxLayout()
+        btn_sel_all_n = QPushButton("Select All Norms")
+        btn_sel_all_n.clicked.connect(lambda: [cb.setChecked(True) for cb in self.norm_checkboxes.values()])
+        btn_clr_n = QPushButton("Clear All (No Filter)")
+        btn_clr_n.clicked.connect(lambda: [cb.setChecked(False) for cb in self.norm_checkboxes.values()])
+        norm_btns.addWidget(btn_sel_all_n)
+        norm_btns.addWidget(btn_clr_n)
+        norm_layout.addLayout(norm_btns)
+        norm_layout.addWidget(norm_scroll)
+        tabs.addTab(norm_tab, f"Norms ({len(ALL_NORMS_DICT)})")
+
+        # Tab 4: Vehicle Classes
+        class_tab = QWidget()
+        class_layout = QVBoxLayout(class_tab)
+        class_layout.setContentsMargins(8, 8, 8, 8)
+        class_scroll = QScrollArea()
+        class_scroll.setWidgetResizable(True)
+        class_w = QWidget()
+        class_w_layout = QVBoxLayout(class_w)
+        self.class_checkboxes: Dict[str, QCheckBox] = {}
+        sel_class_set = set(selected_vh_class or [])
+        for c_code, c_name in ALL_VHCLASS_DICT.items():
+            cb = QCheckBox(f"{c_name} (Code: {c_code})")
+            cb.setChecked(c_code in sel_class_set)
+            self.class_checkboxes[c_code] = cb
+            class_w_layout.addWidget(cb)
+        class_scroll.setWidget(class_w)
+
+        class_btns = QHBoxLayout()
+        btn_sel_all_c = QPushButton("Select All Classes")
+        btn_sel_all_c.clicked.connect(lambda: [cb.setChecked(True) for cb in self.class_checkboxes.values()])
+        btn_clr_c = QPushButton("Clear All (No Filter)")
+        btn_clr_c.clicked.connect(lambda: [cb.setChecked(False) for cb in self.class_checkboxes.values()])
+        class_btns.addWidget(btn_sel_all_c)
+        class_btns.addWidget(btn_clr_c)
+        class_layout.addLayout(class_btns)
+        class_layout.addWidget(class_scroll)
+        tabs.addTab(class_tab, f"Vehicle Classes ({len(ALL_VHCLASS_DICT)})")
 
         layout.addWidget(tabs)
 
@@ -452,10 +539,12 @@ class FilterDialog(QDialog):
         for f_code, cb in self.fuel_checkboxes.items():
             cb.setChecked(f_code in DEFAULT_FUELS)
 
-    def get_selected(self) -> Tuple[List[str], List[str]]:
+    def get_selected(self) -> Tuple[List[str], List[str], List[str], List[str]]:
         vh = [c for c, cb in self.vh_checkboxes.items() if cb.isChecked()]
         fuels = [f for f, cb in self.fuel_checkboxes.items() if cb.isChecked()]
-        return vh, fuels
+        norms = [n for n, cb in self.norm_checkboxes.items() if cb.isChecked()]
+        vh_class = [c for c, cb in self.class_checkboxes.items() if cb.isChecked()]
+        return vh, fuels, norms, vh_class
 
 
 class MainWindow(QMainWindow):
@@ -476,6 +565,8 @@ class MainWindow(QMainWindow):
         # Filters & Output Directory
         self.selected_vh_catg = list(DEFAULT_VH_CATG)
         self.selected_fuels = list(DEFAULT_FUELS)
+        self.selected_norms: List[str] = []
+        self.selected_vh_class: List[str] = []
         self.output_dir = os.path.abspath(os.path.join(os.getcwd(), "output"))
 
         self._build_ui()
@@ -580,6 +671,23 @@ class MainWindow(QMainWindow):
         year_box.addWidget(self.combo_year)
         row1.addLayout(year_box)
 
+        # Dimension (Y-Axis) Dropdown
+        yaxis_box = QVBoxLayout()
+        yaxis_box.setSpacing(2)
+        lbl_yaxis = QLabel("Dimension (Y-Axis):")
+        lbl_yaxis.setObjectName("field_tag")
+        self.combo_yaxis = QComboBox()
+        self.combo_yaxis.setMinimumWidth(150)
+        self.combo_yaxis.addItem("Maker (OEM Brands)", "Maker")
+        self.combo_yaxis.addItem("Vehicle Category", "Vehicle Category")
+        self.combo_yaxis.addItem("Norms (Emission)", "Norms")
+        self.combo_yaxis.addItem("Vehicle Class", "Vehicle Class")
+        self.combo_yaxis.addItem("Fuel Type", "Fuel")
+        self.combo_yaxis.currentIndexChanged.connect(self._on_yaxis_changed)
+        yaxis_box.addWidget(lbl_yaxis)
+        yaxis_box.addWidget(self.combo_yaxis)
+        row1.addLayout(yaxis_box)
+
         # Speed Mode
         speed_box = QVBoxLayout()
         speed_box.setSpacing(2)
@@ -614,9 +722,9 @@ class MainWindow(QMainWindow):
         # Filters Button
         filter_box = QVBoxLayout()
         filter_box.setSpacing(2)
-        lbl_f = QLabel("Filters:")
+        lbl_f = QLabel("Filter Parameters:")
         lbl_f.setObjectName("field_tag")
-        self.btn_filters = QPushButton("⚙ LMV, LPV (34 Fuels)")
+        self.btn_filters = QPushButton("⚙ Filters (LMV, LPV Default)")
         self.btn_filters.clicked.connect(self._open_filters_dialog)
         filter_box.addWidget(lbl_f)
         filter_box.addWidget(self.btn_filters)
@@ -1107,11 +1215,13 @@ class MainWindow(QMainWindow):
         config = {
             "state": "KL",
             "year": self.combo_year.currentText(),
-            "yaxis": "Maker",
+            "yaxis": self.combo_yaxis.currentData() or "Maker",
             "xaxis": "Month Wise",
             "year_type": "C",
             "vh_catg": self.selected_vh_catg,
             "fuels": self.selected_fuels,
+            "norms": self.selected_norms,
+            "vh_class": self.selected_vh_class,
             "threads": threads,
             "output_dir": self.output_dir,
             "max_retries": max_retries,
@@ -1283,12 +1393,19 @@ class MainWindow(QMainWindow):
         tot = int(df["TOTAL"].sum()) if "TOTAL" in df.columns else 0
         self.kpi_total_v.val_label.setText(f"{tot:,}")
 
-        if "Maker" in df.columns and "TOTAL" in df.columns and len(df) > 0:
-            top_row = df.sort_values(by="TOTAL", ascending=False).iloc[0]
-            self.kpi_top_maker.val_label.setText(f"{top_row['Maker'][:16]} ({top_row['TOTAL']:,})")
-
-        # Strip redundant columns: show S_No, Maker, Months, TOTAL
+        # Strip redundant columns: show S_No, Dimension, Months, TOTAL
         cols_to_show = [c for c in df.columns if c not in ["State", "RTO_Code", "RTO_Name", "Year"]]
+        primary_dim = "Maker"
+        if len(cols_to_show) > 1 and cols_to_show[1] not in ["TOTAL", "JAN", "FEB", "MAR", "APR", "MAY"]:
+            primary_dim = cols_to_show[1]
+
+        if primary_dim in df.columns and "TOTAL" in df.columns and len(df) > 0:
+            top_row = df.sort_values(by="TOTAL", ascending=False).iloc[0]
+            val_str = str(top_row[primary_dim])[:16]
+            self.kpi_top_maker.title_label.setText(f"Top {primary_dim}")
+            self.kpi_top_maker.val_label.setText(f"{val_str} ({top_row['TOTAL']:,})")
+        self.kpi_makers.title_label.setText(f"Active {primary_dim}s")
+
         self.table_preview.setColumnCount(len(cols_to_show))
         self.table_preview.setHorizontalHeaderLabels(cols_to_show)
         self.table_preview.setRowCount(len(df))
@@ -1309,8 +1426,8 @@ class MainWindow(QMainWindow):
                 self.table_preview.setItem(r_idx, c_idx, item)
 
         self.table_preview.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        if "Maker" in cols_to_show:
-            m_idx = cols_to_show.index("Maker")
+        if primary_dim in cols_to_show:
+            m_idx = cols_to_show.index(primary_dim)
             self.table_preview.horizontalHeader().setSectionResizeMode(m_idx, QHeaderView.ResizeMode.Stretch)
 
     def _update_consolidated_tab(self):
@@ -1320,29 +1437,35 @@ class MainWindow(QMainWindow):
         all_dfs = list(self.active_dfs.values())
         union_df = pd.concat(all_dfs, ignore_index=True).fillna(0)
 
+        # Detect primary dimension column
+        primary_dim = "Maker"
+        if len(union_df.columns) > 5 and union_df.columns[5] not in ["TOTAL", "JAN", "FEB", "MAR", "APR", "MAY"]:
+            primary_dim = union_df.columns[5]
+
         # Update KPIs
         grand_total = int(union_df["TOTAL"].sum()) if "TOTAL" in union_df.columns else 0
         self.kpi_state_total.val_label.setText(f"{grand_total:,}")
         self.kpi_state_rtos.val_label.setText(f"{len(self.active_dfs)} / {len(self.rtos_data)}")
-        uniq_makers = union_df["Maker"].nunique() if "Maker" in union_df.columns else 0
-        self.kpi_state_makers.val_label.setText(f"{uniq_makers}")
+        uniq_items = union_df[primary_dim].nunique() if primary_dim in union_df.columns else 0
+        self.kpi_state_makers.val_label.setText(f"{uniq_items}")
+        self.kpi_state_makers.title_label.setText(f"Unique {primary_dim}s")
 
         # Summary by RTO table
         rto_summary = (
             union_df.groupby(["RTO_Code", "RTO_Name"])
-            .agg(Makers=("Maker", "count"), Vehicles=("TOTAL", "sum"))
+            .agg(Items=(primary_dim, "count"), Vehicles=("TOTAL", "sum"))
             .reset_index()
             .sort_values(by="Vehicles", ascending=False)
         )
 
         self.table_summary.setColumnCount(4)
-        self.table_summary.setHorizontalHeaderLabels(["RTO Code", "Office Name", "Makers Count", "Total Vehicles"])
+        self.table_summary.setHorizontalHeaderLabels(["RTO Code", "Office Name", f"{primary_dim} Count", "Total Vehicles"])
         self.table_summary.setRowCount(len(rto_summary))
 
         for r_idx, (_, row) in enumerate(rto_summary.iterrows()):
             self.table_summary.setItem(r_idx, 0, QTableWidgetItem(str(row["RTO_Code"])))
             self.table_summary.setItem(r_idx, 1, QTableWidgetItem(str(row["RTO_Name"])))
-            self.table_summary.setItem(r_idx, 2, QTableWidgetItem(str(row["Makers"])))
+            self.table_summary.setItem(r_idx, 2, QTableWidgetItem(str(row["Items"])))
             v_item = QTableWidgetItem(f"{int(row['Vehicles']):,}")
             v_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             v_item.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
@@ -1362,13 +1485,39 @@ class MainWindow(QMainWindow):
             self.log_message(f"RTO {code} ({name}) has not been fetched yet. Double-click after fetching.", "INFO")
 
     def _open_filters_dialog(self):
-        dlg = FilterDialog(self.selected_vh_catg, self.selected_fuels, self)
+        dlg = FilterDialog(
+            self.selected_vh_catg,
+            self.selected_fuels,
+            self.selected_norms,
+            self.selected_vh_class,
+            self
+        )
         if dlg.exec():
-            self.selected_vh_catg, self.selected_fuels = dlg.get_selected()
+            self.selected_vh_catg, self.selected_fuels, self.selected_norms, self.selected_vh_class = dlg.get_selected()
+            self._update_filters_button_label()
             self.log_message(
-                f"Updated filters: {len(self.selected_vh_catg)} categories, {len(self.selected_fuels)} fuel types.",
+                f"Updated filters: {len(self.selected_vh_catg)} categories, {len(self.selected_fuels)} fuel types, "
+                f"{len(self.selected_norms)} norms, {len(self.selected_vh_class)} vehicle classes.",
                 "INFO"
             )
+
+    def _update_filters_button_label(self):
+        catg_str = f"{len(self.selected_vh_catg)} Catg"
+        fuel_str = f"{len(self.selected_fuels)} Fuels"
+        extras = []
+        if self.selected_norms:
+            extras.append(f"{len(self.selected_norms)} Norms")
+        if self.selected_vh_class:
+            extras.append(f"{len(self.selected_vh_class)} Classes")
+        extra_str = f", {', '.join(extras)}" if extras else ""
+        self.btn_filters.setText(f"⚙ Filters ({catg_str}, {fuel_str}{extra_str})")
+
+    def _on_yaxis_changed(self):
+        dim = self.combo_yaxis.currentText()
+        dim_data = self.combo_yaxis.currentData()
+        self.kpi_makers.title_label.setText(f"Active {dim}")
+        self.kpi_state_makers.title_label.setText(f"Unique {dim}")
+        self.log_message(f"Primary report dimension set to: {dim_data}", "INFO")
 
     def export_master_excel_manual(self):
         if not self.active_dfs:

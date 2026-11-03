@@ -13,8 +13,11 @@ export async function POST(req: NextRequest) {
       rtoCode,
       rtoName,
       year = "2026",
+      yaxis = "Maker",
       vhCatg = DEFAULT_VH_CATG,
       fuels = DEFAULT_FUELS,
+      norms = [],
+      vhClass = [],
       outputDir,
     } = body;
 
@@ -34,8 +37,11 @@ export async function POST(req: NextRequest) {
       rtoCode,
       rtoName,
       String(year),
+      yaxis,
       vhCatg,
-      fuels
+      fuels,
+      norms,
+      vhClass
     );
 
     const totalVehicles = result.rows.reduce((sum, r) => sum + (r.TOTAL || 0), 0);
