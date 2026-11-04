@@ -4,6 +4,7 @@ Combat & Compact Tactical UI/UX for Automotive Registration Analytics.
 """
 
 import os
+import re
 import sys
 import subprocess
 from datetime import datetime
@@ -1527,11 +1528,12 @@ class MainWindow(QMainWindow):
         year = self.combo_year.currentText()
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # If single RTO active, name file <RTO Name>-<Year>.xlsx
+        # If single RTO active, name file <RTO Name without SRTO/RTO>-<Year>.xlsx
         if len(self.active_dfs) == 1:
             first_df = list(self.active_dfs.values())[0]
             rto_name = first_df["RTO_Name"].iloc[0] if "RTO_Name" in first_df.columns else "RTO"
-            safe_name = "".join(c for c in str(rto_name) if c not in r'\/:*?"<>|').strip()
+            clean_name = re.sub(r'[\s\-_]+(?:SRTO|RTO)\s*$', '', str(rto_name), flags=re.IGNORECASE).strip() or str(rto_name).strip()
+            safe_name = "".join(c for c in clean_name if c not in r'\/:*?"<>|').strip()
             xlsx_filename = f"{safe_name}-{year}.xlsx"
         else:
             xlsx_filename = f"KL_ALL_RTO_CONSOLIDATED_{year}.xlsx"

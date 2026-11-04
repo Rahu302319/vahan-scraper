@@ -53,7 +53,9 @@ export async function POST(req: NextRequest) {
         const safeDir = path.resolve(outputDir.trim());
         fs.mkdirSync(safeDir, { recursive: true });
 
-        const cleanName = (rtoName || rtoCode).replace(/[\\/:*?"<>|]/g, "").trim();
+        // Strip trailing SRTO / RTO from name
+        const rawName = (rtoName || rtoCode).replace(/[\s\-_]+(?:SRTO|RTO)\s*$/i, "").trim() || (rtoName || rtoCode);
+        const cleanName = rawName.replace(/[\\/:*?"<>|]/g, "").trim();
         const fileName = `${cleanName}-${year}.xlsx`;
 
         if (result.xlsxBuffer) {

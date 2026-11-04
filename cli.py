@@ -4,6 +4,7 @@ Runs headlessly in the terminal with Ultrafast Multi-Threading.
 """
 
 import os
+import re
 import sys
 import time
 import queue
@@ -123,8 +124,9 @@ def run_cli():
                         fuels=DEFAULT_FUELS,
                     )
 
-                    # Save only XLSX with strictly required format: <RTO Name>-<Year>.xlsx
-                    safe_name = "".join(c for c in rto_name if c not in r'\/:*?"<>|').strip()
+                    # Save only XLSX with strictly required format: <RTO Name without SRTO/RTO>-<Year>.xlsx
+                    clean_name = re.sub(r'[\s\-_]+(?:SRTO|RTO)\s*$', '', rto_name, flags=re.IGNORECASE).strip() or rto_name.strip()
+                    safe_name = "".join(c for c in clean_name if c not in r'\/:*?"<>|').strip()
                     xlsx_path = os.path.join(output_dir, f"{safe_name}-{args.year}.xlsx")
 
                     with open(xlsx_path, "wb") as f_out:

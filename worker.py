@@ -4,6 +4,7 @@ Runs concurrent persistent sessions for blazing-fast batch extraction across all
 """
 
 import os
+import re
 import time
 import queue
 import threading
@@ -167,8 +168,9 @@ class VahanFetchWorker(QThread):
                             vh_class=vh_class,
                         )
 
-                        # Save only XLSX with strictly required format: <RTO Name>-<Year>.xlsx
-                        safe_name = "".join(c for c in rto_name if c not in r'\/:*?"<>|').strip()
+                        # Save only XLSX with strictly required format: <RTO Name without SRTO/RTO>-<Year>.xlsx
+                        clean_name = re.sub(r'[\s\-_]+(?:SRTO|RTO)\s*$', '', rto_name, flags=re.IGNORECASE).strip() or rto_name.strip()
+                        safe_name = "".join(c for c in clean_name if c not in r'\/:*?"<>|').strip()
                         xlsx_filename = f"{safe_name}-{year}.xlsx"
                         xlsx_path = os.path.join(output_dir, xlsx_filename)
 

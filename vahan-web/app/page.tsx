@@ -53,6 +53,13 @@ export default function VahanDashboardPage() {
     }
   };
 
+  // Helper to get clean filename: strictly strips trailing SRTO or RTO (e.g. VELLARIKUNDU SRTO -> VELLARIKUNDU-2026.xlsx)
+  const getCleanRtoFileName = (name: string, yr: string): string => {
+    const stripped = (name || "").replace(/[\s\-_]+(?:SRTO|RTO)\s*$/i, "").trim() || (name || "").trim();
+    const safe = stripped.replace(/[\\/:*?"<>|]/g, "").trim();
+    return `${safe}-${yr}.xlsx`;
+  };
+
   // Filter state
   const [vhCatg, setVhCatg] = useState<string[]>(DEFAULT_VH_CATG);
   const [fuels, setFuels] = useState<string[]>(DEFAULT_FUELS);
@@ -352,8 +359,7 @@ export default function VahanDashboardPage() {
               // If user selected a local folder via Browse Path, save XLSX directly to their PC!
               if (directoryHandleRef.current && json.xlsxBase64) {
                 try {
-                  const cleanName = (target.item.name || target.item.code).replace(/[\\/:*?"<>|]/g, "").trim();
-                  const fileName = `${cleanName}-${year}.xlsx`;
+                  const fileName = getCleanRtoFileName(target.item.name || target.item.code, year);
                   const byteCharacters = atob(json.xlsxBase64);
                   const byteNumbers = new Uint8Array(byteCharacters.length);
                   for (let b = 0; b < byteCharacters.length; b++) {
@@ -465,8 +471,7 @@ export default function VahanDashboardPage() {
           const completedRtos = rtos.filter((r) => r.data && r.data.length > 0);
           let masterName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}.xlsx`;
           if (completedRtos.length === 1) {
-            const cleanName = completedRtos[0].item.name.replace(/[\\/:*?"<>|]/g, "").trim();
-            masterName = `${cleanName}-${year}.xlsx`;
+            masterName = getCleanRtoFileName(completedRtos[0].item.name, year);
           }
           addLog(`Saving ${masterName} to local folder [${directoryHandleRef.current.name}]...`, "INFO");
           const resp = await fetch("/api/export-master", {
@@ -517,11 +522,10 @@ export default function VahanDashboardPage() {
       return;
     }
 
-    // Required format: If single RTO -> <RTO Name>-<Year>.xlsx
+    // Required format: If single RTO -> <RTO Name without SRTO/RTO>-<Year>.xlsx
     let targetFileName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}.xlsx`;
     if (completedRtos.length === 1) {
-      const cleanName = completedRtos[0].item.name.replace(/[\\/:*?"<>|]/g, "").trim();
-      targetFileName = `${cleanName}-${year}.xlsx`;
+      targetFileName = getCleanRtoFileName(completedRtos[0].item.name, year);
     }
 
     try {
@@ -581,11 +585,10 @@ export default function VahanDashboardPage() {
     }
   };
 
-  // Instant 1-click Download for any single RTO with format: <RTO Name>-<Year>.xlsx
+  // Instant 1-click Download for any single RTO with format: <RTO Name without SRTO/RTO>-<Year>.xlsx
   const downloadSingleRtoExcel = async (rtoItem: { code: string; name: string }, data: RTORowData[]) => {
     if (!data || data.length === 0) return;
-    const cleanName = rtoItem.name.replace(/[\\/:*?"<>|]/g, "").trim();
-    const fileName = `${cleanName}-${year}.xlsx`;
+    const fileName = getCleanRtoFileName(rtoItem.name, year);
     try {
       addLog(`Generating ${fileName}...`, "INFO");
       const resp = await fetch("/api/export-master", {
@@ -991,7 +994,7 @@ export default function VahanDashboardPage() {
                                   e.stopPropagation();
                                   downloadSingleRtoExcel(r.item, r.data!);
                                 }}
-                                title={`Download ${r.item.name}-${year}.xlsx`}
+                                title={`Download ${getCleanRtoFileName(r.item.name, year)}`}
                                 className="p-0.5 rounded bg-[#0284c7]/20 hover:bg-[#0284c7] text-[#38bdf8] hover:text-white transition"
                               >
                                 <Download className="w-3 h-3" />
@@ -1112,7 +1115,7 @@ export default function VahanDashboardPage() {
                     className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] transition shadow"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    Download {currentPreviewRecord.item.name}-{year}.xlsx
+                    Download {getCleanRtoFileName(currentPreviewRecord.item.name, year)}
                   </button>
                 </div>
               )}

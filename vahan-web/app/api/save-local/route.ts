@@ -139,11 +139,12 @@ export async function POST(req: NextRequest) {
         sheetMaker.addRow([mName, mTotal, pct]);
       });
 
-    // Determine filename: if single RTO, strictly use format: <RTO Name>-<Year>.xlsx
+    // Determine filename: if single RTO, strictly use format: <RTO Name without SRTO/RTO>-<Year>.xlsx
     const uniqueRtos = Array.from(new Set(rows.map((r) => r.RTO_Name || r.RTO_Code)));
     let xlsxFileName = `KL_ALL_RTO_CONSOLIDATED_${yr}.xlsx`;
     if (uniqueRtos.length === 1) {
-      const cleanName = uniqueRtos[0].replace(/[\\/:*?"<>|]/g, "").trim();
+      const rawName = uniqueRtos[0].replace(/[\s\-_]+(?:SRTO|RTO)\s*$/i, "").trim() || uniqueRtos[0];
+      const cleanName = rawName.replace(/[\\/:*?"<>|]/g, "").trim();
       xlsxFileName = `${cleanName}-${yr}.xlsx`;
     }
 

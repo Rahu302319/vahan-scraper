@@ -139,7 +139,8 @@ export async function POST(req: NextRequest) {
     let downloadFilename = filename;
     if (!downloadFilename) {
       if (rtoList.length === 1) {
-        const cleanName = (rtoList[0].name || rtoList[0].code).replace(/[\\/:*?"<>|]/g, "").trim();
+        const rawName = (rtoList[0].name || rtoList[0].code).replace(/[\s\-_]+(?:SRTO|RTO)\s*$/i, "").trim() || (rtoList[0].name || rtoList[0].code);
+        const cleanName = rawName.replace(/[\\/:*?"<>|]/g, "").trim();
         downloadFilename = `${cleanName}-${year}.xlsx`;
       } else {
         downloadFilename = `KL_ALL_${rtoList.length}_RTO_CONSOLIDATED_${year}.xlsx`;
