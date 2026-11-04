@@ -92,11 +92,7 @@ class VahanFetchWorker(QThread):
         norms = self.config.get("norms")
         vh_class = self.config.get("vh_class")
         output_dir = self.config.get("output_dir", os.path.join(os.getcwd(), "output"))
-
-        raw_xlsx_dir = os.path.join(output_dir, "raw_xlsx")
-        csv_dir = os.path.join(output_dir, "csv")
-        os.makedirs(raw_xlsx_dir, exist_ok=True)
-        os.makedirs(csv_dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
 
         self.sig_log.emit(
             f"⚡ Launching ULTRAFAST engine with {num_workers} concurrent workers for {total} RTO(s) [Year: {year}]...",
@@ -171,15 +167,13 @@ class VahanFetchWorker(QThread):
                             vh_class=vh_class,
                         )
 
-                        # Save files immediately
-                        safe_name = "".join(c for c in rto_name if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")
-                        file_stem = f"{rto_code}_{safe_name}_{year}"
-                        xlsx_path = os.path.join(raw_xlsx_dir, f"{file_stem}.xlsx")
-                        csv_path = os.path.join(csv_dir, f"{file_stem}.csv")
+                        # Save only XLSX with strictly required format: <RTO Name>-<Year>.xlsx
+                        safe_name = "".join(c for c in rto_name if c not in r'\/:*?"<>|').strip()
+                        xlsx_filename = f"{safe_name}-{year}.xlsx"
+                        xlsx_path = os.path.join(output_dir, xlsx_filename)
 
                         with open(xlsx_path, "wb") as f_out:
                             f_out.write(raw_bytes)
-                        df_result.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
                         rto_success = True
                         break
@@ -244,17 +238,15 @@ class VahanFetchWorker(QThread):
         for t in threads:
             t.join()
 
-        # Generate Master Consolidated Excel and CSV
+        # Generate Master Consolidated Excel (XLSX only, no CSV)
         if self.collected_dfs and not self._is_stopped:
             self.sig_status.emit("Generating 3-sheet master consolidated Excel...")
-            self.sig_log.emit("Generating Master Consolidated Excel & CSV...", "INFO")
+            self.sig_log.emit("Generating Master Consolidated Excel (XLSX only)...", "INFO")
             try:
                 state_code = self.config.get("state", "KL")
                 master_xlsx = os.path.join(output_dir, f"{state_code}_ALL_RTO_CONSOLIDATED_{year}.xlsx")
-                master_csv = os.path.join(output_dir, f"{state_code}_ALL_RTO_CONSOLIDATED_{year}.csv")
-                consolidate_all_rtos(self.collected_dfs, master_xlsx, master_csv)
+                consolidate_all_rtos(self.collected_dfs, master_xlsx, output_csv_path=None)
                 self.sig_log.emit(f"★ Master Consolidated Excel: {master_xlsx}", "SUCCESS")
-                self.sig_log.emit(f"★ Master Consolidated CSV:   {master_csv}", "SUCCESS")
             except Exception as ce:
                 self.sig_log.emit(f"Consolidation error: {str(ce)}", "ERROR")
 

@@ -1526,16 +1526,25 @@ class MainWindow(QMainWindow):
 
         year = self.combo_year.currentText()
         os.makedirs(self.output_dir, exist_ok=True)
-        xlsx_path = os.path.join(self.output_dir, f"KL_ALL_RTO_CONSOLIDATED_{year}.xlsx")
-        csv_path = os.path.join(self.output_dir, f"KL_ALL_RTO_CONSOLIDATED_{year}.csv")
+        
+        # If single RTO active, name file <RTO Name>-<Year>.xlsx
+        if len(self.active_dfs) == 1:
+            first_df = list(self.active_dfs.values())[0]
+            rto_name = first_df["RTO_Name"].iloc[0] if "RTO_Name" in first_df.columns else "RTO"
+            safe_name = "".join(c for c in str(rto_name) if c not in r'\/:*?"<>|').strip()
+            xlsx_filename = f"{safe_name}-{year}.xlsx"
+        else:
+            xlsx_filename = f"KL_ALL_RTO_CONSOLIDATED_{year}.xlsx"
+
+        xlsx_path = os.path.join(self.output_dir, xlsx_filename)
 
         try:
-            consolidate_all_rtos(list(self.active_dfs.values()), xlsx_path, csv_path)
+            consolidate_all_rtos(list(self.active_dfs.values()), xlsx_path, output_csv_path=None)
             self.log_message(f"Master Consolidated Excel successfully exported to {xlsx_path}", "SUCCESS")
             QMessageBox.information(
                 self,
                 "Export Successful",
-                f"Master Consolidated files created:\n\n{xlsx_path}\n{csv_path}"
+                f"Excel file created:\n\n{xlsx_path}"
             )
         except Exception as e:
             self.log_message(f"Failed to export master Excel: {str(e)}", "ERROR")

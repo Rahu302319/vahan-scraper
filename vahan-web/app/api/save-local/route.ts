@@ -139,44 +139,20 @@ export async function POST(req: NextRequest) {
         sheetMaker.addRow([mName, mTotal, pct]);
       });
 
-    // Write Master Excel
-    const xlsxFileName = `KL_ALL_RTO_CONSOLIDATED_${yr}.xlsx`;
+    // Determine filename: if single RTO, strictly use format: <RTO Name>-<Year>.xlsx
+    const uniqueRtos = Array.from(new Set(rows.map((r) => r.RTO_Name || r.RTO_Code)));
+    let xlsxFileName = `KL_ALL_RTO_CONSOLIDATED_${yr}.xlsx`;
+    if (uniqueRtos.length === 1) {
+      const cleanName = uniqueRtos[0].replace(/[\\/:*?"<>|]/g, "").trim();
+      xlsxFileName = `${cleanName}-${yr}.xlsx`;
+    }
+
     const xlsxFullPath = path.join(outDir, xlsxFileName);
     await workbook.xlsx.writeFile(xlsxFullPath);
-
-    // Write Master CSV
-    const csvFileName = `KL_ALL_RTO_CONSOLIDATED_${yr}.csv`;
-    const csvFullPath = path.join(outDir, csvFileName);
-    const csvLines = [headersAll.join(",")];
-    rows.forEach((r) => {
-      csvLines.push([
-        r.State,
-        r.RTO_Code,
-        `"${r.RTO_Name}"`,
-        r.Year,
-        r.S_No,
-        `"${r.Maker}"`,
-        r.JAN ?? 0,
-        r.FEB ?? 0,
-        r.MAR ?? 0,
-        r.APR ?? 0,
-        r.MAY ?? 0,
-        r.JUN ?? 0,
-        r.JUL ?? 0,
-        r.AUG ?? 0,
-        r.SEP ?? 0,
-        r.OCT ?? 0,
-        r.NOV ?? 0,
-        r.DEC ?? 0,
-        r.TOTAL ?? 0,
-      ].join(","));
-    });
-    fs.writeFileSync(csvFullPath, csvLines.join("\n"), "utf-8");
 
     return NextResponse.json({
       success: true,
       savedXlsx: xlsxFullPath,
-      savedCsv: csvFullPath,
       directory: outDir,
       rowsCount: rows.length,
     });

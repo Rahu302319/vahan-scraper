@@ -351,9 +351,9 @@ export default function VahanDashboardPage() {
     const secs = totalElapsedSec % 60;
     addLog(`★ Scraping batch finished in ${mins}m ${secs}s!`, "SUCCESS");
 
-    // Automatically generate Master Excel and Master CSV into the chosen output path!
+    // Automatically generate Excel into the chosen output path (XLSX only)
     if (accumulatedRows.length > 0) {
-      addLog(`Generating 3-sheet Master Consolidated Excel in ${outputPath}...`, "INFO");
+      addLog(`Generating Master Consolidated Excel in ${outputPath}...`, "INFO");
       try {
         const localSaveResp = await fetch("/api/save-local", {
           method: "POST",
@@ -366,12 +366,11 @@ export default function VahanDashboardPage() {
         });
         const saveJson = await localSaveResp.json();
         if (saveJson.success) {
-          addLog(`★ Master Excel saved to disk: ${saveJson.savedXlsx}`, "SUCCESS");
-          addLog(`★ Master CSV saved to disk:   ${saveJson.savedCsv}`, "SUCCESS");
-          setPathSaveStatus("✓ Master Excel & CSV saved to disk!");
+          addLog(`★ Excel saved to disk: ${saveJson.savedXlsx}`, "SUCCESS");
+          setPathSaveStatus("✓ Excel saved to disk!");
         }
       } catch (err: any) {
-        addLog(`Notice on auto-saving master files: ${err.message}`, "WARNING");
+        addLog(`Notice on auto-saving Excel: ${err.message}`, "WARNING");
       }
     }
   };
@@ -389,10 +388,11 @@ export default function VahanDashboardPage() {
     addLog("Scraping stopped by user.", "WARNING");
   };
 
-  // Download Master Excel & Save to Selected Path
+  // Download Excel & Save to Selected Path (XLSX only, format: <RTO Name>-<Year>.xlsx)
   const downloadMasterExcel = async () => {
     const allRows: RTORowData[] = [];
-    rtos.forEach((r) => {
+    const completedRtos = rtos.filter((r) => r.data && r.data.length > 0);
+    completedRtos.forEach((r) => {
       if (r.data && r.data.length > 0) {
         allRows.push(...r.data);
       }
@@ -403,8 +403,15 @@ export default function VahanDashboardPage() {
       return;
     }
 
+    // Required format: If single RTO -> <RTO Name>-<Year>.xlsx
+    let targetFileName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}.xlsx`;
+    if (completedRtos.length === 1) {
+      const cleanName = completedRtos[0].item.name.replace(/[\\/:*?"<>|]/g, "").trim();
+      targetFileName = `${cleanName}-${year}.xlsx`;
+    }
+
     try {
-      addLog(`Generating 3-sheet Master Consolidated Excel (Saving to: ${outputPath})...`, "INFO");
+      addLog(`Generating Excel: ${targetFileName} (Saving to: ${outputPath})...`, "INFO");
 
       // 1. Save directly to chosen folder on disk
       try {
@@ -430,7 +437,7 @@ export default function VahanDashboardPage() {
       const resp = await fetch("/api/export-master", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ allRows, year }),
+        body: JSON.stringify({ allRows, year, filename: targetFileName }),
       });
 
       if (!resp.ok) throw new Error("Export failed on server.");
@@ -439,13 +446,40 @@ export default function VahanDashboardPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `KL_ALL_${rtos.filter((r) => r.data).length}_RTO_CONSOLIDATED_${year}.xlsx`;
+      a.download = targetFileName;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      addLog("★ Master Consolidated Excel downloaded successfully to your browser!", "SUCCESS");
+      addLog(`★ ${targetFileName} downloaded successfully!`, "SUCCESS");
     } catch (e: any) {
       addLog(`Export error: ${e.message}`, "ERROR");
+    }
+  };
+
+  // Instant 1-click Download for any single RTO with format: <RTO Name>-<Year>.xlsx
+  const downloadSingleRtoExcel = async (rtoItem: { code: string; name: string }, data: RTORowData[]) => {
+    if (!data || data.length === 0) return;
+    const cleanName = rtoItem.name.replace(/[\\/:*?"<>|]/g, "").trim();
+    const fileName = `${cleanName}-${year}.xlsx`;
+    try {
+      addLog(`Generating ${fileName}...`, "INFO");
+      const resp = await fetch("/api/export-master", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allRows: data, year, filename: fileName }),
+      });
+      if (!resp.ok) throw new Error("Export failed.");
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      addLog(`✓ ${fileName} downloaded successfully!`, "SUCCESS");
+    } catch (err: any) {
+      addLog(`Download error: ${err.message}`, "ERROR");
     }
   };
 
@@ -601,7 +635,7 @@ export default function VahanDashboardPage() {
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-extrabold text-[#38bdf8] uppercase tracking-wider flex items-center gap-1">
                 <Folder className="w-3.5 h-3.5 text-[#38bdf8]" />
-                Browse Save Path (Excel & CSV Folder):
+                Browse Save Path (Excel Folder):
               </label>
               {pathSaveStatus && (
                 <span className="text-[10px] font-semibold text-[#34d399] truncate max-w-[170px]">
@@ -616,7 +650,7 @@ export default function VahanDashboardPage() {
                 onChange={(e) => setOutputPath(e.target.value)}
                 placeholder="C:\Users\...\Desktop\NEW VAHAN\output"
                 className="flex-1 bg-[#070d1a] border border-[#1f2f4c] rounded px-2.5 py-1.5 text-xs font-mono text-[#7dd3fc] focus:border-[#38bdf8] focus:outline-none"
-                title="Enter local disk path to save Excel and CSV output files"
+                title="Enter local disk path to save Excel output files (<RTO Name>-<Year>.xlsx)"
               />
               <button
                 type="button"
@@ -810,9 +844,24 @@ export default function VahanDashboardPage() {
                           </span>
                         )}
                         {r.status === "done" && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#064e3b]/40 text-[#34d399] border border-[#059669]">
-                            Done ✓
-                          </span>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#064e3b]/40 text-[#34d399] border border-[#059669]">
+                              Done ✓
+                            </span>
+                            {r.data && r.data.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadSingleRtoExcel(r.item, r.data!);
+                                }}
+                                title={`Download ${r.item.name}-${year}.xlsx`}
+                                className="p-0.5 rounded bg-[#0284c7]/20 hover:bg-[#0284c7] text-[#38bdf8] hover:text-white transition"
+                              >
+                                <Download className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
                         )}
                         {r.status === "failed" && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#7f1d1d]/40 text-[#f87171] border border-[#dc2626]">
@@ -915,6 +964,22 @@ export default function VahanDashboardPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Quick Single RTO Download Bar */}
+              {currentPreviewRecord && currentPreviewData.length > 0 && (
+                <div className="flex items-center justify-between p-2 bg-[#0c1629] border border-[#1d2d4a] rounded shadow-sm">
+                  <span className="text-xs font-semibold text-[#94a3b8]">
+                    Selected RTO: <span className="text-[#38bdf8] font-bold">{currentPreviewRecord.item.name}</span> ({year})
+                  </span>
+                  <button
+                    onClick={() => downloadSingleRtoExcel(currentPreviewRecord.item, currentPreviewData)}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] transition shadow"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download {currentPreviewRecord.item.name}-{year}.xlsx
+                  </button>
+                </div>
+              )}
 
               {/* Data Table */}
               <div className="flex-1 overflow-auto rounded border border-[#1a2842] max-h-[500px]">

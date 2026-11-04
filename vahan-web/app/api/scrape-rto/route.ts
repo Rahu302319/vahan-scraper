@@ -47,57 +47,21 @@ export async function POST(req: NextRequest) {
     const totalVehicles = result.rows.reduce((sum, r) => sum + (r.TOTAL || 0), 0);
 
     // Save individual RTO files to local disk if outputDir is specified
+    // If local output directory specified, save only XLSX with required format: <RTO Name>-<Year>.xlsx
     if (outputDir && typeof outputDir === "string" && outputDir.trim()) {
       try {
         const safeDir = path.resolve(outputDir.trim());
-        const rawDir = path.join(safeDir, "raw_xlsx");
-        const csvDir = path.join(safeDir, "csv");
+        fs.mkdirSync(safeDir, { recursive: true });
 
-        fs.mkdirSync(rawDir, { recursive: true });
-        fs.mkdirSync(csvDir, { recursive: true });
+        const cleanName = (rtoName || rtoCode).replace(/[\\/:*?"<>|]/g, "").trim();
+        const fileName = `${cleanName}-${year}.xlsx`;
 
-        const safeName = (rtoName || "").replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/_+/g, "_");
-        const fileStem = `${rtoCode}_${safeName}_${year}`;
-
-        // 1. Save original XLSX
         if (result.xlsxBuffer) {
-          const xlsxPath = path.join(rawDir, `${fileStem}.xlsx`);
+          const xlsxPath = path.join(safeDir, fileName);
           fs.writeFileSync(xlsxPath, Buffer.from(result.xlsxBuffer));
         }
-
-        // 2. Save parsed CSV
-        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-        const csvHeader = ["State", "RTO_Code", "RTO_Name", "Year", "S_No", "Maker", ...months, "TOTAL"].join(",");
-        const csvLines = [csvHeader];
-
-        result.rows.forEach((r) => {
-          csvLines.push([
-            r.State,
-            r.RTO_Code,
-            `"${r.RTO_Name}"`,
-            r.Year,
-            r.S_No,
-            `"${r.Maker}"`,
-            r.JAN ?? 0,
-            r.FEB ?? 0,
-            r.MAR ?? 0,
-            r.APR ?? 0,
-            r.MAY ?? 0,
-            r.JUN ?? 0,
-            r.JUL ?? 0,
-            r.AUG ?? 0,
-            r.SEP ?? 0,
-            r.OCT ?? 0,
-            r.NOV ?? 0,
-            r.DEC ?? 0,
-            r.TOTAL ?? 0,
-          ].join(","));
-        });
-
-        const csvPath = path.join(csvDir, `${fileStem}.csv`);
-        fs.writeFileSync(csvPath, csvLines.join("\n"), "utf-8");
       } catch (saveErr) {
-        console.warn(`Could not save individual files for ${rtoCode}:`, saveErr);
+        console.warn(`Could not save individual XLSX for ${rtoCode}:`, saveErr);
       }
     }
 

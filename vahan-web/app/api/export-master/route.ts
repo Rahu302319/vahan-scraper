@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const { allRows, year = "2026" } = (await req.json()) as {
+    const { allRows, year = "2026", filename } = (await req.json()) as {
       allRows: RTORowData[];
       year: string;
+      filename?: string;
     };
 
     if (!allRows || allRows.length === 0) {
@@ -135,11 +136,21 @@ export async function POST(req: NextRequest) {
 
     const buffer = await workbook.xlsx.writeBuffer();
 
+    let downloadFilename = filename;
+    if (!downloadFilename) {
+      if (rtoList.length === 1) {
+        const cleanName = (rtoList[0].name || rtoList[0].code).replace(/[\\/:*?"<>|]/g, "").trim();
+        downloadFilename = `${cleanName}-${year}.xlsx`;
+      } else {
+        downloadFilename = `KL_ALL_${rtoList.length}_RTO_CONSOLIDATED_${year}.xlsx`;
+      }
+    }
+
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename=KL_ALL_${rtoList.length}_RTO_CONSOLIDATED_${year}.xlsx`,
+        "Content-Disposition": `attachment; filename="${downloadFilename}"`,
       },
     });
   } catch (error: any) {

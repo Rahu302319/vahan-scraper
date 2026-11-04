@@ -45,10 +45,7 @@ def run_cli():
     print("=" * 75)
 
     output_dir = os.path.abspath(args.output)
-    raw_xlsx_dir = os.path.join(output_dir, "raw_xlsx")
-    csv_dir = os.path.join(output_dir, "csv")
-    os.makedirs(raw_xlsx_dir, exist_ok=True)
-    os.makedirs(csv_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     scraper_init = VahanScraper()
     print("\n[1/3] Connecting to Vahan Parivahan Portal...")
@@ -126,14 +123,12 @@ def run_cli():
                         fuels=DEFAULT_FUELS,
                     )
 
-                    safe_name = "".join(c for c in rto_name if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")
-                    file_stem = f"{rto_code}_{safe_name}_{args.year}"
-                    xlsx_path = os.path.join(raw_xlsx_dir, f"{file_stem}.xlsx")
-                    csv_path = os.path.join(csv_dir, f"{file_stem}.csv")
+                    # Save only XLSX with strictly required format: <RTO Name>-<Year>.xlsx
+                    safe_name = "".join(c for c in rto_name if c not in r'\/:*?"<>|').strip()
+                    xlsx_path = os.path.join(output_dir, f"{safe_name}-{args.year}.xlsx")
 
                     with open(xlsx_path, "wb") as f_out:
                         f_out.write(raw_bytes)
-                    df_result.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
                     fetch_success = True
                     break
@@ -175,12 +170,10 @@ def run_cli():
     # Consolidate
     print("-" * 75)
     if collected_dfs:
-        print("Generating Master Consolidated Excel and CSV...")
+        print("Generating Master Consolidated Excel (XLSX only)...")
         master_xlsx = os.path.join(output_dir, f"{args.state}_ALL_{total}_RTO_CONSOLIDATED_{args.year}.xlsx")
-        master_csv = os.path.join(output_dir, f"{args.state}_ALL_{total}_RTO_CONSOLIDATED_{args.year}.csv")
-        consolidate_all_rtos(collected_dfs, master_xlsx, master_csv)
+        consolidate_all_rtos(collected_dfs, master_xlsx, output_csv_path=None)
         print(f"★ Master Excel: {master_xlsx}")
-        print(f"★ Master CSV:   {master_csv}")
 
     total_time = time.time() - start_time
     mins, secs = divmod(int(total_time), 60)
