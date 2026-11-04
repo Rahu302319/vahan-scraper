@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
       makerCount: result.rows.length,
       totalVehicles,
       rows: result.rows,
+      xlsxBase64: result.xlsxBuffer ? Buffer.from(result.xlsxBuffer).toString("base64") : null,
     });
   } catch (error: any) {
     console.error("API /api/scrape-rto error:", error);

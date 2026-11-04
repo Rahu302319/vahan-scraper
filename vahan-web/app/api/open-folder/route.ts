@@ -22,11 +22,11 @@ export async function POST(req: NextRequest) {
       exec(`explorer.exe "${outDir}"`);
       return NextResponse.json({ success: true, openedPath: outDir });
     } else {
-      // Cloud hosting (Netlify/Vercel/Linux)
+      // Cloud hosting (Vercel/Linux)
       return NextResponse.json({
         success: true,
         isCloud: true,
-        message: "Running in Cloud Mode on Netlify: Use the 'Download Master Excel' button to save files directly to your device.",
+        message: "Running in Cloud Mode: Files are saved to your selected local folder or browser downloads.",
       });
     }
   } catch (err: any) {

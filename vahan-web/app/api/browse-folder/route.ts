@@ -45,9 +45,9 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     } else {
       // Cloud/Linux environment (Netlify, Vercel, AWS)
       return NextResponse.json({
-        success: true,
+        success: false,
         isCloud: true,
-        path: "Browser Downloads Folder (Cloud Mode)",
+        message: "Native server dialog unavailable on cloud; use browser native folder picker.",
       });
     }
   } catch (err: any) {

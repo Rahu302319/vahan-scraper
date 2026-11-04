@@ -36,6 +36,22 @@ export default function VahanDashboardPage() {
   // Output Path Selection Option
   const [outputPath, setOutputPath] = useState<string>("C:\\Users\\Rah\\Desktop\\NEW VAHAN\\output");
   const [pathSaveStatus, setPathSaveStatus] = useState<string>("Ready (Saves to local disk)");
+  const directoryHandleRef = useRef<any>(null);
+
+  // Helper to save file directly into user-selected local directory handle
+  const saveToLocalDirectory = async (fileName: string, data: Uint8Array | Blob | ArrayBuffer): Promise<boolean> => {
+    if (!directoryHandleRef.current) return false;
+    try {
+      const fileHandle = await directoryHandleRef.current.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(data);
+      await writable.close();
+      return true;
+    } catch (err) {
+      console.warn(`Could not save ${fileName} to local folder handle:`, err);
+      return false;
+    }
+  };
 
   // Filter state
   const [vhCatg, setVhCatg] = useState<string[]>(DEFAULT_VH_CATG);
@@ -132,61 +148,112 @@ export default function VahanDashboardPage() {
     });
   };
 
-  // Browse Folder Picker Handler (triggers native Windows FolderBrowserDialog via server API)
+  // Browse Folder Picker Handler:
+  // In modern browsers (Chrome/Edge), opens the native OS Folder Picker dialog!
+  // On localhost, also supports Windows Server FolderBrowserDialog.
   const handleBrowseFolder = async () => {
-    addLog("Opening Windows Folder Browser Dialog...", "INFO");
-    setPathSaveStatus("Selecting folder...");
-
-    try {
-      const resp = await fetch("/api/browse-folder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPath: outputPath }),
-      });
-      const data = await resp.json();
-
-      if (data.success && data.path) {
-        setOutputPath(data.path);
-        addLog(`✓ Output directory set to: ${data.path}`, "SUCCESS");
-        setPathSaveStatus(`✓ Path selected: ${data.path}`);
-      } else if (data.cancelled) {
-        setPathSaveStatus("Selection cancelled");
-      } else {
-        // Fallback: prompt user for folder path
-        const manual = prompt("Enter full folder path to save data:", outputPath);
-        if (manual && manual.trim()) {
-          setOutputPath(manual.trim());
-          addLog(`Output path set to: ${manual.trim()}`, "INFO");
-          setPathSaveStatus(`✓ Path set to: ${manual.trim()}`);
+    // 1. Direct native browser directory picker (Works in Chrome/Edge on Vercel, Netlify, Localhost)
+    if (typeof window !== "undefined" && "showDirectoryPicker" in window) {
+      try {
+        addLog("Opening native Windows folder browser...", "INFO");
+        setPathSaveStatus("Selecting folder...");
+        const dirHandle = await (window as any).showDirectoryPicker({
+          id: "vahan_output_folder",
+          mode: "readwrite",
+        });
+        if (dirHandle) {
+          directoryHandleRef.current = dirHandle;
+          const folderName = dirHandle.name;
+          setOutputPath(`📁 ${folderName} (Selected Folder)`);
+          setPathSaveStatus(`✓ Local Folder: ${folderName}`);
+          addLog(`✓ Selected local PC folder: "${folderName}" (Files will save here automatically!)`, "SUCCESS");
+          return;
         }
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          setPathSaveStatus("Selection cancelled");
+          addLog("Folder selection cancelled.", "WARNING");
+          return;
+        }
+        console.warn("showDirectoryPicker notice:", err);
       }
-    } catch (e: any) {
-      const manual = prompt("Enter full folder path to save data:", outputPath);
-      if (manual && manual.trim()) {
-        setOutputPath(manual.trim());
-        addLog(`Output path set to: ${manual.trim()}`, "INFO");
-        setPathSaveStatus(`✓ Path set to: ${manual.trim()}`);
+    }
+
+    // 2. If running locally on localhost, use PowerShell folder browser dialog
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+    if (isLocalhost) {
+      try {
+        addLog("Opening Windows Folder Browser Dialog...", "INFO");
+        setPathSaveStatus("Selecting folder...");
+        const resp = await fetch("/api/browse-folder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentPath: outputPath }),
+        });
+        const data = await resp.json();
+        if (data.success && data.path && !data.isCloud) {
+          setOutputPath(data.path);
+          addLog(`✓ Output directory set to: ${data.path}`, "SUCCESS");
+          setPathSaveStatus(`✓ Path selected: ${data.path}`);
+          return;
+        } else if (data.cancelled) {
+          setPathSaveStatus("Selection cancelled");
+          return;
+        }
+      } catch (e: any) {
+        console.warn("Server browse-folder error:", e);
       }
+    }
+
+    // 3. Fallback prompt
+    const manual = prompt(
+      "Enter folder name or path on your computer where files should be saved:",
+      outputPath.replace(/^📁\s*/, "").replace(/\s*\(Selected Folder\)$/, "")
+    );
+    if (manual && manual.trim()) {
+      setOutputPath(manual.trim());
+      addLog(`Output path set to: ${manual.trim()}`, "INFO");
+      setPathSaveStatus(`✓ Path set: ${manual.trim()}`);
     }
   };
 
-  // Open the selected output folder in Windows File Explorer
+  // Open / inspect the selected output folder
   const handleOpenFolder = async () => {
-    try {
-      const resp = await fetch("/api/open-folder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetDir: outputPath }),
-      });
-      const json = await resp.json();
-      if (json.success) {
-        addLog(`📂 Opened directory in Explorer: ${json.openedPath}`, "SUCCESS");
-      } else {
-        addLog(`Error opening folder: ${json.error}`, "ERROR");
-      }
-    } catch (e: any) {
-      addLog(`Error opening folder: ${e.message}`, "ERROR");
+    if (directoryHandleRef.current) {
+      alert(
+        `📁 Active Local Folder: "${directoryHandleRef.current.name}"\n\nAll scraped XLSX files are automatically saved directly into this folder on your computer.\n\nOpen Windows File Explorer to browse your files!`
+      );
+      addLog(`📂 Active local folder: ${directoryHandleRef.current.name}`, "SUCCESS");
+      return;
     }
+
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+    if (isLocalhost) {
+      try {
+        const resp = await fetch("/api/open-folder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetDir: outputPath }),
+        });
+        const json = await resp.json();
+        if (json.success && !json.isCloud) {
+          addLog(`📂 Opened directory in Explorer: ${json.openedPath}`, "SUCCESS");
+          return;
+        }
+      } catch (e: any) {
+        console.warn("Open folder error:", e);
+      }
+    }
+
+    alert(
+      `Output Path: "${outputPath}"\n\nTip: Click "Browse Path..." to choose any folder on your computer so files are saved directly into it!`
+    );
   };
 
   // Start Scraper with Concurrency, 3 Auto-Retries & Live Disk Saving
@@ -281,6 +348,25 @@ export default function VahanDashboardPage() {
               resultData = json.rows;
               totalV = json.totalVehicles || 0;
               accumulatedRows.push(...resultData);
+
+              // If user selected a local folder via Browse Path, save XLSX directly to their PC!
+              if (directoryHandleRef.current && json.xlsxBase64) {
+                try {
+                  const cleanName = (target.item.name || target.item.code).replace(/[\\/:*?"<>|]/g, "").trim();
+                  const fileName = `${cleanName}-${year}.xlsx`;
+                  const byteCharacters = atob(json.xlsxBase64);
+                  const byteNumbers = new Uint8Array(byteCharacters.length);
+                  for (let b = 0; b < byteCharacters.length; b++) {
+                    byteNumbers[b] = byteCharacters.charCodeAt(b);
+                  }
+                  const saved = await saveToLocalDirectory(fileName, byteNumbers);
+                  if (saved) {
+                    addLog(`💾 Auto-saved ${fileName} directly to local folder [${directoryHandleRef.current.name}]`, "SUCCESS");
+                  }
+                } catch (fsErr: any) {
+                  console.warn("Auto-save to directory failed:", fsErr);
+                }
+              }
               break;
             } else {
               lastErr = json.error || "Unknown server response";
@@ -365,12 +451,40 @@ export default function VahanDashboardPage() {
           }),
         });
         const saveJson = await localSaveResp.json();
-        if (saveJson.success) {
+        if (saveJson.success && !saveJson.isCloud) {
           addLog(`★ Excel saved to disk: ${saveJson.savedXlsx}`, "SUCCESS");
           setPathSaveStatus("✓ Excel saved to disk!");
         }
       } catch (err: any) {
         addLog(`Notice on auto-saving Excel: ${err.message}`, "WARNING");
+      }
+
+      // If user selected a local folder via Browse Path, save Master Excel directly into it
+      if (directoryHandleRef.current) {
+        try {
+          const completedRtos = rtos.filter((r) => r.data && r.data.length > 0);
+          let masterName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}.xlsx`;
+          if (completedRtos.length === 1) {
+            const cleanName = completedRtos[0].item.name.replace(/[\\/:*?"<>|]/g, "").trim();
+            masterName = `${cleanName}-${year}.xlsx`;
+          }
+          addLog(`Saving ${masterName} to local folder [${directoryHandleRef.current.name}]...`, "INFO");
+          const resp = await fetch("/api/export-master", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ allRows: accumulatedRows, year, filename: masterName }),
+          });
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const saved = await saveToLocalDirectory(masterName, blob);
+            if (saved) {
+              addLog(`★ Master Excel saved directly to local folder [${directoryHandleRef.current.name}]: ${masterName}`, "SUCCESS");
+              setPathSaveStatus(`✓ Saved to ${directoryHandleRef.current.name}`);
+            }
+          }
+        } catch (mErr: any) {
+          console.warn("Master folder save error:", mErr);
+        }
       }
     }
   };
@@ -443,6 +557,17 @@ export default function VahanDashboardPage() {
       if (!resp.ok) throw new Error("Export failed on server.");
 
       const blob = await resp.blob();
+
+      // If user selected a local folder via Browse Path, save directly to their PC!
+      if (directoryHandleRef.current) {
+        try {
+          await saveToLocalDirectory(targetFileName, blob);
+          addLog(`✓ Saved to local folder [${directoryHandleRef.current.name}]: ${targetFileName}`, "SUCCESS");
+        } catch (fsErr) {
+          console.warn("Folder save notice:", fsErr);
+        }
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -470,6 +595,17 @@ export default function VahanDashboardPage() {
       });
       if (!resp.ok) throw new Error("Export failed.");
       const blob = await resp.blob();
+
+      // If user selected a local folder via Browse Path, save directly to their PC!
+      if (directoryHandleRef.current) {
+        try {
+          await saveToLocalDirectory(fileName, blob);
+          addLog(`✓ Saved to local folder [${directoryHandleRef.current.name}]: ${fileName}`, "SUCCESS");
+        } catch (fsErr) {
+          console.warn("Folder save notice:", fsErr);
+        }
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
