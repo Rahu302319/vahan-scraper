@@ -46,56 +46,116 @@ interface SummaryRow {
   monthly?: Record<string, number>;
 }
 
-export interface FYOption {
-  value: string; // e.g. "2026"
-  label: string; // "FY 2025-26 (FY26)"
-  startYear: number; // 2025
-  endYear: number; // 2026
-  prevYY: string; // "25"
-  currYY: string; // "26"
-}
+export type PeriodType = "FY" | "CY";
 
-export const AVAILABLE_FY_LIST: FYOption[] = [
-  { value: "2027", label: "FY 2026-27 (FY27)", startYear: 2026, endYear: 2027, prevYY: "26", currYY: "27" },
-  { value: "2026", label: "FY 2025-26 (FY26)", startYear: 2025, endYear: 2026, prevYY: "25", currYY: "26" },
-  { value: "2025", label: "FY 2024-25 (FY25)", startYear: 2024, endYear: 2025, prevYY: "24", currYY: "25" },
-  { value: "2024", label: "FY 2023-24 (FY24)", startYear: 2023, endYear: 2024, prevYY: "23", currYY: "24" },
-  { value: "2023", label: "FY 2022-23 (FY23)", startYear: 2022, endYear: 2023, prevYY: "22", currYY: "23" },
-  { value: "2022", label: "FY 2021-22 (FY22)", startYear: 2021, endYear: 2022, prevYY: "21", currYY: "22" },
-  { value: "2021", label: "FY 2020-21 (FY21)", startYear: 2020, endYear: 2021, prevYY: "20", currYY: "21" },
-];
-
-export interface FYMonthItem {
-  code: string;       // "APR", "MAY", ... "MAR"
-  name: string;       // "Apr", "May", ... "Mar"
-  mmmYy: string;      // "Apr-25", "May-25", ... "Jan-26", "Mar-26"
-  calYear: number;    // 2025 for Apr-Dec, 2026 for Jan-Mar
+export interface PeriodMonth {
+  code: string;       // "APR", "MAY", ... "MAR" or "JAN", "FEB", ... "DEC"
+  name: string;       // "Apr", "May", ...
+  mmmYy: string;      // "Apr-26", "Nov-26", etc.
+  calYear: number;    // 2026
   quarter: string;    // "Q1", "Q2", "Q3", "Q4"
   order: number;      // 1 to 12
 }
 
-export function getFyMonthSequence(selectedYear: string): FYMonthItem[] {
-  const numYr = parseInt(selectedYear, 10) || 2026;
-  const startYr = numYr - 1;
-  const endYr = numYr;
-  const prevYY = String(startYr).slice(-2);
-  const currYY = String(endYr).slice(-2);
-
-  return [
-    { code: "APR", name: "Apr", mmmYy: `Apr-${prevYY}`, calYear: startYr, quarter: "Q1", order: 1 },
-    { code: "MAY", name: "May", mmmYy: `May-${prevYY}`, calYear: startYr, quarter: "Q1", order: 2 },
-    { code: "JUN", name: "Jun", mmmYy: `Jun-${prevYY}`, calYear: startYr, quarter: "Q1", order: 3 },
-    { code: "JUL", name: "Jul", mmmYy: `Jul-${prevYY}`, calYear: startYr, quarter: "Q2", order: 4 },
-    { code: "AUG", name: "Aug", mmmYy: `Aug-${prevYY}`, calYear: startYr, quarter: "Q2", order: 5 },
-    { code: "SEP", name: "Sep", mmmYy: `Sep-${prevYY}`, calYear: startYr, quarter: "Q2", order: 6 },
-    { code: "OCT", name: "Oct", mmmYy: `Oct-${prevYY}`, calYear: startYr, quarter: "Q3", order: 7 },
-    { code: "NOV", name: "Nov", mmmYy: `Nov-${prevYY}`, calYear: startYr, quarter: "Q3", order: 8 },
-    { code: "DEC", name: "Dec", mmmYy: `Dec-${prevYY}`, calYear: startYr, quarter: "Q3", order: 9 },
-    { code: "JAN", name: "Jan", mmmYy: `Jan-${currYY}`, calYear: endYr,   quarter: "Q4", order: 10 },
-    { code: "FEB", name: "Feb", mmmYy: `Feb-${currYY}`, calYear: endYr,   quarter: "Q4", order: 11 },
-    { code: "MAR", name: "Mar", mmmYy: `Mar-${currYY}`, calYear: endYr,   quarter: "Q4", order: 12 },
-  ];
+export interface PeriodOption {
+  id: string;             // "FY27", "FY26", "CY26", etc.
+  type: PeriodType;       // "FY" | "CY"
+  label: string;          // "FY 2026-27 (FY27)"
+  subLabel: string;       // "Apr-26 to Mar-27"
+  startYear?: number;     // 2026
+  endYear?: number;       // 2027
+  year?: number;          // for CY e.g. 2026
+  yearsToFetch: number[]; // [2026, 2027] or [2026]
+  months: PeriodMonth[];
 }
+
+export function buildFyOption(endYear: number): PeriodOption {
+  const startYear = endYear - 1;
+  const prevYY = String(startYear).slice(-2);
+  const currYY = String(endYear).slice(-2);
+  const id = `FY${currYY}`;
+  const label = `FY ${startYear}-${currYY} (${id})`;
+  const subLabel = `Apr-${prevYY} to Mar-${currYY}`;
+
+  const months: PeriodMonth[] = [
+    { code: "APR", name: "Apr", mmmYy: `Apr-${prevYY}`, calYear: startYear, quarter: "Q1", order: 1 },
+    { code: "MAY", name: "May", mmmYy: `May-${prevYY}`, calYear: startYear, quarter: "Q1", order: 2 },
+    { code: "JUN", name: "Jun", mmmYy: `Jun-${prevYY}`, calYear: startYear, quarter: "Q1", order: 3 },
+    { code: "JUL", name: "Jul", mmmYy: `Jul-${prevYY}`, calYear: startYear, quarter: "Q2", order: 4 },
+    { code: "AUG", name: "Aug", mmmYy: `Aug-${prevYY}`, calYear: startYear, quarter: "Q2", order: 5 },
+    { code: "SEP", name: "Sep", mmmYy: `Sep-${prevYY}`, calYear: startYear, quarter: "Q2", order: 6 },
+    { code: "OCT", name: "Oct", mmmYy: `Oct-${prevYY}`, calYear: startYear, quarter: "Q3", order: 7 },
+    { code: "NOV", name: "Nov", mmmYy: `Nov-${prevYY}`, calYear: startYear, quarter: "Q3", order: 8 },
+    { code: "DEC", name: "Dec", mmmYy: `Dec-${prevYY}`, calYear: startYear, quarter: "Q3", order: 9 },
+    { code: "JAN", name: "Jan", mmmYy: `Jan-${currYY}`, calYear: endYear,   quarter: "Q4", order: 10 },
+    { code: "FEB", name: "Feb", mmmYy: `Feb-${currYY}`, calYear: endYear,   quarter: "Q4", order: 11 },
+    { code: "MAR", name: "Mar", mmmYy: `Mar-${currYY}`, calYear: endYear,   quarter: "Q4", order: 12 },
+  ];
+
+  return {
+    id,
+    type: "FY",
+    label,
+    subLabel,
+    startYear,
+    endYear,
+    yearsToFetch: [startYear, endYear],
+    months,
+  };
+}
+
+export function buildCyOption(year: number): PeriodOption {
+  const yy = String(year).slice(-2);
+  const id = `CY${yy}`;
+  const label = `CY ${year}`;
+  const subLabel = `Jan-${yy} to Dec-${yy}`;
+
+  const months: PeriodMonth[] = [
+    { code: "JAN", name: "Jan", mmmYy: `Jan-${yy}`, calYear: year, quarter: "Q1", order: 1 },
+    { code: "FEB", name: "Feb", mmmYy: `Feb-${yy}`, calYear: year, quarter: "Q1", order: 2 },
+    { code: "MAR", name: "Mar", mmmYy: `Mar-${yy}`, calYear: year, quarter: "Q1", order: 3 },
+    { code: "APR", name: "Apr", mmmYy: `Apr-${yy}`, calYear: year, quarter: "Q2", order: 4 },
+    { code: "MAY", name: "May", mmmYy: `May-${yy}`, calYear: year, quarter: "Q2", order: 5 },
+    { code: "JUN", name: "Jun", mmmYy: `Jun-${yy}`, calYear: year, quarter: "Q2", order: 6 },
+    { code: "JUL", name: "Jul", mmmYy: `Jul-${yy}`, calYear: year, quarter: "Q3", order: 7 },
+    { code: "AUG", name: "Aug", mmmYy: `Aug-${yy}`, calYear: year, quarter: "Q3", order: 8 },
+    { code: "SEP", name: "Sep", mmmYy: `Sep-${yy}`, calYear: year, quarter: "Q3", order: 9 },
+    { code: "OCT", name: "Oct", mmmYy: `Oct-${yy}`, calYear: year, quarter: "Q4", order: 10 },
+    { code: "NOV", name: "Nov", mmmYy: `Nov-${yy}`, calYear: year, quarter: "Q4", order: 11 },
+    { code: "DEC", name: "Dec", mmmYy: `Dec-${yy}`, calYear: year, quarter: "Q4", order: 12 },
+  ];
+
+  return {
+    id,
+    type: "CY",
+    label,
+    subLabel,
+    year,
+    yearsToFetch: [year],
+    months,
+  };
+}
+
+export const ALL_FY_OPTIONS: PeriodOption[] = [
+  buildFyOption(2027), // FY 2026-27 (FY27) - Current active FY
+  buildFyOption(2026), // FY 2025-26 (FY26)
+  buildFyOption(2025), // FY 2024-25 (FY25)
+  buildFyOption(2024), // FY 2023-24 (FY24)
+  buildFyOption(2023), // FY 2022-23 (FY23)
+  buildFyOption(2022), // FY 2021-22 (FY22)
+  buildFyOption(2021), // FY 2020-21 (FY21)
+];
+
+export const ALL_CY_OPTIONS: PeriodOption[] = [
+  buildCyOption(2026), // CY 2026 (Jan-26 to Dec-26)
+  buildCyOption(2025), // CY 2025 (Jan-25 to Dec-25)
+  buildCyOption(2024), // CY 2024
+  buildCyOption(2023), // CY 2023
+  buildCyOption(2022), // CY 2022
+];
+
+export type FYOption = PeriodOption;
+export const AVAILABLE_FY_LIST = ALL_FY_OPTIONS;
 
 export const KERALA_TERRITORIES: Record<string, string[]> = {
   "North Kerala": [
@@ -144,6 +204,45 @@ function cleanRtoName(s: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
+export function getRowVolumeForPeriod(
+  row: any,
+  selectedMonth: string = "ALL",
+  periodMonths: PeriodMonth[]
+): number {
+  const rowYear = Number(row.Year || row.year || row.FY || 0);
+
+  if (selectedMonth && selectedMonth !== "ALL") {
+    const targetMonth = periodMonths.find(
+      (m) =>
+        m.mmmYy.toUpperCase() === selectedMonth.toUpperCase() ||
+        m.code.toUpperCase() === selectedMonth.toUpperCase() ||
+        m.name.toUpperCase() === selectedMonth.toUpperCase()
+    );
+    if (!targetMonth) return 0;
+    if (rowYear !== 0 && rowYear !== targetMonth.calYear) return 0;
+    const colName = targetMonth.code;
+    if (colName === "DEC") {
+      return Number(row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0) || 0;
+    }
+    return Number(row[colName] ?? row[colName.toLowerCase()] ?? 0) || 0;
+  }
+
+  let total = 0;
+  for (const m of periodMonths) {
+    if (rowYear === 0 || rowYear === m.calYear) {
+      const colName = m.code;
+      const v =
+        colName === "DEC"
+          ? (row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0)
+          : (row[colName] ?? row[colName.toLowerCase()] ?? 0);
+      if (v !== undefined && !isNaN(Number(v))) {
+        total += Number(v);
+      }
+    }
+  }
+  return total;
+}
+
 function getRowVolume(row: any, selectedMonth: string = "ALL", selectedFyYear: string = "2026"): number {
   if (selectedMonth && selectedMonth !== "ALL") {
     const colName = selectedMonth.slice(0, 3).toUpperCase();
@@ -153,7 +252,6 @@ function getRowVolume(row: any, selectedMonth: string = "ALL", selectedFyYear: s
     return Number(row[colName] ?? row[colName.toLowerCase()] ?? 0) || 0;
   }
 
-  // selectedMonth === "ALL": Return row's total registrations
   if (row.TOTAL !== undefined && row.TOTAL !== null && !isNaN(Number(row.TOTAL))) {
     return Number(row.TOTAL);
   }
@@ -242,7 +340,9 @@ export default function ExecutiveDashboard({
   }, [dbBenchmarks]);
 
   // 1. DEPENDENT FILTER STATES
-  const [selectedYear, setSelectedYear] = useState<string>("2026");
+  const [periodType, setPeriodType] = useState<PeriodType>("FY");
+  const [selectedFyId, setSelectedFyId] = useState<string>("FY27");
+  const [selectedCyId, setSelectedCyId] = useState<string>("CY26");
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [selectedSegment, setSelectedSegment] = useState<"PV" | "CV" | "BEV" | "ALL">("PV");
   const [selectedTerritory, setSelectedTerritory] = useState<string>("ALL");
@@ -252,12 +352,17 @@ export default function ExecutiveDashboard({
   const [hideZeroRtos, setHideZeroRtos] = useState<boolean>(false);
   const [tableMode, setTableMode] = useState<"summary" | "monthly">("summary");
 
-  // FY Definition & 12 Month Financial Year Sequence (Apr to Mar)
-  const fyOption = useMemo(
-    () => AVAILABLE_FY_LIST.find((f) => f.value === selectedYear) || AVAILABLE_FY_LIST[1],
-    [selectedYear]
-  );
-  const fyMonths = useMemo(() => getFyMonthSequence(selectedYear), [selectedYear]);
+  // Active Period Definition (Financial Year or Calendar Year)
+  const currentPeriod = useMemo<PeriodOption>(() => {
+    if (periodType === "FY") {
+      return ALL_FY_OPTIONS.find((f) => f.id === selectedFyId) || ALL_FY_OPTIONS[0];
+    }
+    return ALL_CY_OPTIONS.find((c) => c.id === selectedCyId) || ALL_CY_OPTIONS[0];
+  }, [periodType, selectedFyId, selectedCyId]);
+
+  // Backward-compatible alias
+  const selectedYear = currentPeriod.id;
+  const fyMonths = currentPeriod.months;
 
   // Cached scraped rows from localStorage & database
   const [cachedScrapedRows, setCachedScrapedRows] = useState<any[]>([]);
@@ -277,11 +382,12 @@ export default function ExecutiveDashboard({
     } catch {}
   }, []);
 
-  // Fetch live registrations from Hostinger database strictly for the selected FY calendar year
+  // Fetch live registrations from Hostinger database strictly for the selected period
   const fetchDbRegistrations = async () => {
     setIsLoadingDb(true);
     try {
-      const res = await fetch(`/api/db?type=registrations&year=${selectedYear}`);
+      const yearsParam = currentPeriod.yearsToFetch.join(",");
+      const res = await fetch(`/api/db?type=registrations&year=${yearsParam}`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setDbScrapedRows(json.data);
@@ -298,7 +404,7 @@ export default function ExecutiveDashboard({
 
   useEffect(() => {
     fetchDbRegistrations();
-  }, [selectedYear]);
+  }, [currentPeriod.id]);
 
   // Combined dataset from database and current live scraper session (Zero stale cache)
   const allDatasetRows = useMemo(() => {
@@ -330,13 +436,13 @@ export default function ExecutiveDashboard({
     let pv = 0, cv = 0, bev = 0;
     allDatasetRows.forEach((r) => {
       const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-      const vol = Number(r.TOTAL || r.total || 0);
+      const vol = getRowVolumeForPeriod(r, selectedMonth, currentPeriod.months);
       if (s === "PV") pv += vol;
       else if (s === "CV") cv += vol;
       else if (s === "BEV") bev += vol;
     });
     return { pv, cv, bev, all: pv + cv + bev };
-  }, [allDatasetRows]);
+  }, [allDatasetRows, selectedMonth, currentPeriod]);
 
   // Auto-switch to active segment if current segment has 0 records but another segment has scraped data
   useEffect(() => {
@@ -540,7 +646,7 @@ export default function ExecutiveDashboard({
       }
 
       const { grouping } = resolveRowOem(r);
-      const vol = getRowVolume(r, selectedMonth, selectedYear);
+      const vol = getRowVolumeForPeriod(r, selectedMonth, currentPeriod.months);
       if (vol === 0) return;
       groupMap[grouping] = (groupMap[grouping] || 0) + vol;
       totalVal += vol;
@@ -554,26 +660,26 @@ export default function ExecutiveDashboard({
         color: OEM_COLORS[group] || "#64748b",
       }))
       .sort((a, b) => b.count - a.count);
-  }, [selectedYear, selectedMonth, selectedTerritory, selectedDistrict, selectedRto, activeDatasetRows, effectiveOemDb, rtoDtLookup, rtoCodeLookup]);
+  }, [currentPeriod, selectedMonth, selectedTerritory, selectedDistrict, selectedRto, activeDatasetRows, effectiveOemDb, rtoDtLookup, rtoCodeLookup]);
 
   // DYNAMIC SUMMARY ROWS ENGINE (Month & Cascading Filters Applied)
   const computedSummaryRows = useMemo(() => {
-    // 1. Build volume map for each RTO from activeDatasetRows for selectedMonth & individual FY months
+    // 1. Build volume map for each RTO from activeDatasetRows for selectedMonth & individual period months
     const rtoMap = new Map<string, { total: number; mm: number; monthly: Record<string, number> }>();
 
     activeDatasetRows.forEach((row) => {
       const finalName = resolveRowToFinalRto(row);
       const key = cleanRtoName(finalName);
-      const vol = getRowVolume(row, selectedMonth, selectedYear);
+      const vol = getRowVolumeForPeriod(row, selectedMonth, currentPeriod.months);
       const { isMahindra } = resolveRowOem(row);
 
       const curr = rtoMap.get(key) || { total: 0, mm: 0, monthly: {} };
       curr.total += vol;
       if (isMahindra) curr.mm += vol;
 
-      // Accumulate monthly volumes for 12 FY months (Apr to Mar in mmm-yy format)
-      fyMonths.forEach((m) => {
-        const mVol = getRowVolume(row, m.mmmYy, selectedYear);
+      // Accumulate monthly volumes for all 12 months of this period (in mmm-yy format)
+      currentPeriod.months.forEach((m) => {
+        const mVol = getRowVolumeForPeriod(row, m.mmmYy, currentPeriod.months);
         curr.monthly[m.mmmYy] = (curr.monthly[m.mmmYy] || 0) + mVol;
       });
 
@@ -602,7 +708,7 @@ export default function ExecutiveDashboard({
         }
         districtAccumulator[templateRow.district].total += stats.total;
         districtAccumulator[templateRow.district].mm += stats.mm;
-        fyMonths.forEach((m) => {
+        currentPeriod.months.forEach((m) => {
           districtAccumulator[templateRow.district].monthly[m.mmmYy] =
             (districtAccumulator[templateRow.district].monthly[m.mmmYy] || 0) + (stats.monthly[m.mmmYy] || 0);
         });
@@ -610,7 +716,7 @@ export default function ExecutiveDashboard({
         if (territoryAccumulator[templateRow.territory]) {
           territoryAccumulator[templateRow.territory].total += stats.total;
           territoryAccumulator[templateRow.territory].mm += stats.mm;
-          fyMonths.forEach((m) => {
+          currentPeriod.months.forEach((m) => {
             territoryAccumulator[templateRow.territory].monthly[m.mmmYy] =
               (territoryAccumulator[templateRow.territory].monthly[m.mmmYy] || 0) + (stats.monthly[m.mmmYy] || 0);
           });
@@ -623,7 +729,7 @@ export default function ExecutiveDashboard({
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
+            [currentPeriod.id]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: stats.monthly,
         });
@@ -643,7 +749,7 @@ export default function ExecutiveDashboard({
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
+            [currentPeriod.id]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: distStats.monthly,
         });
@@ -657,7 +763,7 @@ export default function ExecutiveDashboard({
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
+            [currentPeriod.id]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: terrStats.monthly,
         });
@@ -671,7 +777,7 @@ export default function ExecutiveDashboard({
         const finalMs = grandTotalAcc > 0 ? (grandMmAcc / grandTotalAcc) * 100 : 0;
 
         const grandMonthly: Record<string, number> = {};
-        fyMonths.forEach((m) => {
+        currentPeriod.months.forEach((m) => {
           grandMonthly[m.mmmYy] =
             (territoryAccumulator["North Kerala"]?.monthly[m.mmmYy] || 0) +
             (territoryAccumulator["South Kerala"]?.monthly[m.mmmYy] || 0);
@@ -680,7 +786,7 @@ export default function ExecutiveDashboard({
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: grandTotalAcc, mm: grandMmAcc, ms: finalMs },
+            [currentPeriod.id]: { total: grandTotalAcc, mm: grandMmAcc, ms: finalMs },
           },
           monthly: grandMonthly,
         });
@@ -688,7 +794,7 @@ export default function ExecutiveDashboard({
     });
 
     return newRows;
-  }, [selectedYear, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, rtoCodeLookup, effectiveOemDb, fyMonths]);
+  }, [currentPeriod, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, rtoCodeLookup, effectiveOemDb]);
 
   // Compute Grand Totals & KPI Cards from live scraper data
   const kpiData = useMemo(() => {
@@ -696,9 +802,9 @@ export default function ExecutiveDashboard({
     const northTotalRow = computedSummaryRows.find((r) => r.label === "North Kerala Total");
     const southTotalRow = computedSummaryRows.find((r) => r.label === "South Kerala Total");
 
-    const grand = grandTotalRow?.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
-    const north = northTotalRow?.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
-    const south = southTotalRow?.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+    const grand = grandTotalRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+    const north = northTotalRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+    const south = southTotalRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
 
     const topOem = activeOemBreakdown[0] || { name: "N/A", share: 0, count: 0 };
 
@@ -713,14 +819,14 @@ export default function ExecutiveDashboard({
       northShare: grand.total > 0 ? ((north.total / grand.total) * 100).toFixed(1) : "0",
       southShare: grand.total > 0 ? ((south.total / grand.total) * 100).toFixed(1) : "0",
     };
-  }, [computedSummaryRows, selectedYear, activeOemBreakdown]);
+  }, [computedSummaryRows, currentPeriod.id, activeOemBreakdown]);
 
   // Filtered Summary Table Rows (Respects Cascading Dropdown Selections)
   const filteredSummaryRows = useMemo(() => {
     return computedSummaryRows.filter((r) => {
       // 1. Hide Zero RTO filter
       if (hideZeroRtos && r.type === "rto") {
-        const metrics = r.years[selectedYear];
+        const metrics = r.years[currentPeriod.id];
         if (!metrics || metrics.total === 0) return false;
       }
 
@@ -753,7 +859,7 @@ export default function ExecutiveDashboard({
 
       return true;
     });
-  }, [computedSummaryRows, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, selectedYear]);
+  }, [computedSummaryRows, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, currentPeriod.id]);
 
   // Hierarchical Territory -> District -> RTO Groups for Merged & Collapsible Rendering
   const territoryGroups = useMemo(() => {
@@ -865,7 +971,7 @@ export default function ExecutiveDashboard({
 
             if (hideZeroRtos) {
               rtos = rtos.filter((r) => {
-                const tot = r.years[selectedYear]?.total || 0;
+                const tot = r.years[currentPeriod.id]?.total || 0;
                 return tot > 0;
               });
             }
@@ -884,7 +990,7 @@ export default function ExecutiveDashboard({
             }
 
             if (hideZeroRtos) {
-              const distTot = dg.totalRow?.years[selectedYear]?.total || 0;
+              const distTot = dg.totalRow?.years[currentPeriod.id]?.total || 0;
               if (distTot === 0 && rtos.length === 0) return null;
             }
 
@@ -903,7 +1009,7 @@ export default function ExecutiveDashboard({
         };
       })
       .filter(Boolean) as typeof territoryGroups;
-  }, [territoryGroups, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, selectedYear]);
+  }, [territoryGroups, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, currentPeriod.id]);
 
   const getDistrictRowCount = (dg: { districtName: string; rtos: SummaryRow[] }) => {
     const expanded = isDistrictExpanded(dg.districtName);
@@ -914,19 +1020,19 @@ export default function ExecutiveDashboard({
     return computedSummaryRows.find((r) => r.type === "grand_total");
   }, [computedSummaryRows]);
 
-  // Active Timeframe Label: formatted strictly as mmm-yy when month is selected, or Full FY
+  // Active Timeframe Label: formatted strictly as mmm-yy when month is selected, or Full Period
   const activeMonthItem = useMemo(() => {
     if (selectedMonth === "ALL") return null;
-    return fyMonths.find(
+    return currentPeriod.months.find(
       (m) => m.mmmYy.toUpperCase() === selectedMonth.toUpperCase() ||
              m.code.toUpperCase() === selectedMonth.toUpperCase() ||
              m.name.toUpperCase() === selectedMonth.toUpperCase()
     );
-  }, [selectedMonth, fyMonths]);
+  }, [selectedMonth, currentPeriod]);
 
   const timeframeLabel = activeMonthItem
     ? activeMonthItem.mmmYy
-    : `${fyOption.label} (Apr-${fyOption.prevYY} to Mar-${fyOption.currYY})`;
+    : `${currentPeriod.label} (${currentPeriod.subLabel})`;
 
   // Export Summary Table as formatted Excel
   const handleExportSummaryExcel = async () => {
@@ -936,13 +1042,13 @@ export default function ExecutiveDashboard({
       const sheet = workbook.addWorksheet(`Summary_${timeframeLabel.replace(/[\s():/]+/g, "_")}`);
 
       if (tableMode === "monthly") {
-        // Export 12-Month Financial Year Grid (Apr to Mar in mmm-yy format)
+        // Export 12-Month Grid for Selected Period in mmm-yy format
         const headers = [
           "Territory",
           "District",
           "Final RTO Name",
-          ...fyMonths.map((m) => m.mmmYy),
-          "FY Total",
+          ...currentPeriod.months.map((m) => m.mmmYy),
+          `${currentPeriod.label} Total`,
           "M&M Nos",
           "M&M MS %",
         ];
@@ -956,13 +1062,13 @@ export default function ExecutiveDashboard({
         };
 
         filteredSummaryRows.forEach((r) => {
-          const metrics = r.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+          const metrics = r.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
           const isTotal = r.type !== "rto";
           const rowVals = [
             r.type === "rto" ? r.territory : "",
             r.type === "rto" ? r.district : r.type === "district_total" ? r.label : "",
             r.type === "rto" ? r.rtoName : r.type !== "district_total" ? r.label : "",
-            ...fyMonths.map((m) => r.monthly?.[m.mmmYy] || 0),
+            ...currentPeriod.months.map((m) => r.monthly?.[m.mmmYy] || 0),
             metrics.total,
             metrics.mm,
             `${metrics.ms.toFixed(2)}%`,
@@ -997,7 +1103,7 @@ export default function ExecutiveDashboard({
         };
 
         filteredSummaryRows.forEach((r) => {
-          const metrics = r.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+          const metrics = r.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
           const isTotal = r.type !== "rto";
           const row = sheet.addRow([
             r.type === "rto" ? r.territory : "",
@@ -1108,35 +1214,103 @@ export default function ExecutiveDashboard({
         isDark ? "bg-[#080e1b] border-[#18243b]" : "bg-white border-slate-200 shadow-sm"
       }`}>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* A. FY Year Dropdown */}
+          {/* Period Type Mode Toggle: Financial Year vs Calendar Year */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#38bdf8]" : "text-sky-700"}`}>
-              FY Year:
+              Period View:
             </span>
-            <select
-              value={selectedYear}
-              onChange={(e) => {
-                setSelectedYear(e.target.value);
-                setSelectedMonth("ALL");
-              }}
-              className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
-                isDark
-                  ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
-                  : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
-              }`}
-            >
-              {AVAILABLE_FY_LIST.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
+            <div className={`flex items-center rounded border p-0.5 ${
+              isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
+            }`}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPeriodType("FY");
+                  setSelectedMonth("ALL");
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-black rounded transition ${
+                  periodType === "FY"
+                    ? "bg-[#0284c7] text-white shadow"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Indian Financial Year (Apr to Mar)"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                FY (Apr-Mar)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPeriodType("CY");
+                  setSelectedMonth("ALL");
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-black rounded transition ${
+                  periodType === "CY"
+                    ? "bg-[#0284c7] text-white shadow"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Calendar Year (Jan to Dec)"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                CY (Jan-Dec)
+              </button>
+            </div>
           </div>
 
-          {/* B. Month Dropdown (Strictly Financial Year Apr to Mar in mmm-yy format) */}
+          {/* Period Selection Dropdown (FY or CY) */}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#38bdf8]" : "text-sky-700"}`}>
+              {periodType === "FY" ? "FY Year:" : "CY Year:"}
+            </span>
+            {periodType === "FY" ? (
+              <select
+                value={selectedFyId}
+                onChange={(e) => {
+                  setSelectedFyId(e.target.value);
+                  setSelectedMonth("ALL");
+                }}
+                className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
+                  isDark
+                    ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
+                    : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
+                }`}
+              >
+                {ALL_FY_OPTIONS.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label} ({f.subLabel})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={selectedCyId}
+                onChange={(e) => {
+                  setSelectedCyId(e.target.value);
+                  setSelectedMonth("ALL");
+                }}
+                className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
+                  isDark
+                    ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
+                    : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
+                }`}
+              >
+                {ALL_CY_OPTIONS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label} ({c.subLabel})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Month Dropdown (Strictly aligned with selected Period in mmm-yy format) */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-amber-400" : "text-amber-700"}`}>
-              Month (Apr-Mar):
+              Month ({periodType === "FY" ? "Apr-Mar" : "Jan-Dec"}):
             </span>
             <select
               value={selectedMonth}
@@ -1148,9 +1322,9 @@ export default function ExecutiveDashboard({
               }`}
             >
               <option value="ALL">
-                All Months (Apr-{fyOption.prevYY} to Mar-{fyOption.currYY} • Full FY)
+                All Months ({currentPeriod.subLabel} • Full {currentPeriod.type})
               </option>
-              {fyMonths.map((m) => (
+              {currentPeriod.months.map((m) => (
                 <option key={m.mmmYy} value={m.mmmYy}>
                   {String(m.order).padStart(2, "0")} • {m.mmmYy} ({m.name})
                 </option>
@@ -1521,7 +1695,7 @@ export default function ExecutiveDashboard({
                     : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                12-M Trend (Apr-Mar)
+                12-M Trend ({currentPeriod.type === "FY" ? "Apr-Mar" : "Jan-Dec"})
               </button>
             </div>
 
@@ -1601,12 +1775,14 @@ export default function ExecutiveDashboard({
                   <th className="p-3 w-36 text-center border-r border-[#1f2f4c]/30">Territory</th>
                   <th className="p-3 w-44 text-center border-r border-[#1f2f4c]/30">District</th>
                   <th className="p-3 min-w-[170px]">Final RTO Name</th>
-                  {fyMonths.map((m) => (
+                  {currentPeriod.months.map((m) => (
                     <th key={m.mmmYy} className="p-2 text-right w-16 font-mono text-[11px] text-amber-400">
                       {m.mmmYy}
                     </th>
                   ))}
-                  <th className="p-3 text-right w-28 text-[#38bdf8] uppercase">FY Total</th>
+                  <th className="p-3 text-right w-28 text-[#38bdf8] uppercase">
+                    {currentPeriod.type === "FY" ? "FY Total" : "CY Total"}
+                  </th>
                   <th className="p-3 text-right w-24 text-red-400 uppercase">M&M Nos</th>
                   <th className="p-3 text-right w-24 text-[#34d399] uppercase">M&M MS %</th>
                 </tr>
@@ -1644,13 +1820,13 @@ export default function ExecutiveDashboard({
                       {tgDistricts.map((dg, distIdx) => {
                         const isExpanded = isDistrictExpanded(dg.districtName);
                         const distRowCount = getDistrictRowCount(dg);
-                        const baseDistMetrics = dg.totalRow?.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                        const baseDistMetrics = dg.totalRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
 
                         let distTotal = baseDistMetrics.total;
                         let distMm = baseDistMetrics.mm;
                         if (distTotal === 0 && dg.rtos.length > 0) {
                           dg.rtos.forEach((r) => {
-                            const y = r.years[selectedYear];
+                            const y = r.years[currentPeriod.id];
                             if (y) {
                               distTotal += y.total || 0;
                               distMm += y.mm || 0;
@@ -1761,7 +1937,7 @@ export default function ExecutiveDashboard({
 
                               {/* Monthly columns for District Total (if monthly mode) */}
                               {tableMode === "monthly" &&
-                                fyMonths.map((m) => {
+                                currentPeriod.months.map((m) => {
                                   let mVal = dg.totalRow?.monthly?.[m.mmmYy] || 0;
                                   if (mVal === 0 && dg.rtos.length > 0) {
                                     mVal = dg.rtos.reduce((s, r) => s + (r.monthly?.[m.mmmYy] || 0), 0);
@@ -1780,21 +1956,21 @@ export default function ExecutiveDashboard({
                                 })}
 
                               {/* Total Registration */}
-                              <td className="p-3 text-right font-mono text-sm sm:text-base font-black">
+                              <td className="p-3 text-right font-mono text-base font-black">
                                 <span className={isDark ? "text-white" : "text-slate-900"}>
                                   {distTotalMetrics.total.toLocaleString()}
                                 </span>
                               </td>
 
                               {/* M&M Nos */}
-                              <td className="p-3 text-right font-mono text-sm sm:text-base font-black text-red-400">
+                              <td className="p-3 text-right font-mono text-base font-black text-red-400">
                                 {distTotalMetrics.mm.toLocaleString()}
                               </td>
 
                               {/* M&M MS % */}
                               <td className="p-3 text-right font-mono">
                                 <span
-                                  className={`inline-block px-2 py-0.5 rounded text-xs font-black ${
+                                  className={`inline-block px-2.5 py-1 rounded text-xs font-black ${
                                     distTotalMetrics.ms >= 4.0
                                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
                                       : distTotalMetrics.ms >= 3.0
@@ -1814,7 +1990,7 @@ export default function ExecutiveDashboard({
                             {/* Child RTO Rows (Rendered only when expanded) */}
                             {isExpanded &&
                               dg.rtos.map((rtoRow, rtoIdx) => {
-                                const rtoMetrics = rtoRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                                const rtoMetrics = rtoRow.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
                                 const isEven = rtoIdx % 2 === 0;
 
                                 return (
@@ -1845,7 +2021,7 @@ export default function ExecutiveDashboard({
 
                                     {/* Monthly columns */}
                                     {tableMode === "monthly" &&
-                                      fyMonths.map((m) => {
+                                      currentPeriod.months.map((m) => {
                                         const mVal = rtoRow.monthly?.[m.mmmYy] || 0;
                                         return (
                                           <td
@@ -1902,13 +2078,13 @@ export default function ExecutiveDashboard({
 
                       {/* Territory Total Row */}
                       {tg.totalRow && showTerrTotal && (() => {
-                        const baseTerrMetrics = tg.totalRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                        const baseTerrMetrics = tg.totalRow.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
                         let terrTotal = baseTerrMetrics.total;
                         let terrMm = baseTerrMetrics.mm;
                         if (terrTotal === 0 && tg.districts.length > 0) {
                           tg.districts.forEach((d) => {
                             d.rtos.forEach((r) => {
-                              const y = r.years[selectedYear];
+                              const y = r.years[currentPeriod.id];
                               if (y) {
                                 terrTotal += y.total || 0;
                                 terrMm += y.mm || 0;
@@ -1947,7 +2123,7 @@ export default function ExecutiveDashboard({
 
                             {/* Monthly columns */}
                             {tableMode === "monthly" &&
-                              fyMonths.map((m) => {
+                              currentPeriod.months.map((m) => {
                                 let mVal = tg.totalRow?.monthly?.[m.mmmYy] || 0;
                                 if (mVal === 0) {
                                   mVal = tg.districts.reduce(
@@ -1992,7 +2168,7 @@ export default function ExecutiveDashboard({
                 selectedDistrict === "ALL" &&
                 selectedRto === "ALL" &&
                 (() => {
-                  const grand = grandTotalRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                  const grand = grandTotalRow.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
                   return (
                     <tr
                       className={`border-t-4 font-black transition ${
@@ -2014,7 +2190,7 @@ export default function ExecutiveDashboard({
 
                       {/* Monthly columns */}
                       {tableMode === "monthly" &&
-                        fyMonths.map((m) => {
+                        currentPeriod.months.map((m) => {
                           const mVal = grandTotalRow.monthly?.[m.mmmYy] || 0;
                           return (
                             <td
