@@ -12,7 +12,8 @@ import ExecutiveDashboard from "@/components/ExecutiveDashboard";
 import DatabaseManager, { OEMRecord, RTORecord } from "@/components/DatabaseManager";
 import {
   RTOItem, RTORowData, DEFAULT_VH_CATG, ALL_VH_CATG, ALL_VH_CATG_DICT,
-  DEFAULT_FUELS, ALL_FUELS_DICT, ALL_NORMS_DICT, ALL_VHCLASS_DICT, YAXIS_OPTIONS
+  DEFAULT_FUELS, ALL_FUELS_DICT, ALL_NORMS_DICT, ALL_VHCLASS_DICT, YAXIS_OPTIONS,
+  SegmentType, SEGMENT_CONFIGS
 } from "@/lib/vahan";
 import { KERALA_RTOS } from "@/lib/kerala-rtos";
 
@@ -104,13 +105,65 @@ export default function VahanDashboardPage() {
     return `${safe}-${yr}.xlsx`;
   };
 
-  // Filter state
+  // Filter state & Segment
+  const [segment, setSegment] = useState<SegmentType>("PV");
   const [vhCatg, setVhCatg] = useState<string[]>(DEFAULT_VH_CATG);
   const [fuels, setFuels] = useState<string[]>(DEFAULT_FUELS);
   const [norms, setNorms] = useState<string[]>([]);
   const [vhClass, setVhClass] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [filterTab, setFilterTab] = useState<"catg" | "fuels" | "norms" | "class">("catg");
+
+  // Handles Segment selection: PV, CV, BEV, or CUSTOM
+  const handleSegmentChange = (seg: SegmentType) => {
+    setSegment(seg);
+    if (seg === "PV") {
+      setVhCatg(["LMV", "LPV"]);
+      setFuels(SEGMENT_CONFIGS.PV.fuels); // 34 non-EV fuels
+      addLog("Segment changed to PV: LMV + LPV, 34 Fuels (ELECTRIC(BOV) & PURE EV unticked)", "INFO");
+    } else if (seg === "CV") {
+      setVhCatg(["LGV"]);
+      setFuels(Object.keys(ALL_FUELS_DICT)); // Full tick (all 36 fuels)
+      addLog("Segment changed to CV: LIGHT GOODS VEHICLE (LGV), All Fuels (Full Tick)", "INFO");
+    } else if (seg === "BEV") {
+      setVhCatg(["LMV", "LPV"]);
+      setFuels(["4", "23"]); // Only ELECTRIC(BOV) & PURE EV
+      addLog("Segment changed to BEV: LMV + LPV, Electric Fuels Only (BOV + Pure EV)", "INFO");
+    }
+  };
+
+  const updateSegmentFromSelections = (newCatg: string[], newFuels: string[]) => {
+    const catgSet = new Set(newCatg);
+    const fuelSet = new Set(newFuels);
+
+    if (
+      catgSet.size === 2 &&
+      catgSet.has("LMV") &&
+      catgSet.has("LPV") &&
+      !fuelSet.has("4") &&
+      !fuelSet.has("23") &&
+      fuelSet.size === SEGMENT_CONFIGS.PV.fuels.length
+    ) {
+      setSegment("PV");
+    } else if (
+      catgSet.size === 1 &&
+      catgSet.has("LGV") &&
+      fuelSet.size === Object.keys(ALL_FUELS_DICT).length
+    ) {
+      setSegment("CV");
+    } else if (
+      catgSet.size === 2 &&
+      catgSet.has("LMV") &&
+      catgSet.has("LPV") &&
+      fuelSet.size === 2 &&
+      fuelSet.has("4") &&
+      fuelSet.has("23")
+    ) {
+      setSegment("BEV");
+    } else {
+      setSegment("CUSTOM");
+    }
+  };
 
   // Scraper execution state
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -943,6 +996,30 @@ export default function VahanDashboardPage() {
             </select>
           </div>
 
+          {/* Segment Selection (PV, CV, BEV) */}
+          <div className="md:col-span-2 flex flex-col gap-1">
+            <label className={`text-[10px] font-extrabold uppercase tracking-wider ${
+              isDark ? "text-[#38bdf8]" : "text-sky-700"
+            }`}>
+              Segment:
+            </label>
+            <select
+              value={segment}
+              onChange={(e) => handleSegmentChange(e.target.value as SegmentType)}
+              disabled={isRunning}
+              className={`w-full border rounded px-2 py-1.5 text-xs font-bold focus:outline-none transition ${
+                isDark
+                  ? "bg-[#070d1a] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
+                  : "bg-slate-50 border-slate-300 text-sky-800 focus:border-sky-500 font-bold"
+              }`}
+            >
+              <option value="PV">🚗 PV (LMV+LPV, Non-EV)</option>
+              <option value="CV">🚛 CV (LGV, Full Tick)</option>
+              <option value="BEV">⚡ BEV (Pure EV & BOV)</option>
+              <option value="CUSTOM">⚙ Custom Filters</option>
+            </select>
+          </div>
+
           {/* Dimension (Y-Axis) */}
           <div className="md:col-span-2 flex flex-col gap-1">
             <label className={`text-[10px] font-extrabold uppercase tracking-wider ${
@@ -1001,20 +1078,20 @@ export default function VahanDashboardPage() {
             </label>
             <button
               onClick={() => setIsFilterOpen(true)}
-              className={`flex items-center justify-between w-full border rounded px-2.5 py-1.5 text-xs font-semibold transition ${
+              className={`flex items-center justify-between w-full border rounded px-2 py-1.5 text-xs font-semibold transition ${
                 isDark
                   ? "bg-[#152238] hover:bg-[#1e3152] border-[#253757] text-[#cbd5e1]"
                   : "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-700"
               }`}
             >
               <span className="flex items-center gap-1.5 text-[11px] truncate">
-                <Settings className={`w-3.5 h-3.5 ${isDark ? "text-[#38bdf8]" : "text-sky-600"}`} />
-                Filters ({vhCatg.length} Catg, {fuels.length} Fuels)
+                <Settings className={`w-3.5 h-3.5 shrink-0 ${isDark ? "text-[#38bdf8]" : "text-sky-600"}`} />
+                {segment === "PV" ? "PV (34 Fuels)" : segment === "CV" ? "CV (All Fuels)" : segment === "BEV" ? "BEV (EV Only)" : "Custom"}
               </span>
-              <span className={`text-[9px] px-1 py-0.5 rounded font-bold ${
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 ${
                 isDark ? "bg-[#0284c7]/20 text-[#38bdf8]" : "bg-sky-100 text-sky-700"
               }`}>
-                LMV+LPV
+                {segment === "CV" ? "LGV" : "LMV+LPV"}
               </span>
             </button>
           </div>
@@ -1780,6 +1857,57 @@ export default function VahanDashboardPage() {
               </button>
             </div>
 
+            {/* Quick Segment Presets Toolbar */}
+            <div className={`p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-2 text-xs ${
+              isDark ? "bg-[#0b1222] border-[#1c2a44]" : "bg-slate-50 border-slate-200"
+            }`}>
+              <div className="flex items-center gap-1.5 font-bold">
+                <Zap className="w-4 h-4 text-amber-400" />
+                <span className={isDark ? "text-slate-200" : "text-slate-800"}>Segment Presets:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSegmentChange("PV")}
+                  className={`px-3 py-1 rounded text-xs font-bold border transition shadow-sm ${
+                    segment === "PV"
+                      ? "bg-[#0284c7] text-white border-[#38bdf8] ring-2 ring-[#0284c7]/40"
+                      : isDark
+                      ? "bg-[#152238] hover:bg-[#1e3152] text-slate-300 border-[#253757]"
+                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-300"
+                  }`}
+                >
+                  🚗 PV (LMV+LPV, Non-EV)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSegmentChange("CV")}
+                  className={`px-3 py-1 rounded text-xs font-bold border transition shadow-sm ${
+                    segment === "CV"
+                      ? "bg-[#0284c7] text-white border-[#38bdf8] ring-2 ring-[#0284c7]/40"
+                      : isDark
+                      ? "bg-[#152238] hover:bg-[#1e3152] text-slate-300 border-[#253757]"
+                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-300"
+                  }`}
+                >
+                  🚛 CV (LGV, Full Tick)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSegmentChange("BEV")}
+                  className={`px-3 py-1 rounded text-xs font-bold border transition shadow-sm ${
+                    segment === "BEV"
+                      ? "bg-[#0284c7] text-white border-[#38bdf8] ring-2 ring-[#0284c7]/40"
+                      : isDark
+                      ? "bg-[#152238] hover:bg-[#1e3152] text-slate-300 border-[#253757]"
+                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-300"
+                  }`}
+                >
+                  ⚡ BEV (LMV+LPV, Pure EV & BOV)
+                </button>
+              </div>
+            </div>
+
             {/* Filter Sub-Tabs */}
             <div className={`flex gap-1 border-b pb-1 ${isDark ? "border-[#1c2a44]" : "border-slate-200"}`}>
               <button
@@ -1894,8 +2022,11 @@ export default function VahanDashboardPage() {
                             type="checkbox"
                             checked={vhCatg.includes(catg)}
                             onChange={(e) => {
-                              if (e.target.checked) setVhCatg([...vhCatg, catg]);
-                              else setVhCatg(vhCatg.filter((c) => c !== catg));
+                              const newCatg = e.target.checked
+                                ? [...vhCatg, catg]
+                                : vhCatg.filter((c) => c !== catg);
+                              setVhCatg(newCatg);
+                              updateSegmentFromSelections(newCatg, fuels);
                             }}
                             className="rounded border-slate-300 text-[#0284c7]"
                           />
@@ -1958,8 +2089,11 @@ export default function VahanDashboardPage() {
                           type="checkbox"
                           checked={fuels.includes(code)}
                           onChange={(e) => {
-                            if (e.target.checked) setFuels([...fuels, code]);
-                            else setFuels(fuels.filter((f) => f !== code));
+                            const newFuels = e.target.checked
+                              ? [...fuels, code]
+                              : fuels.filter((f) => f !== code);
+                            setFuels(newFuels);
+                            updateSegmentFromSelections(vhCatg, newFuels);
                           }}
                           className="rounded border-slate-300 text-[#0284c7]"
                         />
@@ -2086,8 +2220,7 @@ export default function VahanDashboardPage() {
             }`}>
               <button
                 onClick={() => {
-                  setVhCatg(DEFAULT_VH_CATG);
-                  setFuels(DEFAULT_FUELS);
+                  handleSegmentChange("PV");
                   setNorms([]);
                   setVhClass([]);
                 }}
@@ -2097,7 +2230,7 @@ export default function VahanDashboardPage() {
                     : "bg-slate-100 hover:bg-slate-200 text-slate-700"
                 }`}
               >
-                Reset Required Defaults (LMV+LPV)
+                Reset to PV (LMV+LPV, Non-EV)
               </button>
               <button
                 onClick={() => setIsFilterOpen(false)}

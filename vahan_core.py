@@ -98,6 +98,28 @@ ALL_VH_CATG_DICT = {
 
 ALL_VH_CATG = list(ALL_VH_CATG_DICT.keys())
 
+# Segment Definitions (PV, CV, BEV)
+SEGMENT_CONFIGS = {
+    'PV': {
+        'label': 'PV (Passenger Vehicle)',
+        'vh_catg': ['LMV', 'LPV'],
+        'fuels': list(DEFAULT_FUELS),  # 34 non-EV fuels (ELECTRIC(BOV) and PURE EV unticked)
+        'description': 'LIGHT MOTOR VEHICLE (LMV) + LIGHT PASSENGER VEHICLE (LPV) | 34 Fuels (Non-EV)'
+    },
+    'CV': {
+        'label': 'CV (Commercial Vehicle)',
+        'vh_catg': ['LGV'],
+        'fuels': list(ALL_FUELS_DICT.keys()),  # Full tick: all 36 fuels
+        'description': 'LIGHT GOODS VEHICLE (LGV) | Full Tick (All 36 Fuels)'
+    },
+    'BEV': {
+        'label': 'BEV (Battery Electric Vehicle)',
+        'vh_catg': ['LMV', 'LPV'],
+        'fuels': ['4', '23'],  # ELECTRIC(BOV) and PURE EV only
+        'description': 'LIGHT MOTOR VEHICLE (LMV) + LIGHT PASSENGER VEHICLE (LPV) | Electric Only (BOV + Pure EV)'
+    }
+}
+
 ALL_NORMS_DICT = {
     '15': 'BHARAT STAGE VI',
     '4':  'BHARAT STAGE IV',

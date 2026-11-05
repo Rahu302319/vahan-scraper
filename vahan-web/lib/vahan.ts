@@ -57,6 +57,41 @@ export const ALL_FUELS_DICT: Record<string, string> = {
 
 export const DEFAULT_VH_CATG = ["LMV", "LPV"];
 
+export type SegmentType = "PV" | "CV" | "BEV" | "CUSTOM";
+
+export interface SegmentConfig {
+  label: string;
+  vhCatg: string[];
+  fuels: string[];
+  description: string;
+}
+
+export const SEGMENT_CONFIGS: Record<"PV" | "CV" | "BEV", SegmentConfig> = {
+  PV: {
+    label: "PV (Passenger Vehicle)",
+    vhCatg: ["LMV", "LPV"],
+    fuels: [
+      "33", "38", "32", "6", "2", "12", "21", "18", "19", "20",
+      "13", "36", "35", "22", "34", "37", "17", "8", "15", "99",
+      "1", "3", "16", "29", "31", "40", "30", "11", "39", "5",
+      "14", "26", "10", "25"
+    ], // 34 non-EV fuels (ELECTRIC(BOV) and PURE EV unticked)
+    description: "LIGHT MOTOR VEHICLE (LMV) + LIGHT PASSENGER VEHICLE (LPV) | 34 Fuels (Non-EV)"
+  },
+  CV: {
+    label: "CV (Commercial Vehicle)",
+    vhCatg: ["LGV"],
+    fuels: Object.keys(ALL_FUELS_DICT), // Full tick: all 36 fuels
+    description: "LIGHT GOODS VEHICLE (LGV) | Full Tick (All Fuels)"
+  },
+  BEV: {
+    label: "BEV (Battery Electric Vehicle)",
+    vhCatg: ["LMV", "LPV"],
+    fuels: ["4", "23"], // Only ELECTRIC(BOV) and PURE EV
+    description: "LIGHT MOTOR VEHICLE (LMV) + LIGHT PASSENGER VEHICLE (LPV) | Electric Only (BOV + Pure EV)"
+  }
+};
+
 export const ALL_VH_CATG_DICT: Record<string, string> = {
   LMV: "LIGHT MOTOR VEHICLE",
   LPV: "LIGHT PASSENGER VEHICLE",

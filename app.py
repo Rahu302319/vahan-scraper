@@ -33,7 +33,7 @@ from vahan_core import (
     VahanScraper, DEFAULT_FUELS, ALL_FUELS_DICT,
     DEFAULT_VH_CATG, ALL_VH_CATG, ALL_VH_CATG_DICT,
     ALL_NORMS_DICT, ALL_VHCLASS_DICT, YAXIS_OPTIONS,
-    consolidate_all_rtos
+    SEGMENT_CONFIGS, consolidate_all_rtos
 )
 from worker import VahanFetchWorker
 
@@ -391,6 +391,28 @@ class FilterDialog(QDialog):
         lbl.setStyleSheet("color: #38bdf8; font-size: 11px; font-weight: 600;")
         layout.addWidget(lbl)
 
+        # Quick Segment Presets Toolbar
+        preset_box = QHBoxLayout()
+        preset_box.setSpacing(6)
+        lbl_presets = QLabel("⚡ Quick Segment Presets:")
+        lbl_presets.setStyleSheet("font-weight: 700; color: #f59e0b; font-size: 11px;")
+        btn_pv = QPushButton("🚗 PV: LMV+LPV (34 Fuels Non-EV)")
+        btn_pv.setStyleSheet("font-weight: 700; background-color: #0369a1; color: #ffffff; padding: 4px 8px;")
+        btn_pv.clicked.connect(self._apply_preset_pv)
+        btn_cv = QPushButton("🚛 CV: LGV (Full Tick)")
+        btn_cv.setStyleSheet("font-weight: 700; background-color: #0369a1; color: #ffffff; padding: 4px 8px;")
+        btn_cv.clicked.connect(self._apply_preset_cv)
+        btn_bev = QPushButton("⚡ BEV: LMV+LPV (Pure EV/BOV)")
+        btn_bev.setStyleSheet("font-weight: 700; background-color: #0369a1; color: #ffffff; padding: 4px 8px;")
+        btn_bev.clicked.connect(self._apply_preset_bev)
+
+        preset_box.addWidget(lbl_presets)
+        preset_box.addWidget(btn_pv)
+        preset_box.addWidget(btn_cv)
+        preset_box.addWidget(btn_bev)
+        preset_box.addStretch()
+        layout.addLayout(preset_box)
+
         tabs = QTabWidget()
 
         # Tab 1: Vehicle Categories
@@ -540,6 +562,24 @@ class FilterDialog(QDialog):
         for f_code, cb in self.fuel_checkboxes.items():
             cb.setChecked(f_code in DEFAULT_FUELS)
 
+    def _apply_preset_pv(self):
+        for catg, cb in self.vh_checkboxes.items():
+            cb.setChecked(catg in ["LMV", "LPV"])
+        for f_code, cb in self.fuel_checkboxes.items():
+            cb.setChecked(f_code not in ["4", "23"])
+
+    def _apply_preset_cv(self):
+        for catg, cb in self.vh_checkboxes.items():
+            cb.setChecked(catg == "LGV")
+        for f_code, cb in self.fuel_checkboxes.items():
+            cb.setChecked(True)
+
+    def _apply_preset_bev(self):
+        for catg, cb in self.vh_checkboxes.items():
+            cb.setChecked(catg in ["LMV", "LPV"])
+        for f_code, cb in self.fuel_checkboxes.items():
+            cb.setChecked(f_code in ["4", "23"])
+
     def get_selected(self) -> Tuple[List[str], List[str], List[str], List[str]]:
         vh = [c for c, cb in self.vh_checkboxes.items() if cb.isChecked()]
         fuels = [f for f, cb in self.fuel_checkboxes.items() if cb.isChecked()]
@@ -565,6 +605,7 @@ class MainWindow(QMainWindow):
         self.failed_rtos_list: List[Dict[str, Any]] = []
 
         # Filters & Output Directory
+        self.selected_segment = "PV"
         self.selected_vh_catg = list(DEFAULT_VH_CATG)
         self.selected_fuels = list(DEFAULT_FUELS)
         self.selected_norms: List[str] = []
@@ -674,6 +715,22 @@ class MainWindow(QMainWindow):
         year_box.addWidget(self.combo_year)
         row1.addLayout(year_box)
 
+        # Segment Dropdown (PV, CV, BEV)
+        segment_box = QVBoxLayout()
+        segment_box.setSpacing(2)
+        lbl_segment = QLabel("Segment:")
+        lbl_segment.setObjectName("field_tag")
+        self.combo_segment = QComboBox()
+        self.combo_segment.setMinimumWidth(160)
+        self.combo_segment.addItem("🚗 PV (LMV+LPV, Non-EV)", "PV")
+        self.combo_segment.addItem("🚛 CV (LGV, Full Tick)", "CV")
+        self.combo_segment.addItem("⚡ BEV (Pure EV & BOV)", "BEV")
+        self.combo_segment.addItem("⚙ Custom", "CUSTOM")
+        self.combo_segment.currentIndexChanged.connect(self._on_segment_changed)
+        segment_box.addWidget(lbl_segment)
+        segment_box.addWidget(self.combo_segment)
+        row1.addLayout(segment_box)
+
         # Dimension (Y-Axis) Dropdown
         yaxis_box = QVBoxLayout()
         yaxis_box.setSpacing(2)
@@ -727,7 +784,7 @@ class MainWindow(QMainWindow):
         filter_box.setSpacing(2)
         lbl_f = QLabel("Filter Parameters:")
         lbl_f.setObjectName("field_tag")
-        self.btn_filters = QPushButton("⚙ Filters (LMV, LPV Default)")
+        self.btn_filters = QPushButton("⚙ Filters [PV: LMV, LPV, 34 Fuels]")
         self.btn_filters.clicked.connect(self._open_filters_dialog)
         filter_box.addWidget(lbl_f)
         filter_box.addWidget(self.btn_filters)
@@ -1232,7 +1289,7 @@ class MainWindow(QMainWindow):
 
         target_desc = "All 87 RTOs" if len(selected_items) == len(self.rtos_data) else f"{len(selected_items)} selected RTO(s)"
         self.log_message(
-            f"⚡ Initiating run for {target_desc} [{threads} Workers, Year: {config['year']}, Auto-Retry: {max_retries}x, Path: {self.output_dir}]...",
+            f"⚡ Initiating run for {target_desc} [{threads} Workers, Year: {config['year']}, Segment: {self.combo_segment.currentText()}, Auto-Retry: {max_retries}x, Path: {self.output_dir}]...",
             "INFO"
         )
 
@@ -1536,6 +1593,28 @@ class MainWindow(QMainWindow):
         else:
             self.log_message(f"RTO {code} ({name}) has not been fetched yet. Double-click after fetching.", "INFO")
 
+    def _on_segment_changed(self, idx: int):
+        seg = self.combo_segment.currentData()
+        self.selected_segment = seg
+        if seg == "PV":
+            cfg = SEGMENT_CONFIGS["PV"]
+            self.selected_vh_catg = list(cfg["vh_catg"])
+            self.selected_fuels = list(cfg["fuels"])
+            self.btn_filters.setText("⚙ Filters [PV: LMV, LPV, 34 Fuels]")
+            self.log_message("Segment preset selected: PV -> LIGHT MOTOR VEHICLE (LMV), LIGHT PASSENGER VEHICLE (LPV), 34 Fuels (ELECTRIC(BOV) and PURE EV unticked)", "INFO")
+        elif seg == "CV":
+            cfg = SEGMENT_CONFIGS["CV"]
+            self.selected_vh_catg = list(cfg["vh_catg"])
+            self.selected_fuels = list(cfg["fuels"])
+            self.btn_filters.setText("⚙ Filters [CV: LGV, Full Tick]")
+            self.log_message("Segment preset selected: CV -> LIGHT GOODS VEHICLE (LGV), Full Tick (All Fuels)", "INFO")
+        elif seg == "BEV":
+            cfg = SEGMENT_CONFIGS["BEV"]
+            self.selected_vh_catg = list(cfg["vh_catg"])
+            self.selected_fuels = list(cfg["fuels"])
+            self.btn_filters.setText("⚙ Filters [BEV: LMV, LPV, Pure EV/BOV]")
+            self.log_message("Segment preset selected: BEV -> LIGHT MOTOR VEHICLE (LMV), LIGHT PASSENGER VEHICLE (LPV), Electric Fuels Only (BOV + Pure EV)", "INFO")
+
     def _open_filters_dialog(self):
         dlg = FilterDialog(
             self.selected_vh_catg,
@@ -1554,15 +1633,38 @@ class MainWindow(QMainWindow):
             )
 
     def _update_filters_button_label(self):
-        catg_str = f"{len(self.selected_vh_catg)} Catg"
-        fuel_str = f"{len(self.selected_fuels)} Fuels"
-        extras = []
-        if self.selected_norms:
-            extras.append(f"{len(self.selected_norms)} Norms")
-        if self.selected_vh_class:
-            extras.append(f"{len(self.selected_vh_class)} Classes")
-        extra_str = f", {', '.join(extras)}" if extras else ""
-        self.btn_filters.setText(f"⚙ Filters ({catg_str}, {fuel_str}{extra_str})")
+        catg_set = set(self.selected_vh_catg)
+        fuel_set = set(self.selected_fuels)
+
+        # Check if matches PV, CV, or BEV
+        if catg_set == {"LMV", "LPV"} and "4" not in fuel_set and "23" not in fuel_set and len(fuel_set) == len(DEFAULT_FUELS):
+            self.combo_segment.blockSignals(True)
+            self.combo_segment.setCurrentIndex(self.combo_segment.findData("PV"))
+            self.combo_segment.blockSignals(False)
+            self.btn_filters.setText("⚙ Filters [PV: LMV, LPV, 34 Fuels]")
+        elif catg_set == {"LGV"} and len(fuel_set) == len(ALL_FUELS_DICT):
+            self.combo_segment.blockSignals(True)
+            self.combo_segment.setCurrentIndex(self.combo_segment.findData("CV"))
+            self.combo_segment.blockSignals(False)
+            self.btn_filters.setText("⚙ Filters [CV: LGV, Full Tick]")
+        elif catg_set == {"LMV", "LPV"} and fuel_set == {"4", "23"}:
+            self.combo_segment.blockSignals(True)
+            self.combo_segment.setCurrentIndex(self.combo_segment.findData("BEV"))
+            self.combo_segment.blockSignals(False)
+            self.btn_filters.setText("⚙ Filters [BEV: LMV, LPV, Pure EV/BOV]")
+        else:
+            self.combo_segment.blockSignals(True)
+            self.combo_segment.setCurrentIndex(self.combo_segment.findData("CUSTOM"))
+            self.combo_segment.blockSignals(False)
+            catg_str = f"{len(self.selected_vh_catg)} Catg"
+            fuel_str = f"{len(self.selected_fuels)} Fuels"
+            extras = []
+            if self.selected_norms:
+                extras.append(f"{len(self.selected_norms)} Norms")
+            if self.selected_vh_class:
+                extras.append(f"{len(self.selected_vh_class)} Classes")
+            extra_str = f", {', '.join(extras)}" if extras else ""
+            self.btn_filters.setText(f"⚙ Filters ({catg_str}, {fuel_str}{extra_str})")
 
     def _on_yaxis_changed(self):
         dim = self.combo_yaxis.currentText()
