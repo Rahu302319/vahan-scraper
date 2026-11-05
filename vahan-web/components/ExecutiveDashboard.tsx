@@ -1246,15 +1246,15 @@ export default function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* 2. CASCADING CONTROLS COCKPIT TOOLBAR (Compact 2-Row Layout) */}
-      <div className={`flex flex-col gap-1.5 p-2 rounded-md border ${
+      {/* 2. CASCADING CONTROLS COCKPIT TOOLBAR (Unified Compact Executive Bar) */}
+      <div className={`p-2 rounded-lg border ${
         isDark ? "bg-[#080e1b] border-[#18243b]" : "bg-white border-slate-200 shadow-sm"
       }`}>
-        {/* ROW 1: Period, Year, Month, Segment, and Export Button */}
-        <div className="flex flex-wrap items-center justify-between gap-1.5">
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left / Primary Filters: Timeframe, Segment, and Geographic Slicers */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* FY / CY Mode Switch */}
-            <div className={`flex items-center rounded border p-0.5 ${
+            <div className={`flex items-center rounded-md border p-0.5 ${
               isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
             }`}>
               <button
@@ -1263,7 +1263,7 @@ export default function ExecutiveDashboard({
                   setPeriodType("FY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-2 py-0.5 text-[11px] font-black rounded transition ${
+                className={`flex items-center gap-1 px-2 py-1 text-[11px] font-black rounded transition ${
                   periodType === "FY"
                     ? "bg-[#0284c7] text-white shadow-sm"
                     : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -1279,7 +1279,7 @@ export default function ExecutiveDashboard({
                   setPeriodType("CY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-2 py-0.5 text-[11px] font-black rounded transition ${
+                className={`flex items-center gap-1 px-2 py-1 text-[11px] font-black rounded transition ${
                   periodType === "CY"
                     ? "bg-[#0284c7] text-white shadow-sm"
                     : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -1299,7 +1299,7 @@ export default function ExecutiveDashboard({
                   setSelectedFyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`px-2 py-1 rounded text-xs font-bold border focus:outline-none ${
+                className={`h-8 px-2 py-1 rounded-md text-xs font-bold border focus:outline-none ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
                     : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
@@ -1318,7 +1318,7 @@ export default function ExecutiveDashboard({
                   setSelectedCyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`px-2 py-1 rounded text-xs font-bold border focus:outline-none ${
+                className={`h-8 px-2 py-1 rounded-md text-xs font-bold border focus:outline-none ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
                     : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
@@ -1336,7 +1336,7 @@ export default function ExecutiveDashboard({
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className={`px-2 py-1 rounded text-xs font-bold border focus:outline-none ${
+              className={`h-8 px-2 py-1 rounded-md text-xs font-bold border focus:outline-none ${
                 isDark
                   ? "bg-[#060c18] border-[#1f2f4c] text-amber-400 focus:border-amber-400"
                   : "bg-amber-50 border-amber-300 text-amber-900 focus:border-amber-500"
@@ -1353,13 +1353,13 @@ export default function ExecutiveDashboard({
             </select>
 
             {/* Segment Selector Chips */}
-            <div className={`flex items-center rounded border p-0.5 ${
+            <div className={`flex items-center rounded-md border p-0.5 ${
               isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
             }`}>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("PV")}
-                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
+                className={`px-2 py-1 text-[11px] font-black rounded transition ${
                   selectedSegment === "PV"
                     ? "bg-[#0284c7] text-white shadow-sm"
                     : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -1370,7 +1370,7 @@ export default function ExecutiveDashboard({
               <button
                 type="button"
                 onClick={() => setSelectedSegment("CV")}
-                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
+                className={`px-2 py-1 text-[11px] font-black rounded transition ${
                   selectedSegment === "CV"
                     ? "bg-[#0284c7] text-white shadow-sm"
                     : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -1381,7 +1381,7 @@ export default function ExecutiveDashboard({
               <button
                 type="button"
                 onClick={() => setSelectedSegment("BEV")}
-                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
+                className={`px-2 py-1 text-[11px] font-black rounded transition ${
                   selectedSegment === "BEV"
                     ? "bg-[#0284c7] text-white shadow-sm"
                     : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -1392,7 +1392,7 @@ export default function ExecutiveDashboard({
               <button
                 type="button"
                 onClick={() => setSelectedSegment("ALL")}
-                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
+                className={`px-2 py-1 text-[11px] font-black rounded transition ${
                   selectedSegment === "ALL"
                     ? "bg-[#0284c7] text-white shadow-sm"
                     : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -1401,30 +1401,18 @@ export default function ExecutiveDashboard({
                 All {segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}
               </button>
             </div>
-          </div>
 
-          {/* Export Button */}
-          <button
-            onClick={handleExportSummaryExcel}
-            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] shadow-sm transition"
-          >
-            <Download className="w-3 h-3" />
-            Export Excel
-          </button>
-        </div>
+            <span className="hidden xl:inline text-slate-600">|</span>
 
-        {/* ROW 2: Cascading Geographic Drill-Down (Territory, District, RTO Office) */}
-        <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-[#1f2f4c]/30">
-          <div className="flex flex-wrap items-center gap-2">
             {/* Territory Dropdown */}
             <div className="flex items-center gap-1">
-              <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
                 Territory:
               </span>
               <select
                 value={selectedTerritory}
                 onChange={(e) => handleTerritoryChange(e.target.value)}
-                className={`px-2 py-0.5 rounded text-xs font-semibold border focus:outline-none ${
+                className={`h-8 px-2 py-1 rounded-md text-xs font-semibold border focus:outline-none ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
                     : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
@@ -1438,13 +1426,13 @@ export default function ExecutiveDashboard({
 
             {/* District Dropdown */}
             <div className="flex items-center gap-1">
-              <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
                 District:
               </span>
               <select
                 value={selectedDistrict}
                 onChange={(e) => handleDistrictChange(e.target.value)}
-                className={`px-2 py-0.5 rounded text-xs font-semibold border focus:outline-none ${
+                className={`h-8 px-2 py-1 rounded-md text-xs font-semibold border focus:outline-none ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
                     : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
@@ -1463,13 +1451,13 @@ export default function ExecutiveDashboard({
 
             {/* RTO Office Dropdown */}
             <div className="flex items-center gap-1">
-              <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
                 RTO:
               </span>
               <select
                 value={selectedRto}
                 onChange={(e) => setSelectedRto(e.target.value)}
-                className={`px-2 py-0.5 rounded text-xs font-semibold border focus:outline-none max-w-[170px] truncate ${
+                className={`h-8 px-2 py-1 rounded-md text-xs font-semibold border focus:outline-none max-w-[160px] truncate ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
                     : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
@@ -1489,24 +1477,33 @@ export default function ExecutiveDashboard({
                 ))}
               </select>
             </div>
+
+            {/* Reset Filters Shortcut */}
+            {(selectedMonth !== "ALL" || selectedTerritory !== "ALL" || selectedDistrict !== "ALL" || selectedRto !== "ALL") && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                title="Reset all filters back to All Kerala Full Year"
+                className={`h-8 flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold border transition ${
+                  isDark
+                    ? "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
+                    : "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300"
+                }`}
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset
+              </button>
+            )}
           </div>
 
-          {/* Reset Filters Shortcut */}
-          {(selectedMonth !== "ALL" || selectedTerritory !== "ALL" || selectedDistrict !== "ALL" || selectedRto !== "ALL") && (
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              title="Reset all filters back to All Kerala Full Year"
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition ${
-                isDark
-                  ? "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
-                  : "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300"
-              }`}
-            >
-              <RotateCcw className="w-2.5 h-2.5" />
-              Reset Filters
-            </button>
-          )}
+          {/* Right Action: Export Excel Button */}
+          <button
+            onClick={handleExportSummaryExcel}
+            className="h-8 flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] shadow-sm transition shrink-0 ml-auto"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export Excel
+          </button>
         </div>
       </div>
 
