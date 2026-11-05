@@ -23,7 +23,12 @@ import {
   Calendar,
   RotateCcw,
   Plus,
-  Minus
+  Minus,
+  Crown,
+  Trophy,
+  Flame,
+  ChevronRight,
+  Compass
 } from "lucide-react";
 import ExcelJS from "exceljs";
 import summaryDataRaw from "@/lib/summary-data.json";
@@ -862,8 +867,54 @@ export default function ExecutiveDashboard({
       southTotal: south.total,
       northShare: totalVehicles > 0 ? ((north.total / totalVehicles) * 100).toFixed(1) : "0",
       southShare: totalVehicles > 0 ? ((south.total / totalVehicles) * 100).toFixed(1) : "0",
+      northMm: north.mm,
+      northMs: north.ms,
+      southMm: south.mm,
+      southMs: south.ms,
     };
   }, [computedSummaryRows, currentPeriod.id, activeOemBreakdown, selectedTerritory, selectedDistrict, selectedRto]);
+
+  // Top 5 Performing Districts
+  const topDistricts = useMemo(() => {
+    return computedSummaryRows
+      .filter((r) => r.type === "district_total")
+      .map((r) => {
+        const distName = r.label.replace(/\s+Total$/i, "").trim();
+        const metrics = r.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+        return {
+          district: distName,
+          territory: r.territory,
+          total: metrics.total,
+          mm: metrics.mm,
+          ms: metrics.ms,
+          shareOfTotal: kpiData.totalVehicles > 0 ? (metrics.total / kpiData.totalVehicles) * 100 : 0,
+        };
+      })
+      .filter((d) => d.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [computedSummaryRows, currentPeriod.id, kpiData.totalVehicles]);
+
+  // Top 5 Performing RTO Offices
+  const topRtos = useMemo(() => {
+    return computedSummaryRows
+      .filter((r) => r.type === "rto")
+      .map((r) => {
+        const metrics = r.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+        return {
+          rtoName: r.rtoName,
+          district: r.district,
+          territory: r.territory,
+          total: metrics.total,
+          mm: metrics.mm,
+          ms: metrics.ms,
+          shareOfTotal: kpiData.totalVehicles > 0 ? (metrics.total / kpiData.totalVehicles) * 100 : 0,
+        };
+      })
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [computedSummaryRows, currentPeriod.id, kpiData.totalVehicles]);
 
   // Filtered Summary Table Rows (Respects Cascading Dropdown Selections)
   const filteredSummaryRows = useMemo(() => {
@@ -1187,58 +1238,62 @@ export default function ExecutiveDashboard({
   };
 
   return (
-    <div className={`flex flex-col gap-2.5 rounded-2xl border p-2.5 sm:p-3 transition-colors ${
-      isDark ? "bg-[#060a14] border-[#18233a] text-[#cbd5e1]" : "bg-slate-50/80 border-slate-200 text-slate-800"
+    <div className={`flex flex-col gap-3 rounded-3xl border p-3.5 sm:p-4.5 transition-all duration-300 ${
+      isDark
+        ? "bg-gradient-to-b from-[#090f1d] via-[#060a14] to-[#04070e] border-[#18263f] text-slate-200 shadow-2xl shadow-black/40"
+        : "bg-gradient-to-b from-slate-50 via-white to-slate-100/70 border-slate-200/90 text-slate-800 shadow-xl shadow-slate-200/50"
     }`}>
-      {/* 1. CUTE HEADER */}
-      <div className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl border transition ${
-        isDark ? "bg-[#0a1120] border-[#1b2b48]" : "bg-white border-slate-200/80 shadow-sm"
+      {/* 1. ULTRA-CUTE & MODERN STATUS HEADER */}
+      <div className={`flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl border transition-all ${
+        isDark
+          ? "bg-gradient-to-r from-[#0c1426]/90 to-[#0e172c]/90 border-[#1f3152]/80 backdrop-blur-md shadow-sm"
+          : "bg-gradient-to-r from-white to-sky-50/50 border-sky-100 shadow-sm"
       }`}>
-        <div className="flex items-center gap-2">
-          <div className="relative flex h-2.5 w-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
           </div>
-          <div className="p-1 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
-            <Zap className="w-3.5 h-3.5 fill-sky-400" />
+          <div className="p-1.5 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-sky-500/25">
+            <Zap className="w-4 h-4 fill-white" />
           </div>
-          <div className="flex items-center gap-1.5">
-            <h2 className={`text-xs sm:text-sm font-black tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
-              LIVE SCRAPER EXECUTIVE DASHBOARD
+          <div className="flex items-center gap-2">
+            <h2 className={`text-xs sm:text-sm font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+              VAHAN 4 LIVE EXECUTIVE COCKPIT
             </h2>
-            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-sky-500 text-white tracking-wider">
-              KL • KERALA
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm tracking-wider uppercase">
+              KL • Kerala
             </span>
           </div>
         </div>
 
         {/* Live Scraper Stats Badges & Refresh */}
-        <div className="flex items-center gap-1.5">
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold ${
-            isDark ? "bg-[#070d18] border-[#18263e]" : "bg-slate-100 border-slate-200"
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full border text-[11px] font-bold ${
+            isDark ? "bg-[#070d18]/90 border-[#18263e] text-slate-300" : "bg-white/80 border-slate-200 text-slate-700 shadow-xs"
           }`}>
-            <span className="flex items-center gap-1 text-emerald-400">
-              <Activity className="w-3 h-3" />
+            <span className="flex items-center gap-1 text-emerald-500 font-extrabold">
+              <Activity className="w-3.5 h-3.5" />
               <span>{activeDatasetRows.length.toLocaleString()} Records</span>
             </span>
-            <span className="text-slate-500">•</span>
-            <span className="text-sky-400 font-bold">
+            <span className="text-slate-400">•</span>
+            <span className="text-sky-500 font-extrabold">
               {selectedSegment === "ALL" ? "All Segments" : `${selectedSegment} Segment`}
             </span>
-            <span className="text-slate-500">•</span>
-            <span className="text-sky-300">{activeDatasetRtoCount} RTOs</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-amber-400 font-black">{timeframeLabel}</span>
+            <span className="text-slate-400">•</span>
+            <span className="text-indigo-400 font-bold">{activeDatasetRtoCount} RTOs Synced</span>
+            <span className="text-slate-400">•</span>
+            <span className="text-amber-500 font-black">{timeframeLabel}</span>
           </div>
 
           <button
             type="button"
             onClick={fetchDbRegistrations}
-            title="Refresh latest scraped data from Hostinger database"
-            className={`p-1.5 rounded-full border transition ${
+            title="Refresh latest scraped data from Hostinger MariaDB"
+            className={`p-2 rounded-xl border transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${
               isDark
-                ? "bg-[#0c1424] border-[#1e2e4f] text-[#94a3b8] hover:text-white hover:bg-[#131f38]"
-                : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
+                ? "bg-[#0d1628] border-[#1e2f50] text-sky-400 hover:bg-[#14213d] hover:text-white"
+                : "bg-white border-slate-200 text-sky-600 hover:bg-sky-50"
             }`}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDb ? "animate-spin text-sky-400" : ""}`} />
@@ -1246,16 +1301,18 @@ export default function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* 2. CUTE & BALANCED CONTROLS TOOLBAR (2 Perfectly Balanced Rows) */}
-      <div className={`flex flex-col gap-2 p-2.5 rounded-xl border ${
-        isDark ? "bg-[#080e1b] border-[#18243b]" : "bg-white border-slate-200/80 shadow-sm"
+      {/* 2. CUTE & SLEEK CONTROLS TOOLBAR (2 Perfectly Balanced Rows) */}
+      <div className={`flex flex-col gap-2.5 p-3 rounded-2xl border transition-all ${
+        isDark
+          ? "bg-[#0a1122]/90 border-[#1a2947] shadow-lg shadow-black/20 backdrop-blur-md"
+          : "bg-white/95 border-slate-200/90 shadow-sm"
       }`}>
         {/* ROW 1: Period, Year, Month, Segment, and Export Button on the right */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* FY / CY Mode Switch */}
-            <div className={`flex items-center rounded-lg border p-0.5 ${
-              isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-200"
+            <div className={`flex items-center rounded-xl border p-0.5 shadow-inner ${
+              isDark ? "bg-[#060b16] border-[#1d2b45]" : "bg-slate-100 border-slate-200"
             }`}>
               <button
                 type="button"
@@ -1263,10 +1320,10 @@ export default function ExecutiveDashboard({
                   setPeriodType("FY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-black rounded-md transition ${
+                className={`flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg transition-all ${
                   periodType === "FY"
-                    ? "bg-sky-500 text-white shadow-sm"
-                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 scale-100"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
                 title="Indian Financial Year (Apr to Mar)"
               >
@@ -1279,10 +1336,10 @@ export default function ExecutiveDashboard({
                   setPeriodType("CY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-black rounded-md transition ${
+                className={`flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg transition-all ${
                   periodType === "CY"
-                    ? "bg-sky-500 text-white shadow-sm"
-                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 scale-100"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
                 title="Calendar Year (Jan to Dec)"
               >
@@ -1299,10 +1356,10 @@ export default function ExecutiveDashboard({
                   setSelectedFyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`h-8 px-2.5 py-1 rounded-lg text-xs font-bold border focus:outline-none transition ${
+                className={`h-8.5 px-3 py-1 rounded-xl text-xs font-extrabold border focus:outline-none transition-all shadow-xs ${
                   isDark
-                    ? "bg-[#060c18] border-[#1f2f4c] text-sky-400 focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 focus:border-sky-500"
+                    ? "bg-[#070d1a] border-[#1d2d4a] text-sky-400 hover:border-sky-500/50 focus:border-sky-400"
+                    : "bg-sky-50/50 border-sky-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
                 }`}
               >
                 {ALL_FY_OPTIONS.map((f) => (
@@ -1318,10 +1375,10 @@ export default function ExecutiveDashboard({
                   setSelectedCyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`h-8 px-2.5 py-1 rounded-lg text-xs font-bold border focus:outline-none transition ${
+                className={`h-8.5 px-3 py-1 rounded-xl text-xs font-extrabold border focus:outline-none transition-all shadow-xs ${
                   isDark
-                    ? "bg-[#060c18] border-[#1f2f4c] text-sky-400 focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 focus:border-sky-500"
+                    ? "bg-[#070d1a] border-[#1d2d4a] text-sky-400 hover:border-sky-500/50 focus:border-sky-400"
+                    : "bg-sky-50/50 border-sky-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
                 }`}
               >
                 {ALL_CY_OPTIONS.map((c) => (
@@ -1336,14 +1393,14 @@ export default function ExecutiveDashboard({
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className={`h-8 px-2.5 py-1 rounded-lg text-xs font-bold border focus:outline-none transition ${
+              className={`h-8.5 px-3 py-1 rounded-xl text-xs font-extrabold border focus:outline-none transition-all shadow-xs ${
                 isDark
-                  ? "bg-[#060c18] border-[#1f2f4c] text-amber-400 focus:border-amber-400"
-                  : "bg-amber-50 border-amber-300 text-amber-900 focus:border-amber-500"
+                  ? "bg-[#070d1a] border-[#1d2d4a] text-amber-400 hover:border-amber-500/50 focus:border-amber-400"
+                  : "bg-amber-50/60 border-amber-200 text-amber-900 hover:border-amber-400 focus:border-amber-500"
               }`}
             >
               <option value="ALL">
-                All Months ({currentPeriod.type === "FY" ? "Apr-Mar" : "Jan-Dec"})
+                All Months ({currentPeriod.type === "FY" ? "Apr-Mar • Full FY" : "Jan-Dec • Full CY"})
               </option>
               {currentPeriod.months.map((m) => (
                 <option key={m.mmmYy} value={m.mmmYy}>
@@ -1353,38 +1410,38 @@ export default function ExecutiveDashboard({
             </select>
 
             {/* Segment Selector Chips */}
-            <div className={`flex items-center rounded-lg border p-0.5 ${
-              isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-200"
+            <div className={`flex items-center rounded-xl border p-0.5 shadow-inner ${
+              isDark ? "bg-[#060b16] border-[#1d2b45]" : "bg-slate-100 border-slate-200"
             }`}>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("PV")}
-                className={`px-2.5 py-1 text-[11px] font-black rounded-md transition ${
+                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
                   selectedSegment === "PV"
-                    ? "bg-sky-500 text-white shadow-sm"
-                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                PV {segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}
+                🚗 PV {segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("CV")}
-                className={`px-2.5 py-1 text-[11px] font-black rounded-md transition ${
+                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
                   selectedSegment === "CV"
-                    ? "bg-sky-500 text-white shadow-sm"
-                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                CV {segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}
+                🚚 CV {segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("BEV")}
-                className={`px-2.5 py-1 text-[11px] font-black rounded-md transition ${
+                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
                   selectedSegment === "BEV"
-                    ? "bg-sky-500 text-white shadow-sm"
-                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 ⚡ BEV {segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}
@@ -1392,13 +1449,13 @@ export default function ExecutiveDashboard({
               <button
                 type="button"
                 onClick={() => setSelectedSegment("ALL")}
-                className={`px-2.5 py-1 text-[11px] font-black rounded-md transition ${
+                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
                   selectedSegment === "ALL"
-                    ? "bg-sky-500 text-white shadow-sm"
-                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                All {segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}
+                🌐 All {segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}
               </button>
             </div>
           </div>
@@ -1406,7 +1463,7 @@ export default function ExecutiveDashboard({
           {/* Export Button - Always anchored right on Row 1 */}
           <button
             onClick={handleExportSummaryExcel}
-            className="h-8 flex items-center gap-1.5 px-3.5 py-1 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition shrink-0 ml-auto"
+            className="h-8.5 flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-md shadow-emerald-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 shrink-0 ml-auto"
           >
             <Download className="w-3.5 h-3.5" />
             Export Excel
@@ -1414,20 +1471,20 @@ export default function ExecutiveDashboard({
         </div>
 
         {/* ROW 2: Geographic Drill-Down on the left + Scope badge on the right */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1f2f4c]/30">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#1d2d4b]/30">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Territory Dropdown */}
-            <div className="flex items-center gap-1">
-              <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 Territory:
               </span>
               <select
                 value={selectedTerritory}
                 onChange={(e) => handleTerritoryChange(e.target.value)}
-                className={`h-8 px-2.5 py-1 rounded-lg text-xs font-semibold border focus:outline-none transition ${
+                className={`h-8 px-3 py-1 rounded-xl text-xs font-bold border focus:outline-none transition-all shadow-xs ${
                   isDark
-                    ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 focus:border-sky-500"
+                    ? "bg-[#070d1a] border-[#1d2d4a] text-white hover:border-sky-400 focus:border-sky-400"
+                    : "bg-slate-50 border-slate-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
                 }`}
               >
                 <option value="ALL">All Kerala</option>
@@ -1437,17 +1494,17 @@ export default function ExecutiveDashboard({
             </div>
 
             {/* District Dropdown */}
-            <div className="flex items-center gap-1">
-              <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 District:
               </span>
               <select
                 value={selectedDistrict}
                 onChange={(e) => handleDistrictChange(e.target.value)}
-                className={`h-8 px-2.5 py-1 rounded-lg text-xs font-semibold border focus:outline-none transition ${
+                className={`h-8 px-3 py-1 rounded-xl text-xs font-bold border focus:outline-none transition-all shadow-xs ${
                   isDark
-                    ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 focus:border-sky-500"
+                    ? "bg-[#070d1a] border-[#1d2d4a] text-white hover:border-sky-400 focus:border-sky-400"
+                    : "bg-slate-50 border-slate-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
                 }`}
               >
                 <option value="ALL">
@@ -1462,17 +1519,17 @@ export default function ExecutiveDashboard({
             </div>
 
             {/* RTO Office Dropdown */}
-            <div className="flex items-center gap-1">
-              <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 RTO:
               </span>
               <select
                 value={selectedRto}
                 onChange={(e) => setSelectedRto(e.target.value)}
-                className={`h-8 px-2.5 py-1 rounded-lg text-xs font-semibold border focus:outline-none max-w-[170px] truncate transition ${
+                className={`h-8 px-3 py-1 rounded-xl text-xs font-bold border focus:outline-none max-w-[190px] truncate transition-all shadow-xs ${
                   isDark
-                    ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 focus:border-sky-500"
+                    ? "bg-[#070d1a] border-[#1d2d4a] text-white hover:border-sky-400 focus:border-sky-400"
+                    : "bg-slate-50 border-slate-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
                 }`}
               >
                 <option value="ALL">
@@ -1496,13 +1553,13 @@ export default function ExecutiveDashboard({
                 type="button"
                 onClick={handleResetFilters}
                 title="Reset all filters back to All Kerala Full Year"
-                className={`h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                className={`h-8 flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold border transition-all duration-200 hover:scale-105 ${
                   isDark
-                    ? "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
-                    : "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300"
+                    ? "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
+                    : "bg-slate-200 text-slate-800 border-slate-300 hover:bg-slate-300"
                 }`}
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3 h-3 text-sky-400" />
                 Reset Filters
               </button>
             )}
@@ -1510,143 +1567,181 @@ export default function ExecutiveDashboard({
 
           {/* Right Status Badge in Row 2 */}
           <div className="flex items-center gap-1.5 ml-auto">
-            <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
-              isDark ? "bg-[#060c18] border-[#1b2842] text-slate-300" : "bg-slate-100 border-slate-200 text-slate-700"
+            <span className={`px-3 py-1 rounded-xl text-xs font-bold border shadow-xs ${
+              isDark ? "bg-[#060c18] border-[#1a2844] text-slate-300" : "bg-sky-50/60 border-sky-100 text-slate-700"
             }`}>
-              📍 Scope: <span className="font-extrabold text-sky-400">
+              📍 Scope: <span className="font-black text-sky-400">
                 {selectedRto !== "ALL"
                   ? `RTO ${selectedRto}`
                   : selectedDistrict !== "ALL"
                   ? `${selectedDistrict} District`
                   : selectedTerritory !== "ALL"
                   ? selectedTerritory
-                  : "All Kerala"}
+                  : "All Kerala (Whole State)"}
               </span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. CUTE & COMPACT EXECUTIVE KPI CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+      {/* 3. ULTRA-CUTE & POWERFUL EXECUTIVE KPI HERO CARDS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Registrations */}
-        <div className={`p-3 rounded-2xl border flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 shadow-sm ${
+        <div className={`p-4 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
           isDark
-            ? "bg-gradient-to-br from-[#0c1424] to-[#101b30] border-sky-500/20 hover:border-sky-500/40"
-            : "bg-white border-sky-100 hover:border-sky-300"
+            ? "bg-gradient-to-br from-[#0c182c] via-[#091120] to-[#060b16] border-sky-500/30 hover:border-sky-400/60 shadow-sky-950/20"
+            : "bg-gradient-to-br from-white via-sky-50/30 to-sky-100/20 border-sky-200/80 hover:border-sky-400 shadow-slate-200/60"
         }`}>
           <div className="flex items-center justify-between">
-            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-sky-400" : "text-sky-600"}`}>
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${isDark ? "text-sky-400" : "text-sky-600"}`}>
               Total Registrations
             </span>
-            <div className="w-7 h-7 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400">
+            <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white shadow-md shadow-sky-500/30">
               <Car className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2">
-            <span className={`text-2xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-              {kpiData.totalVehicles.toLocaleString()}
-            </span>
-            <span className={`block text-[10px] font-semibold mt-1 truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-              {selectedRto !== "ALL"
-                ? `RTO: ${selectedRto}`
-                : selectedDistrict !== "ALL"
-                ? `District: ${selectedDistrict}`
-                : selectedTerritory !== "ALL"
-                ? `Territory: ${selectedTerritory}`
-                : `Across ${activeDatasetRtoCount} Kerala RTOs`}
-            </span>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-3xl sm:text-4xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                {kpiData.totalVehicles.toLocaleString()}
+              </span>
+              <span className="text-xs font-bold text-slate-400">units</span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-sky-500/10 flex items-center justify-between text-[11px] font-semibold">
+              <span className={`truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                {selectedRto !== "ALL"
+                  ? `RTO: ${selectedRto}`
+                  : selectedDistrict !== "ALL"
+                  ? `District: ${selectedDistrict}`
+                  : selectedTerritory !== "ALL"
+                  ? `Territory: ${selectedTerritory}`
+                  : `Across ${activeDatasetRtoCount} Kerala RTOs`}
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                100% DB
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Mahindra (M&M) Registrations */}
-        <div className={`p-3 rounded-2xl border flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 shadow-sm ${
+        <div className={`p-4 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
           isDark
-            ? "bg-gradient-to-br from-[#1a0e14] to-[#120a10] border-rose-500/20 hover:border-rose-500/40"
-            : "bg-white border-rose-100 hover:border-rose-300"
+            ? "bg-gradient-to-br from-[#240e16] via-[#160a10] to-[#0e060a] border-rose-500/30 hover:border-rose-400/60 shadow-rose-950/20"
+            : "bg-gradient-to-br from-white via-rose-50/30 to-rose-100/20 border-rose-200/80 hover:border-rose-400 shadow-slate-200/60"
         }`}>
           <div className="flex items-center justify-between">
-            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-rose-400" : "text-rose-600"}`}>
-              M&M Volume
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${isDark ? "text-rose-400" : "text-rose-600"}`}>
+              Mahindra Volume (M&M)
             </span>
-            <div className="w-7 h-7 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400">
-              <Award className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-md shadow-rose-500/30">
+              <Flame className="w-4 h-4 fill-white" />
             </div>
           </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black tracking-tight text-rose-400">
-              {kpiData.mmVehicles.toLocaleString()}
-            </span>
-            <span className={`block text-[10px] font-semibold mt-1 truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-              Mahindra Units ({timeframeLabel})
-            </span>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-rose-500 dark:text-rose-400">
+                {kpiData.mmVehicles.toLocaleString()}
+              </span>
+              <span className="text-xs font-bold text-rose-400/70">vehicles</span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-rose-500/10 flex items-center justify-between text-[11px] font-semibold">
+              <span className={`truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                Mahindra Registrations
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                #3 OEM
+              </span>
+            </div>
           </div>
         </div>
 
         {/* M&M Market Share */}
-        <div className={`p-3 rounded-2xl border flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 shadow-sm ${
+        <div className={`p-4 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
           isDark
-            ? "bg-gradient-to-br from-[#0c1815] to-[#081210] border-emerald-500/20 hover:border-emerald-500/40"
-            : "bg-white border-emerald-100 hover:border-emerald-300"
+            ? "bg-gradient-to-br from-[#0c241c] via-[#081712] to-[#040e0b] border-emerald-500/30 hover:border-emerald-400/60 shadow-emerald-950/20"
+            : "bg-gradient-to-br from-white via-emerald-50/30 to-emerald-100/20 border-emerald-200/80 hover:border-emerald-400 shadow-slate-200/60"
         }`}>
           <div className="flex items-center justify-between">
-            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
-              M&M Market Share
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
+              M&M Market Share (MS %)
             </span>
-            <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/30">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black tracking-tight text-emerald-400">
-              {kpiData.mmMarketShare.toFixed(2)}%
-            </span>
-            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-              isDark ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-emerald-100 text-emerald-800"
-            }`}>
-              {selectedMonth === "ALL" ? "Cumulative" : selectedMonth}
-            </span>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-500 dark:text-emerald-400">
+                {kpiData.mmMarketShare.toFixed(2)}%
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                isDark ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-emerald-100 text-emerald-800"
+              }`}>
+                {selectedMonth === "ALL" ? "Cumulative" : selectedMonth}
+              </span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-emerald-500/10 flex items-center justify-between text-[11px] font-semibold">
+              <span className={`truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                Statewide MS Penetration
+              </span>
+              <span className="text-emerald-400 font-extrabold text-[10px]">
+                {kpiData.mmMarketShare > 0 ? `${kpiData.mmMarketShare.toFixed(1)}% Share` : "0%"}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Market Leader OEM */}
-        <div className={`p-3 rounded-2xl border flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 shadow-sm ${
+        <div className={`p-4 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-md ${
           isDark
-            ? "bg-gradient-to-br from-[#130f24] to-[#0d091a] border-purple-500/20 hover:border-purple-500/40"
-            : "bg-white border-purple-100 hover:border-purple-300"
+            ? "bg-gradient-to-br from-[#1a1233] via-[#100a22] to-[#0a0616] border-purple-500/30 hover:border-purple-400/60 shadow-purple-950/20"
+            : "bg-gradient-to-br from-white via-purple-50/30 to-purple-100/20 border-purple-200/80 hover:border-purple-400 shadow-slate-200/60"
         }`}>
           <div className="flex items-center justify-between">
-            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-purple-400" : "text-purple-600"}`}>
-              Market Leader
+            <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${isDark ? "text-purple-400" : "text-purple-600"}`}>
+              Market Leader (OEM Group)
             </span>
-            <div className="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
-              <Layers className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-500/30">
+              <Crown className="w-4 h-4 fill-white" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-              {kpiData.topOemName}
-            </span>
-            <span className="text-sm font-black text-purple-400">
-              {kpiData.topOemShare}%
-            </span>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className={`text-3xl sm:text-4xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                {kpiData.topOemName}
+              </span>
+              <span className="text-lg font-black text-purple-400">
+                {kpiData.topOemShare}%
+              </span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-purple-500/10 flex items-center justify-between text-[11px] font-semibold">
+              <span className={`truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                Dominant Kerala Volume
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                #1 Rank
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 4. CUTE OEM GROUPING MARKET SHARE BREAKDOWN */}
-      <div className={`p-3 rounded-2xl border ${
-        isDark ? "bg-[#090f1d] border-[#18263e]" : "bg-white border-slate-200/80 shadow-sm"
+      <div className={`p-4 rounded-3xl border transition-all ${
+        isDark ? "bg-[#09101f]/90 border-[#1a2846] shadow-xl shadow-black/20" : "bg-white border-slate-200/90 shadow-sm"
       }`}>
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1f2f4c]/30">
+        <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#1f2f4c]/30">
           <div className="flex items-center gap-2">
-            <PieChart className="w-4 h-4 text-sky-400" />
-            <h3 className={`text-xs font-black uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
+            <div className="p-1 rounded-lg bg-sky-500/10 text-sky-400">
+              <PieChart className="w-4 h-4" />
+            </div>
+            <h3 className={`text-xs sm:text-sm font-black uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
               OEM Grouping Market Share Breakdown ({timeframeLabel})
             </h3>
           </div>
-          <span className={`text-[10px] font-semibold ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            Scope: <span className="font-extrabold text-sky-400">
+          <span className={`text-xs font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            Scope: <span className="font-black text-sky-400">
               {selectedRto !== "ALL"
                 ? `RTO ${selectedRto}`
                 : selectedDistrict !== "ALL"
@@ -1657,8 +1752,8 @@ export default function ExecutiveDashboard({
         </div>
 
         {/* Cute Progress Bar */}
-        <div className={`w-full h-2.5 rounded-full overflow-hidden flex my-2 ${
-          isDark ? "bg-slate-800" : "bg-slate-200"
+        <div className={`w-full h-3.5 rounded-full overflow-hidden flex my-2.5 shadow-inner ring-1 ${
+          isDark ? "bg-slate-800 ring-white/10" : "bg-slate-200 ring-slate-900/5"
         }`}>
           {activeOemBreakdown.map((item) => (
             <div
@@ -1671,29 +1766,196 @@ export default function ExecutiveDashboard({
         </div>
 
         {/* Cute Legend Chips */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 mt-3">
           {activeOemBreakdown.map((item) => (
             <div
               key={item.name}
-              className={`px-2.5 py-1.5 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.02] ${
-                isDark ? "bg-[#060c18] border-[#1b2842]" : "bg-slate-50 border-slate-200"
+              className={`p-2.5 rounded-2xl border flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                isDark ? "bg-[#060c18] border-[#1b2842]" : "bg-slate-50 border-slate-200/80 shadow-xs"
               }`}
             >
-              <div className="flex items-center gap-1.5 truncate">
-                <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
-                <span className="font-bold truncate">{item.name}</span>
-              </div>
-              <div className="flex items-baseline gap-1 shrink-0 ml-1.5">
-                <span className="font-black" style={{ color: item.color }}>{item.share.toFixed(1)}%</span>
-                <span className={`text-[9px] font-mono font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                  ({item.count.toLocaleString()})
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-sm" style={{ backgroundColor: item.color }} />
+                  <span className="font-extrabold text-xs truncate">{item.name}</span>
+                </div>
+                <span className="text-xs font-black" style={{ color: item.color }}>
+                  {item.share.toFixed(1)}%
                 </span>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                <span className="font-mono font-bold">{item.count.toLocaleString()} units</span>
+                <div className="w-12 h-1.5 rounded-full bg-slate-700/30 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.min(100, item.share * 1.5)}%`, backgroundColor: item.color }}
+                  />
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
+      {/* 5. BRAND NEW: CUTE REGIONAL & DISTRICT LEADERBOARDS (Fills the Bottom Screen) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+        {/* Top 5 Districts Leaderboard */}
+        <div className={`p-4 rounded-3xl border transition-all ${
+          isDark ? "bg-[#09101f]/90 border-[#1a2846] shadow-xl shadow-black/20" : "bg-white border-slate-200/90 shadow-sm"
+        }`}>
+          <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#1f2f4c]/30">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-lg bg-amber-500/10 text-amber-400">
+                <Trophy className="w-4 h-4" />
+              </div>
+              <h3 className={`text-xs sm:text-sm font-black uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
+                Top 5 Districts Leaderboard ({timeframeLabel})
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold text-slate-400">Ranked by Volume</span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {topDistricts.length > 0 ? (
+              topDistricts.map((d, idx) => (
+                <div
+                  key={d.district}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                    isDark ? "bg-[#060b17] border-[#18253d] hover:bg-[#0b1324]" : "bg-slate-50 border-slate-200/80 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center ${
+                      idx === 0
+                        ? "bg-amber-500 text-white shadow-sm shadow-amber-500/40"
+                        : idx === 1
+                        ? "bg-slate-400 text-white"
+                        : idx === 2
+                        ? "bg-amber-700 text-white"
+                        : isDark ? "bg-slate-800 text-slate-300" : "bg-slate-200 text-slate-700"
+                    }`}>
+                      #{idx + 1}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-black ${isDark ? "text-white" : "text-slate-900"}`}>
+                          {d.district}
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-400">({d.territory})</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Mahindra: <span className="font-bold text-rose-400">{d.mm.toLocaleString()}</span> ({d.ms.toFixed(1)}% MS)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className={`text-sm font-black font-mono ${isDark ? "text-sky-400" : "text-sky-600"}`}>
+                      {d.total.toLocaleString()}
+                    </span>
+                    <span className="block text-[9px] font-bold text-slate-400">
+                      {d.shareOfTotal.toFixed(1)}% of state
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-xs text-slate-400">No district registration data found for this period</div>
+            )}
+          </div>
+        </div>
+
+        {/* Territory Split & Top RTOs */}
+        <div className={`p-4 rounded-3xl border flex flex-col justify-between transition-all ${
+          isDark ? "bg-[#09101f]/90 border-[#1a2846] shadow-xl shadow-black/20" : "bg-white border-slate-200/90 shadow-sm"
+        }`}>
+          <div>
+            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#1f2f4c]/30">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <Compass className="w-4 h-4" />
+                </div>
+                <h3 className={`text-xs sm:text-sm font-black uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
+                  Territory Distribution (North vs South)
+                </h3>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400">State Split</span>
+            </div>
+
+            {/* Comparison Visual Bar */}
+            <div className="flex flex-col gap-1.5 mb-3">
+              <div className="flex items-center justify-between text-xs font-extrabold">
+                <span className="text-sky-400">North Kerala: {kpiData.northShare}%</span>
+                <span className="text-indigo-400">South Kerala: {kpiData.southShare}%</span>
+              </div>
+              <div className="w-full h-3 rounded-full overflow-hidden flex bg-slate-800">
+                <div
+                  style={{ width: `${kpiData.northShare}%` }}
+                  className="h-full bg-gradient-to-r from-sky-500 to-blue-500 transition-all duration-300"
+                  title={`North Kerala: ${kpiData.northTotal?.toLocaleString() || 0} (${kpiData.northShare}%)`}
+                />
+                <div
+                  style={{ width: `${kpiData.southShare}%` }}
+                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
+                  title={`South Kerala: ${kpiData.southTotal?.toLocaleString() || 0} (${kpiData.southShare}%)`}
+                />
+              </div>
+            </div>
+
+            {/* 2 Territory Summary Cards */}
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className={`p-2.5 rounded-2xl border ${isDark ? "bg-[#060b17] border-[#18253d]" : "bg-sky-50/50 border-sky-100"}`}>
+                <span className="text-[10px] font-black uppercase text-sky-400">North Kerala</span>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className={`text-lg font-black font-mono ${isDark ? "text-white" : "text-slate-900"}`}>
+                    {(kpiData.northTotal || 0).toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-slate-400">units</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">
+                  M&M: <span className="font-bold text-rose-400">{(kpiData.northMm || 0).toLocaleString()}</span> ({(kpiData.northMs || 0).toFixed(1)}% MS)
+                </div>
+              </div>
+
+              <div className={`p-2.5 rounded-2xl border ${isDark ? "bg-[#060b17] border-[#18253d]" : "bg-indigo-50/50 border-indigo-100"}`}>
+                <span className="text-[10px] font-black uppercase text-indigo-400">South Kerala</span>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className={`text-lg font-black font-mono ${isDark ? "text-white" : "text-slate-900"}`}>
+                    {(kpiData.southTotal || 0).toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-slate-400">units</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">
+                  M&M: <span className="font-bold text-rose-400">{(kpiData.southMm || 0).toLocaleString()}</span> ({(kpiData.southMs || 0).toFixed(1)}% MS)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top 3 RTOs Preview */}
+          <div className="pt-2 border-t border-[#1f2f4c]/30">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1.5">
+              🏆 Top RTO Offices in Kerala
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {topRtos.slice(0, 3).map((r, idx) => (
+                <span
+                  key={r.rtoName}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 ${
+                    isDark ? "bg-[#060c18] border-[#1a2844] text-slate-200" : "bg-slate-100 border-slate-200 text-slate-800"
+                  }`}
+                >
+                  <span className="text-amber-400 font-black">#{idx + 1}</span>
+                  <span>{r.rtoName}</span>
+                  <span className="font-mono text-sky-400 font-extrabold">{r.total.toLocaleString()}</span>
+                  <span className="text-slate-400 text-[9px]">({r.ms.toFixed(1)}% M&M)</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
