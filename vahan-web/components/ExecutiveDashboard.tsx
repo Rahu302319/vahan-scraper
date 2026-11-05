@@ -21,7 +21,9 @@ import {
   Sparkles,
   RefreshCw,
   Calendar,
-  RotateCcw
+  RotateCcw,
+  Plus,
+  Minus
 } from "lucide-react";
 import ExcelJS from "exceljs";
 import summaryDataRaw from "@/lib/summary-data.json";
@@ -573,44 +575,63 @@ export default function ExecutiveDashboard({
           });
         }
 
+        const existingYears = templateRow.years || {};
+        const finalTotal = activeDatasetRows.length > 0 ? stats.total : (existingYears[selectedYear]?.total || 0);
+        const finalMm = activeDatasetRows.length > 0 ? stats.mm : (existingYears[selectedYear]?.mm || 0);
+        const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
+
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: stats.total, mm: stats.mm, ms },
+            ...existingYears,
+            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: stats.monthly,
         });
       } else if (templateRow.type === "district_total") {
-        const distStats = districtAccumulator[templateRow.district] || { total: 0, mm: 0, monthly: {} };
-        const ms = distStats.total > 0 ? (distStats.mm / distStats.total) * 100 : 0;
+        const distKey = templateRow.label.replace(/\s+Total$/i, "").trim();
+        const distStats = districtAccumulator[distKey] || districtAccumulator[templateRow.district] || { total: 0, mm: 0, monthly: {} };
+        const existingYears = templateRow.years || {};
+        const finalTotal = activeDatasetRows.length > 0 ? distStats.total : (existingYears[selectedYear]?.total || 0);
+        const finalMm = activeDatasetRows.length > 0 ? distStats.mm : (existingYears[selectedYear]?.mm || 0);
+        const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
 
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: distStats.total, mm: distStats.mm, ms },
+            ...existingYears,
+            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: distStats.monthly,
         });
       } else if (templateRow.type === "territory_total") {
-        const terrName = templateRow.label.replace(" Total", "").trim();
-        const terrStats = territoryAccumulator[terrName] || { total: 0, mm: 0, monthly: {} };
-        const ms = terrStats.total > 0 ? (terrStats.mm / terrStats.total) * 100 : 0;
+        const terrName = templateRow.label.replace(/\s+Total$/i, "").trim();
+        const terrStats = territoryAccumulator[terrName] || territoryAccumulator[templateRow.territory] || { total: 0, mm: 0, monthly: {} };
+        const existingYears = templateRow.years || {};
+        const finalTotal = activeDatasetRows.length > 0 ? terrStats.total : (existingYears[selectedYear]?.total || 0);
+        const finalMm = activeDatasetRows.length > 0 ? terrStats.mm : (existingYears[selectedYear]?.mm || 0);
+        const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
 
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: terrStats.total, mm: terrStats.mm, ms },
+            ...existingYears,
+            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: terrStats.monthly,
         });
       } else if (templateRow.type === "grand_total") {
-        const grandTotal =
+        const grandTotalAcc =
           (territoryAccumulator["North Kerala"]?.total || 0) +
           (territoryAccumulator["South Kerala"]?.total || 0);
-        const grandMm =
+        const grandMmAcc =
           (territoryAccumulator["North Kerala"]?.mm || 0) +
           (territoryAccumulator["South Kerala"]?.mm || 0);
-        const ms = grandTotal > 0 ? (grandMm / grandTotal) * 100 : 0;
+
+        const existingYears = templateRow.years || {};
+        const finalTotal = activeDatasetRows.length > 0 ? grandTotalAcc : (existingYears[selectedYear]?.total || 0);
+        const finalMm = activeDatasetRows.length > 0 ? grandMmAcc : (existingYears[selectedYear]?.mm || 0);
+        const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
 
         const grandMonthly: Record<string, number> = {};
         fyMonths.forEach((m) => {
@@ -622,7 +643,8 @@ export default function ExecutiveDashboard({
         newRows.push({
           ...templateRow,
           years: {
-            [selectedYear]: { total: grandTotal, mm: grandMm, ms },
+            ...existingYears,
+            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: grandMonthly,
         });
@@ -696,6 +718,161 @@ export default function ExecutiveDashboard({
       return true;
     });
   }, [computedSummaryRows, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, selectedYear]);
+
+  // Hierarchical Territory -> District -> RTO Groups for Merged & Collapsible Rendering
+  const territoryGroups = useMemo(() => {
+    const terrMap: Record<string, {
+      territoryName: string;
+      districts: Record<string, {
+        districtName: string;
+        territoryName: string;
+        totalRow?: SummaryRow;
+        rtos: SummaryRow[];
+      }>;
+      totalRow?: SummaryRow;
+    }> = {
+      "North Kerala": { territoryName: "North Kerala", districts: {} },
+      "South Kerala": { territoryName: "South Kerala", districts: {} },
+    };
+
+    computedSummaryRows.forEach((row) => {
+      if (row.type === "rto") {
+        const terr = row.territory === "South Kerala" ? "South Kerala" : "North Kerala";
+        if (!terrMap[terr].districts[row.district]) {
+          terrMap[terr].districts[row.district] = {
+            districtName: row.district,
+            territoryName: terr,
+            rtos: [],
+          };
+        }
+        terrMap[terr].districts[row.district].rtos.push(row);
+      } else if (row.type === "district_total") {
+        const distName = row.label.replace(/\s+Total$/i, "").trim();
+        const terr = row.territory === "South Kerala" ? "South Kerala" : "North Kerala";
+        if (!terrMap[terr].districts[distName]) {
+          terrMap[terr].districts[distName] = {
+            districtName: distName,
+            territoryName: terr,
+            rtos: [],
+          };
+        }
+        terrMap[terr].districts[distName].totalRow = row;
+      } else if (row.type === "territory_total") {
+        const terrName = row.label.replace(/\s+Total$/i, "").trim();
+        if (terrMap[terrName]) {
+          terrMap[terrName].totalRow = row;
+        }
+      }
+    });
+
+    return Object.values(terrMap).map((tg) => ({
+      territoryName: tg.territoryName,
+      districts: Object.values(tg.districts),
+      totalRow: tg.totalRow,
+    }));
+  }, [computedSummaryRows]);
+
+  // Expanded districts state: DEFAULT IS COLLAPSED (empty object)
+  const [expandedDistricts, setExpandedDistricts] = useState<Record<string, boolean>>({});
+
+  const toggleDistrict = (districtName: string) => {
+    setExpandedDistricts((prev) => ({
+      ...prev,
+      [districtName]: !prev[districtName],
+    }));
+  };
+
+  const expandAllDistricts = () => {
+    const all: Record<string, boolean> = {};
+    territoryGroups.forEach((tg) => {
+      tg.districts.forEach((dg) => {
+        all[dg.districtName] = true;
+      });
+    });
+    setExpandedDistricts(all);
+  };
+
+  const collapseAllDistricts = () => {
+    setExpandedDistricts({});
+  };
+
+  const isDistrictExpanded = (districtName: string): boolean => {
+    if (selectedRto !== "ALL") return true;
+    if (searchQuery.trim() && searchQuery.trim() !== "ALL") return true;
+    return !!expandedDistricts[districtName];
+  };
+
+  const filteredTerritoryGroups = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const hasSearch = q.length > 0 && q !== "all";
+
+    return territoryGroups
+      .map((tg) => {
+        // Territory filter
+        if (selectedTerritory !== "ALL" && tg.territoryName !== selectedTerritory) {
+          return null;
+        }
+
+        const filteredDistricts = tg.districts
+          .map((dg) => {
+            // District filter
+            if (selectedDistrict !== "ALL" && dg.districtName !== selectedDistrict) {
+              return null;
+            }
+
+            // Filter child RTOs
+            let rtos = dg.rtos;
+
+            if (hideZeroRtos) {
+              rtos = rtos.filter((r) => {
+                const tot = r.years[selectedYear]?.total || 0;
+                return tot > 0;
+              });
+            }
+
+            if (selectedRto !== "ALL") {
+              rtos = rtos.filter((r) => cleanRtoName(r.rtoName) === cleanRtoName(selectedRto));
+              if (rtos.length === 0) return null;
+            }
+
+            if (hasSearch) {
+              const districtMatches = dg.districtName.toLowerCase().includes(q) || tg.territoryName.toLowerCase().includes(q);
+              if (!districtMatches) {
+                rtos = rtos.filter((r) => r.rtoName.toLowerCase().includes(q) || r.label.toLowerCase().includes(q));
+                if (rtos.length === 0) return null;
+              }
+            }
+
+            if (hideZeroRtos) {
+              const distTot = dg.totalRow?.years[selectedYear]?.total || 0;
+              if (distTot === 0 && rtos.length === 0) return null;
+            }
+
+            return {
+              ...dg,
+              rtos,
+            };
+          })
+          .filter(Boolean) as typeof tg.districts;
+
+        if (filteredDistricts.length === 0) return null;
+
+        return {
+          ...tg,
+          districts: filteredDistricts,
+        };
+      })
+      .filter(Boolean) as typeof territoryGroups;
+  }, [territoryGroups, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, selectedYear]);
+
+  const getDistrictRowCount = (dg: { districtName: string; rtos: SummaryRow[] }) => {
+    const expanded = isDistrictExpanded(dg.districtName);
+    return expanded ? 1 + dg.rtos.length : 1;
+  };
+
+  const grandTotalRow = useMemo(() => {
+    return computedSummaryRows.find((r) => r.type === "grand_total");
+  }, [computedSummaryRows]);
 
   // Active Timeframe Label: formatted strictly as mmm-yy when month is selected, or Full FY
   const activeMonthItem = useMemo(() => {
@@ -1269,7 +1446,7 @@ export default function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* 5. Territory & District Summary Table (Image 4 replica) */}
+      {/* 5. Territory & District Summary Table (Hierarchical, Merged, Expandable/Collapsible) */}
       <div className={`flex flex-col gap-2 rounded-lg border p-3 ${
         isDark ? "bg-[#090f1d] border-[#18263e]" : "bg-white border-slate-200 shadow-sm"
       }`}>
@@ -1305,6 +1482,33 @@ export default function ExecutiveDashboard({
                 }`}
               >
                 12-M Trend (Apr-Mar)
+              </button>
+            </div>
+
+            {/* Expand / Collapse All Districts */}
+            <div className={`flex items-center p-0.5 rounded border ${isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"}`}>
+              <button
+                type="button"
+                onClick={expandAllDistricts}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition ${
+                  isDark ? "text-sky-400 hover:bg-[#132038]" : "text-sky-700 hover:bg-sky-100"
+                }`}
+                title="Expand all 14 districts to show child RTOs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Expand All
+              </button>
+              <span className={`px-1 text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>|</span>
+              <button
+                type="button"
+                onClick={collapseAllDistricts}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition ${
+                  isDark ? "text-slate-400 hover:bg-[#132038]" : "text-slate-600 hover:bg-slate-200"
+                }`}
+                title="Collapse all districts to summary level (Default)"
+              >
+                <Minus className="w-3.5 h-3.5" />
+                Collapse All
               </button>
             </div>
 
@@ -1345,156 +1549,432 @@ export default function ExecutiveDashboard({
         </div>
 
         {/* Scrollable Summary Table */}
-        <div className={`overflow-auto rounded border max-h-[600px] ${
+        <div className={`overflow-auto rounded border max-h-[650px] ${
           isDark ? "border-[#1b2842] bg-[#060a14]" : "border-slate-200 bg-white"
         }`}>
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className={`sticky top-0 z-10 font-bold border-b text-[11px] ${
-              isDark ? "bg-[#0d1627] text-[#38bdf8] border-[#1f2f4c]" : "bg-slate-100 text-slate-700 border-slate-300"
+          <table className="w-full text-left border-collapse">
+            <thead className={`sticky top-0 z-10 font-black border-b text-xs ${
+              isDark ? "bg-[#0d1627] text-[#38bdf8] border-[#1f2f4c]" : "bg-slate-100 text-slate-800 border-slate-300"
             }`}>
               {tableMode === "monthly" ? (
                 <tr>
-                  <th className="p-2 w-28">Territory</th>
-                  <th className="p-2 w-32">District</th>
-                  <th className="p-2 min-w-[140px]">Final RTO Name</th>
+                  <th className="p-3 w-36 text-center border-r border-[#1f2f4c]/30">Territory</th>
+                  <th className="p-3 w-44 text-center border-r border-[#1f2f4c]/30">District</th>
+                  <th className="p-3 min-w-[170px]">Final RTO Name</th>
                   {fyMonths.map((m) => (
-                    <th key={m.mmmYy} className="p-2 text-right w-16 font-mono text-[10px] text-amber-400">
+                    <th key={m.mmmYy} className="p-2 text-right w-16 font-mono text-[11px] text-amber-400">
                       {m.mmmYy}
                     </th>
                   ))}
-                  <th className="p-2 text-right w-24 text-[#38bdf8]">FY Total</th>
-                  <th className="p-2 text-right w-20 text-red-400">M&M Nos</th>
-                  <th className="p-2 text-right w-20 text-[#34d399]">M&M MS %</th>
+                  <th className="p-3 text-right w-28 text-[#38bdf8] uppercase">FY Total</th>
+                  <th className="p-3 text-right w-24 text-red-400 uppercase">M&M Nos</th>
+                  <th className="p-3 text-right w-24 text-[#34d399] uppercase">M&M MS %</th>
                 </tr>
               ) : (
                 <tr>
-                  <th className="p-2 w-36">Territory</th>
-                  <th className="p-2 w-44">District</th>
-                  <th className="p-2">Final RTO Name</th>
-                  <th className="p-2 text-right w-44">Total Registration ({timeframeLabel})</th>
-                  <th className="p-2 text-right w-32 text-red-400">M&M Nos</th>
-                  <th className="p-2 text-right w-28 text-[#34d399]">M&M MS %</th>
+                  <th className="p-3 w-36 text-center border-r border-[#1f2f4c]/30">Territory</th>
+                  <th className="p-3 w-48 text-center border-r border-[#1f2f4c]/30">District</th>
+                  <th className="p-3 min-w-[180px]">Final RTO Name</th>
+                  <th className="p-3 text-right w-52 uppercase">Total Registration ({timeframeLabel})</th>
+                  <th className="p-3 text-right w-36 text-red-400 uppercase">M&M Nos</th>
+                  <th className="p-3 text-right w-32 text-[#34d399] uppercase">M&M MS %</th>
                 </tr>
               )}
             </thead>
             <tbody className={`divide-y ${isDark ? "divide-[#131f33]" : "divide-slate-200"}`}>
-              {filteredSummaryRows.map((row, idx) => {
-                const metrics = row.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
-                const isGrandTotal = row.type === "grand_total";
-                const isTerrTotal = row.type === "territory_total";
-                const isDistTotal = row.type === "district_total";
+              {filteredTerritoryGroups.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={tableMode === "monthly" ? 18 : 6}
+                    className={`p-8 text-center text-sm font-semibold ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                  >
+                    No matching registration records found for the selected filters.
+                  </td>
+                </tr>
+              ) : (
+                filteredTerritoryGroups.map((tg) => {
+                  const tgDistricts = tg.districts;
+                  const showTerrTotal = selectedDistrict === "ALL" && selectedRto === "ALL";
+                  const territoryRowCount =
+                    tgDistricts.reduce((acc, dg) => acc + getDistrictRowCount(dg), 0) +
+                    (tg.totalRow && showTerrTotal ? 1 : 0);
 
-                let rowBg = "";
-                if (isGrandTotal) {
-                  rowBg = isDark ? "bg-[#38bdf8]/15 font-black text-white" : "bg-amber-100 font-black text-slate-900";
-                } else if (isTerrTotal) {
-                  rowBg = isDark ? "bg-[#1e293b] font-extrabold text-[#38bdf8]" : "bg-sky-100 font-bold text-sky-900";
-                } else if (isDistTotal) {
-                  rowBg = isDark ? "bg-[#0d172a] font-bold text-white" : "bg-slate-100 font-bold text-slate-900";
-                } else {
-                  rowBg = idx % 2 === 0
-                    ? isDark ? "bg-[#060a14] hover:bg-[#0c1424]" : "bg-white hover:bg-slate-50"
-                    : isDark ? "bg-[#080e1b] hover:bg-[#0e172a]" : "bg-slate-50/60 hover:bg-slate-100";
-                }
+                  return (
+                    <React.Fragment key={tg.territoryName}>
+                      {tgDistricts.map((dg, distIdx) => {
+                        const isExpanded = isDistrictExpanded(dg.districtName);
+                        const distRowCount = getDistrictRowCount(dg);
+                        const distTotalMetrics = dg.totalRow?.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
 
-                return (
-                  <tr key={idx} className={`transition ${rowBg}`}>
-                    {/* Territory */}
-                    <td className="p-2">
-                      {isGrandTotal ? (
-                        <span className="font-extrabold uppercase tracking-wider text-[#38bdf8]">
-                          GRAND TOTAL
-                        </span>
-                      ) : isTerrTotal ? (
-                        <span className="font-extrabold text-[#38bdf8] uppercase tracking-wide">
-                          {row.label}
-                        </span>
-                      ) : row.type === "rto" ? (
-                        <span className={`text-[11px] ${isDark ? "text-[#94a3b8]" : "text-slate-600"}`}>
-                          {row.territory}
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </td>
-
-                    {/* District */}
-                    <td className="p-2 font-medium">
-                      {isDistTotal ? (
-                        <span className={`font-bold uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
-                          {row.label}
-                        </span>
-                      ) : row.type === "rto" ? (
-                        <span className={isDark ? "text-white" : "text-slate-800"}>{row.district}</span>
-                      ) : (
-                        ""
-                      )}
-                    </td>
-
-                    {/* Final RTO Name */}
-                    <td className="p-2 font-semibold">
-                      {row.type === "rto" ? (
-                        <span className={isDark ? "text-[#e2e8f0]" : "text-slate-900"}>{row.rtoName}</span>
-                      ) : (
-                        ""
-                      )}
-                    </td>
-
-                    {/* Monthly Columns (If in 12-Month Financial Year Trend Mode) */}
-                    {tableMode === "monthly" &&
-                      fyMonths.map((m) => {
-                        const mVal = row.monthly?.[m.mmmYy] || 0;
                         return (
-                          <td key={m.mmmYy} className="p-2 text-right font-mono text-[11px]">
-                            {mVal > 0 ? (
-                              mVal.toLocaleString()
-                            ) : (
-                              <span className={isDark ? "text-slate-600" : "text-slate-300"}>-</span>
-                            )}
-                          </td>
+                          <React.Fragment key={dg.districtName}>
+                            {/* Row 0: The District Summary Row (With Expand/Collapse Button & District Total) */}
+                            <tr
+                              className={`transition ${
+                                isDark
+                                  ? "bg-[#0b1424] hover:bg-[#101c33] border-b border-[#1b2b48]"
+                                  : "bg-sky-50/70 hover:bg-sky-100/80 border-b border-sky-200"
+                              }`}
+                            >
+                              {/* Territory (Merged with rowSpan on the very first row of this territory) */}
+                              {distIdx === 0 && (
+                                <td
+                                  rowSpan={territoryRowCount}
+                                  className={`align-middle text-center p-3 border-r ${
+                                    isDark
+                                      ? "bg-[#070e1b] border-[#1e2f4c] text-white"
+                                      : "bg-slate-100 border-slate-300 text-slate-900"
+                                  }`}
+                                >
+                                  <div className="flex flex-col items-center justify-center gap-1.5 py-4">
+                                    <Building2 className="w-5 h-5 text-sky-500 dark:text-[#38bdf8]" />
+                                    <span className="font-black text-sm uppercase tracking-wider block">
+                                      {tg.territoryName}
+                                    </span>
+                                    <span
+                                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                        isDark
+                                          ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                                          : "bg-sky-100 text-sky-800"
+                                      }`}
+                                    >
+                                      {tg.districts.length} Districts
+                                    </span>
+                                  </div>
+                                </td>
+                              )}
+
+                              {/* District (Merged with rowSpan for all rows in this district when expanded) */}
+                              <td
+                                rowSpan={distRowCount}
+                                className={`align-middle text-center p-2.5 border-r ${
+                                  isDark
+                                    ? "bg-[#0a1220] border-[#1e2f4c]"
+                                    : "bg-slate-50 border-slate-200"
+                                }`}
+                              >
+                                <div className="flex flex-col items-center justify-center gap-1.5 py-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleDistrict(dg.districtName)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm ${
+                                      isExpanded
+                                        ? isDark
+                                          ? "bg-sky-600 text-white hover:bg-sky-500"
+                                          : "bg-sky-600 text-white hover:bg-sky-700"
+                                        : isDark
+                                        ? "bg-[#152238] text-sky-300 hover:bg-[#1e3252] border border-sky-500/30"
+                                        : "bg-white text-sky-800 hover:bg-sky-50 border border-sky-300"
+                                    }`}
+                                    title={isExpanded ? "Click to collapse RTOs" : "Click to expand RTOs"}
+                                  >
+                                    {isExpanded ? (
+                                      <Minus className="w-3.5 h-3.5 text-white" />
+                                    ) : (
+                                      <Plus className="w-3.5 h-3.5 text-sky-400" />
+                                    )}
+                                    <span className="text-sm font-black">{dg.districtName}</span>
+                                  </button>
+                                  <span className="text-[11px] font-semibold text-slate-400">
+                                    {dg.rtos.length} RTOs
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Final RTO Name Cell for District Summary */}
+                              <td className="p-3 font-black">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-xs uppercase tracking-wide font-black ${
+                                      isDark ? "text-sky-300" : "text-sky-800"
+                                    }`}
+                                  >
+                                    {isExpanded
+                                      ? `📊 ${dg.districtName} District Total`
+                                      : `All ${dg.rtos.length} RTOs (${dg.districtName} Total)`}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded ${
+                                      isDark
+                                        ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                                        : "bg-sky-200 text-sky-900"
+                                    }`}
+                                  >
+                                    Total
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Monthly columns for District Total (if monthly mode) */}
+                              {tableMode === "monthly" &&
+                                fyMonths.map((m) => {
+                                  const mVal = dg.totalRow?.monthly?.[m.mmmYy] || 0;
+                                  return (
+                                    <td key={m.mmmYy} className="p-2.5 text-right font-mono text-sm font-bold">
+                                      {mVal > 0 ? (
+                                        <span className={isDark ? "text-slate-200" : "text-slate-800"}>
+                                          {mVal.toLocaleString()}
+                                        </span>
+                                      ) : (
+                                        <span className={isDark ? "text-slate-600" : "text-slate-300"}>-</span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+
+                              {/* Total Registration */}
+                              <td className="p-3 text-right font-mono text-sm sm:text-base font-black">
+                                <span className={isDark ? "text-white" : "text-slate-900"}>
+                                  {distTotalMetrics.total.toLocaleString()}
+                                </span>
+                              </td>
+
+                              {/* M&M Nos */}
+                              <td className="p-3 text-right font-mono text-sm sm:text-base font-black text-red-400">
+                                {distTotalMetrics.mm.toLocaleString()}
+                              </td>
+
+                              {/* M&M MS % */}
+                              <td className="p-3 text-right font-mono">
+                                <span
+                                  className={`inline-block px-2 py-0.5 rounded text-xs font-black ${
+                                    distTotalMetrics.ms >= 4.0
+                                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                      : distTotalMetrics.ms >= 3.0
+                                      ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
+                                      : distTotalMetrics.ms >= 2.0
+                                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                                      : isDark
+                                      ? "bg-slate-800 text-slate-400"
+                                      : "bg-slate-200 text-slate-600"
+                                  }`}
+                                >
+                                  {distTotalMetrics.ms.toFixed(2)}%
+                                </span>
+                              </td>
+                            </tr>
+
+                            {/* Child RTO Rows (Rendered only when expanded) */}
+                            {isExpanded &&
+                              dg.rtos.map((rtoRow, rtoIdx) => {
+                                const rtoMetrics = rtoRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                                const isEven = rtoIdx % 2 === 0;
+
+                                return (
+                                  <tr
+                                    key={rtoRow.rtoName}
+                                    className={`transition ${
+                                      isEven
+                                        ? isDark
+                                          ? "bg-[#060a14] hover:bg-[#0c1424]"
+                                          : "bg-white hover:bg-slate-50"
+                                        : isDark
+                                        ? "bg-[#080e1a] hover:bg-[#0e172a]"
+                                        : "bg-slate-50/70 hover:bg-slate-100"
+                                    }`}
+                                  >
+                                    {/* Territory: Spanned, so omitted */}
+                                    {/* District: Spanned, so omitted */}
+
+                                    {/* Final RTO Name */}
+                                    <td className="p-2.5 font-semibold pl-6">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-slate-400 font-mono text-xs">↳</span>
+                                        <span className={`text-xs ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                                          {rtoRow.rtoName}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* Monthly columns */}
+                                    {tableMode === "monthly" &&
+                                      fyMonths.map((m) => {
+                                        const mVal = rtoRow.monthly?.[m.mmmYy] || 0;
+                                        return (
+                                          <td
+                                            key={m.mmmYy}
+                                            className="p-2.5 text-right font-mono text-xs font-semibold"
+                                          >
+                                            {mVal > 0 ? (
+                                              <span className={isDark ? "text-slate-300" : "text-slate-700"}>
+                                                {mVal.toLocaleString()}
+                                              </span>
+                                            ) : (
+                                              <span className={isDark ? "text-slate-700" : "text-slate-300"}>-</span>
+                                            )}
+                                          </td>
+                                        );
+                                      })}
+
+                                    {/* Total Registration */}
+                                    <td className="p-2.5 text-right font-mono text-sm font-bold">
+                                      <span className={isDark ? "text-slate-100" : "text-slate-800"}>
+                                        {rtoMetrics.total.toLocaleString()}
+                                      </span>
+                                    </td>
+
+                                    {/* M&M Nos */}
+                                    <td className="p-2.5 text-right font-mono text-sm font-bold text-red-400">
+                                      {rtoMetrics.mm.toLocaleString()}
+                                    </td>
+
+                                    {/* M&M MS % */}
+                                    <td className="p-2.5 text-right font-mono">
+                                      <span
+                                        className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                                          rtoMetrics.ms >= 4.0
+                                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                            : rtoMetrics.ms >= 3.0
+                                            ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
+                                            : rtoMetrics.ms >= 2.0
+                                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                            : isDark
+                                            ? "bg-slate-800/80 text-slate-400"
+                                            : "bg-slate-100 text-slate-600"
+                                        }`}
+                                      >
+                                        {rtoMetrics.ms.toFixed(2)}%
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </React.Fragment>
                         );
                       })}
 
-                    {/* Total Registration */}
-                    <td className="p-2 text-right font-mono font-bold">
-                      {metrics.total.toLocaleString()}
-                    </td>
+                      {/* Territory Total Row */}
+                      {tg.totalRow && showTerrTotal && (() => {
+                        const terrMetrics = tg.totalRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                        return (
+                          <tr
+                            className={`border-t-2 font-black transition ${
+                              isDark
+                                ? "bg-[#182338] hover:bg-[#1e2c45] border-sky-500/50 text-[#38bdf8]"
+                                : "bg-sky-100 hover:bg-sky-200/80 border-sky-400 text-sky-950"
+                            }`}
+                          >
+                            {/* Territory is spanned above, so colSpan covers District and Final RTO Name */}
+                            <td colSpan={2} className="p-3 text-left">
+                              <div className="flex items-center gap-2 pl-2">
+                                <span className="text-base uppercase tracking-wider font-black">
+                                  🏢 {tg.territoryName} Summary Total
+                                </span>
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded font-black uppercase ${
+                                    isDark
+                                      ? "bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/40"
+                                      : "bg-sky-200 text-sky-900"
+                                  }`}
+                                >
+                                  Territory Total
+                                </span>
+                              </div>
+                            </td>
 
-                    {/* M&M Nos */}
-                    <td className="p-2 text-right font-mono font-bold text-red-400">
-                      {metrics.mm.toLocaleString()}
-                    </td>
+                            {/* Monthly columns */}
+                            {tableMode === "monthly" &&
+                              fyMonths.map((m) => {
+                                const mVal = tg.totalRow?.monthly?.[m.mmmYy] || 0;
+                                return (
+                                  <td key={m.mmmYy} className="p-2.5 text-right font-mono text-sm font-black">
+                                    {mVal > 0 ? mVal.toLocaleString() : "-"}
+                                  </td>
+                                );
+                              })}
 
-                    {/* M&M MS % */}
-                    <td className="p-2 text-right font-mono font-bold">
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[11px] font-black ${
-                          metrics.ms >= 4.0
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : metrics.ms >= 3.0
-                            ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
-                            : metrics.ms >= 2.0
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                            : isDark
-                            ? "bg-slate-800 text-slate-400"
-                            : "bg-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {metrics.ms.toFixed(2)}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                            {/* Total */}
+                            <td className="p-3 text-right font-mono text-sm sm:text-base font-black">
+                              {terrMetrics.total.toLocaleString()}
+                            </td>
+
+                            {/* M&M */}
+                            <td className="p-3 text-right font-mono text-sm sm:text-base font-black text-red-400">
+                              {terrMetrics.mm.toLocaleString()}
+                            </td>
+
+                            {/* MS % */}
+                            <td className="p-3 text-right font-mono">
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-black bg-sky-500/20 text-[#38bdf8] border border-sky-500/40">
+                                {terrMetrics.ms.toFixed(2)}%
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })()}
+                    </React.Fragment>
+                  );
+                })
+              )}
+
+              {/* State-Wide Grand Total Row */}
+              {grandTotalRow &&
+                selectedTerritory === "ALL" &&
+                selectedDistrict === "ALL" &&
+                selectedRto === "ALL" &&
+                (() => {
+                  const grand = grandTotalRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                  return (
+                    <tr
+                      className={`border-t-4 font-black transition ${
+                        isDark
+                          ? "bg-gradient-to-r from-emerald-950/60 via-[#0d1f2d] to-emerald-950/60 border-emerald-500/80 text-emerald-400"
+                          : "bg-emerald-100 hover:bg-emerald-200/90 border-emerald-500 text-emerald-950"
+                      }`}
+                    >
+                      <td colSpan={3} className="p-3.5 text-left">
+                        <div className="flex items-center gap-2 pl-2">
+                          <span className="text-base uppercase tracking-wider font-black">
+                            🏆 GRAND TOTAL ({timeframeLabel} • Kerala State)
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            State Total • 14 Districts • 85 RTOs
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Monthly columns */}
+                      {tableMode === "monthly" &&
+                        fyMonths.map((m) => {
+                          const mVal = grandTotalRow.monthly?.[m.mmmYy] || 0;
+                          return (
+                            <td
+                              key={m.mmmYy}
+                              className="p-2.5 text-right font-mono text-sm sm:text-base font-black text-emerald-400"
+                            >
+                              {mVal > 0 ? mVal.toLocaleString() : "-"}
+                            </td>
+                          );
+                        })}
+
+                      {/* Total */}
+                      <td className="p-3.5 text-right font-mono text-base font-black text-emerald-400">
+                        {grand.total.toLocaleString()}
+                      </td>
+
+                      {/* M&M */}
+                      <td className="p-3.5 text-right font-mono text-base font-black text-red-400">
+                        {grand.mm.toLocaleString()}
+                      </td>
+
+                      {/* MS % */}
+                      <td className="p-3.5 text-right font-mono">
+                        <span className="inline-block px-2.5 py-0.5 rounded text-xs sm:text-sm font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                          {grand.ms.toFixed(2)}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })()}
             </tbody>
           </table>
         </div>
 
-        <div className={`flex items-center justify-between text-[11px] pt-1 ${
-          isDark ? "text-[#64748b]" : "text-slate-500"
+        <div className={`flex items-center justify-between text-xs pt-1.5 font-semibold ${
+          isDark ? "text-[#94a3b8]" : "text-slate-600"
         }`}>
           <span>
-            Displaying {filteredSummaryRows.length} summary rows for {timeframeLabel}
+            Displaying Kerala Registration Hierarchy ({timeframeLabel}) • Click <span className="text-sky-400 font-bold">[+]</span> on any district to expand child RTOs
           </span>
           <span>
             Color Thresholds: <span className="text-emerald-400 font-bold">≥4% MS</span> •{" "}
