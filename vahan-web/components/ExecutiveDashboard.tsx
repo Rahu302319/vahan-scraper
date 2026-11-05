@@ -12,23 +12,17 @@ import {
   Download,
   Filter,
   Search,
-  Upload,
-  Calendar,
   CheckCircle2,
-  ChevronDown,
   Building2,
-  ArrowUpRight,
-  ArrowDownRight,
-  RefreshCw,
-  FileSpreadsheet,
-  Database,
-  Sparkles,
   Eye,
-  EyeOff
+  EyeOff,
+  Activity,
+  Zap,
+  Sparkles,
+  RefreshCw
 } from "lucide-react";
 import ExcelJS from "exceljs";
 import summaryDataRaw from "@/lib/summary-data.json";
-import oemGroupingSummaryRaw from "@/lib/oem-grouping-summary.json";
 import { OEMRecord, RTORecord } from "./DatabaseManager";
 
 export interface DashboardProps {
@@ -79,10 +73,13 @@ function getRowVolume(row: any): number {
   if (row.TOTAL !== undefined && row.TOTAL !== null && !isNaN(Number(row.TOTAL))) {
     return Number(row.TOTAL);
   }
+  if (row.total !== undefined && row.total !== null && !isNaN(Number(row.total))) {
+    return Number(row.total);
+  }
   if (row.Value !== undefined && row.Value !== null && !isNaN(Number(row.Value))) {
     return Number(row.Value);
   }
-  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "dec_val"];
   let sum = 0;
   let found = false;
   for (const m of months) {
@@ -102,8 +99,17 @@ export default function ExecutiveDashboard({
 }: DashboardProps) {
   const isDark = theme === "dark";
 
-  // Persistent live rows from localStorage if any
+  // Dashboard Filters
+  const [selectedYear, setSelectedYear] = useState<string>("2026");
+  const [selectedTerritory, setSelectedTerritory] = useState<string>("ALL");
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
+  const [searchRto, setSearchRto] = useState<string>("");
+  const [hideZeroRtos, setHideZeroRtos] = useState<boolean>(false);
+
+  // Cached scraped rows from localStorage & database
   const [cachedScrapedRows, setCachedScrapedRows] = useState<any[]>([]);
+  const [dbScrapedRows, setDbScrapedRows] = useState<any[]>([]);
+  const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
 
   // Load cached scraped rows on mount
   useEffect(() => {
@@ -115,44 +121,45 @@ export default function ExecutiveDashboard({
           setCachedScrapedRows(parsed);
         }
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, []);
 
-  // Effective live scraped rows (props take priority, otherwise cached)
-  const activeLiveRows = useMemo(() => {
-    if (liveScrapedRows && liveScrapedRows.length > 0) return liveScrapedRows;
-    return cachedScrapedRows;
-  }, [liveScrapedRows, cachedScrapedRows]);
-
-  // Dashboard Filters
-  const [selectedYear, setSelectedYear] = useState<string>("2026");
-  const [selectedTerritory, setSelectedTerritory] = useState<string>("ALL");
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
-  const [searchRto, setSearchRto] = useState<string>("");
-  const [hideZeroRtos, setHideZeroRtos] = useState<boolean>(false);
-
-  // Active Data Source: default to 'live' if scraped rows exist, else 'benchmark'
-  const [dataSource, setDataSource] = useState<"benchmark" | "live" | "custom">("benchmark");
-
-  // Auto-switch to 'live' whenever live scraped rows arrive
-  useEffect(() => {
-    if (activeLiveRows.length > 0 && dataSource === "benchmark") {
-      setDataSource("live");
+  // Fetch live registrations from Hostinger database if no live scrape in memory
+  const fetchDbRegistrations = async () => {
+    setIsLoadingDb(true);
+    try {
+      const res = await fetch(`/api/db?type=registrations&year=${selectedYear}`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        setDbScrapedRows(json.data);
+      }
+    } catch (err) {
+      console.warn("DB registrations fetch note:", err);
+    } finally {
+      setIsLoadingDb(false);
     }
-  }, [activeLiveRows.length]);
-
-  // Custom uploaded rows from user Excel file
-  const [customRows, setCustomRows] = useState<any[]>([]);
-  const [uploadedFileName, setUploadedFileName] = useState<string>("");
-
-  // Base summary template rows from JSON
-  const summaryRowsTemplate = summaryDataRaw as SummaryRow[];
-  const oemGroupingSummary = oemGroupingSummaryRaw as {
-    byYear: Record<string, Record<string, number>>;
-    byTerritory: Record<string, Record<string, Record<string, number>>>;
   };
+
+  useEffect(() => {
+    if ((!liveScrapedRows || liveScrapedRows.length === 0) && cachedScrapedRows.length === 0) {
+      fetchDbRegistrations();
+    }
+  }, [selectedYear, liveScrapedRows.length, cachedScrapedRows.length]);
+
+  // Pure Live Scraper Data: live session > localStorage cache > database registrations
+  const activeDatasetRows = useMemo(() => {
+    if (liveScrapedRows && liveScrapedRows.length > 0) return liveScrapedRows;
+    if (cachedScrapedRows && cachedScrapedRows.length > 0) {
+      // Filter by selected year if Year is present
+      const filtered = cachedScrapedRows.filter((r) => !r.Year || String(r.Year) === selectedYear);
+      if (filtered.length > 0) return filtered;
+      return cachedScrapedRows;
+    }
+    return dbScrapedRows;
+  }, [liveScrapedRows, cachedScrapedRows, dbScrapedRows, selectedYear]);
+
+  // Base summary template rows from JSON (hierarchy structure)
+  const summaryRowsTemplate = summaryDataRaw as SummaryRow[];
 
   // Build RTO Name Lookup Table from rtoDt
   const rtoDtLookup = useMemo(() => {
@@ -166,14 +173,14 @@ export default function ExecutiveDashboard({
 
   // Helper to resolve row to Final RTO Name
   const resolveRowToFinalRto = (row: any): string => {
-    const code = (row.RTO_Code || row["RTO Code"] || row.Code || "").toUpperCase().trim();
+    const code = (row.RTO_Code || row["RTO Code"] || row.Code || row.rto_code || "").toUpperCase().trim();
     if (SPECIAL_CODE_TO_FINAL_RTO[code]) {
       return SPECIAL_CODE_TO_FINAL_RTO[code];
     }
-    const directFinal = row["Final RTO Name"] || row.finalRtoName;
+    const directFinal = row["Final RTO Name"] || row.finalRtoName || row.final_rto_name;
     if (directFinal) return String(directFinal).trim();
 
-    const rawName = String(row.RTO_Name || row["RTO Name"] || row.srtOffice || row.RTO || "").trim();
+    const rawName = String(row.RTO_Name || row["RTO Name"] || row.rto_name || row.srtOffice || row.RTO || "").trim();
     const c = cleanRtoName(rawName);
     if (rtoDtLookup.has(c)) {
       return rtoDtLookup.get(c)!;
@@ -183,13 +190,13 @@ export default function ExecutiveDashboard({
 
   // Helper to identify OEM Grouping and Mahindra flag
   const resolveRowOem = (row: any): { grouping: string; isMahindra: boolean } => {
-    const directGroup = row["OEM Group"] || row.oemGroup;
-    const directGrouping = row["OEM Grouping"] || row.oemGrouping;
+    const directGroup = row["OEM Group"] || row.oemGroup || row.oem_group;
+    const directGrouping = row["OEM Grouping"] || row.oemGrouping || row.oem_grouping;
     if (directGroup === "M&M" || directGrouping === "Mahindra") {
       return { grouping: "Mahindra", isMahindra: true };
     }
 
-    const rawMaker = String(row.Maker || row["OEM Name"] || row.OEM || row["Maker Name"] || "").trim().toUpperCase();
+    const rawMaker = String(row.Maker || row["OEM Name"] || row.OEM || row["Maker Name"] || row.maker || "").trim().toUpperCase();
 
     const matched = oemDb.find(
       (o) => o.oemName.toUpperCase() === rawMaker || o.oemFinal.toUpperCase() === rawMaker
@@ -213,107 +220,25 @@ export default function ExecutiveDashboard({
     return { grouping: "Others", isMahindra: false };
   };
 
-  // Handle Custom Excel Upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(arrayBuffer);
-
-      let targetSheet = workbook.worksheets.find(
-        (ws) => ws.name.toLowerCase() === "all_kerala_data" || ws.name.toLowerCase() === "final data"
-      );
-      if (!targetSheet) {
-        targetSheet = workbook.worksheets.find((ws) => ws.name.includes(selectedYear));
-      }
-      if (!targetSheet) {
-        targetSheet = workbook.worksheets.reduce((prev, curr) =>
-          curr.rowCount > prev.rowCount ? curr : prev
-        );
-      }
-
-      const rows: any[] = [];
-      let headers: string[] = [];
-
-      targetSheet.eachRow((row, rowNumber) => {
-        const values = (row.values as any[]).slice(1);
-        if (rowNumber === 1) {
-          headers = values.map((v) => String(v || "").trim());
-        } else {
-          const rowObj: any = {};
-          headers.forEach((h, idx) => {
-            rowObj[h] = values[idx] !== undefined ? values[idx] : null;
-          });
-          rows.push(rowObj);
-        }
-      });
-
-      setCustomRows(rows);
-      setUploadedFileName(file.name);
-      setDataSource("custom");
-
-      // Attempt to auto-detect year from first row
-      if (rows[0]?.Year || rows[0]?.FY) {
-        const yr = String(rows[0].Year || rows[0].FY).trim();
-        if (AVAILABLE_YEARS.includes(yr)) {
-          setSelectedYear(yr);
-        }
-      }
-    } catch (err: any) {
-      alert(`Error reading Excel file: ${err.message}`);
-    }
-  };
-
-  // Active working dataset
-  const activeDatasetRows = useMemo(() => {
-    if (dataSource === "live") return activeLiveRows;
-    if (dataSource === "custom") return customRows;
-    return [];
-  }, [dataSource, activeLiveRows, customRows]);
-
-  // Distinct RTO count in active dataset
+  // Distinct RTO count in live scraper dataset
   const activeDatasetRtoCount = useMemo(() => {
-    if (dataSource === "benchmark") return 87;
     const rtoSet = new Set<string>();
     activeDatasetRows.forEach((r) => {
       const finalName = resolveRowToFinalRto(r);
       if (finalName) rtoSet.add(cleanRtoName(finalName));
     });
     return rtoSet.size;
-  }, [dataSource, activeDatasetRows, rtoDtLookup]);
+  }, [activeDatasetRows, rtoDtLookup]);
 
-  // Compute Active OEM Market Shares
+  // Compute Active OEM Market Shares from Live Scraper Data
   const activeOemBreakdown = useMemo(() => {
-    if (dataSource === "benchmark") {
-      let breakdown: Record<string, number> = {};
-      if (selectedTerritory === "ALL") {
-        breakdown = oemGroupingSummary.byYear[selectedYear] || {};
-      } else {
-        breakdown = oemGroupingSummary.byTerritory[selectedYear]?.[selectedTerritory] || {};
-      }
-
-      const totalVal = Object.values(breakdown).reduce((a, b) => a + b, 0);
-      return Object.entries(breakdown)
-        .map(([group, count]) => ({
-          name: group,
-          count,
-          share: totalVal > 0 ? (count / totalVal) * 100 : 0,
-          color: OEM_COLORS[group] || "#64748b",
-        }))
-        .sort((a, b) => b.count - a.count);
-    }
-
     if (!activeDatasetRows || activeDatasetRows.length === 0) return [];
 
     const groupMap: Record<string, number> = {};
     let totalVal = 0;
 
     activeDatasetRows.forEach((r) => {
-      // Optional year filter if row has Year
-      const rowYr = String(r.Year || r.FY || "").trim();
+      const rowYr = String(r.Year || r.FY || r.year || "").trim();
       if (rowYr && rowYr !== selectedYear) return;
 
       const { grouping } = resolveRowOem(r);
@@ -330,19 +255,15 @@ export default function ExecutiveDashboard({
         color: OEM_COLORS[group] || "#64748b",
       }))
       .sort((a, b) => b.count - a.count);
-  }, [dataSource, selectedYear, selectedTerritory, activeDatasetRows, oemDb, rtoDtLookup]);
+  }, [selectedYear, selectedTerritory, activeDatasetRows, oemDb, rtoDtLookup]);
 
-  // DYNAMIC SUMMARY ROWS ENGINE (Aggregates Active Scraper / Excel Data into Image 4 Table Hierarchy)
+  // DYNAMIC SUMMARY ROWS ENGINE (Directly aggregated from Live Scraper Data)
   const computedSummaryRows = useMemo(() => {
-    if (dataSource === "benchmark") {
-      return summaryRowsTemplate.filter((r) => r.district !== "District");
-    }
-
     // 1. Build volume map for each RTO from activeDatasetRows
     const rtoMap = new Map<string, { total: number; mm: number }>();
 
     activeDatasetRows.forEach((row) => {
-      const rowYr = String(row.Year || row.FY || "").trim();
+      const rowYr = String(row.Year || row.FY || row.year || "").trim();
       if (rowYr && rowYr !== selectedYear) return;
 
       const finalName = resolveRowToFinalRto(row);
@@ -356,7 +277,7 @@ export default function ExecutiveDashboard({
       rtoMap.set(key, curr);
     });
 
-    // 2. Clone structure and calculate values
+    // 2. Clone hierarchy template and calculate sub-totals
     const newRows: SummaryRow[] = [];
     const districtAccumulator: Record<string, { total: number; mm: number }> = {};
     const territoryAccumulator: Record<string, { total: number; mm: number }> = {
@@ -365,7 +286,7 @@ export default function ExecutiveDashboard({
     };
 
     summaryRowsTemplate.forEach((templateRow) => {
-      if (templateRow.district === "District") return; // skip header row
+      if (templateRow.district === "District") return; // skip header
 
       if (templateRow.type === "rto") {
         const key = cleanRtoName(templateRow.rtoName);
@@ -430,9 +351,9 @@ export default function ExecutiveDashboard({
     });
 
     return newRows;
-  }, [dataSource, selectedYear, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, oemDb]);
+  }, [selectedYear, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, oemDb]);
 
-  // Compute Grand Totals & KPI Cards from dynamically computed rows
+  // Compute Grand Totals & KPI Cards from live scraper data
   const kpiData = useMemo(() => {
     const grandTotalRow = computedSummaryRows.find((r) => r.type === "grand_total");
     const northTotalRow = computedSummaryRows.find((r) => r.label === "North Kerala Total");
@@ -491,8 +412,8 @@ export default function ExecutiveDashboard({
   const handleExportSummaryExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
-      workbook.creator = "Vahan Kerala Intelligence Dashboard";
-      const sheet = workbook.addWorksheet(`Summary_${selectedYear}`);
+      workbook.creator = "Vahan Kerala Live Intelligence Dashboard";
+      const sheet = workbook.addWorksheet(`Live_Summary_${selectedYear}`);
 
       sheet.addRow([
         "Territory",
@@ -549,7 +470,7 @@ export default function ExecutiveDashboard({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Vahan_Kerala_Summary_${selectedYear}.xlsx`;
+      a.download = `Vahan_Kerala_Live_Summary_${selectedYear}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -561,166 +482,68 @@ export default function ExecutiveDashboard({
     <div className={`flex flex-col gap-3 rounded-lg border p-3 sm:p-4 transition-colors ${
       isDark ? "bg-[#060a14] border-[#18233a] text-[#cbd5e1]" : "bg-slate-50 border-slate-200 text-slate-800"
     }`}>
-      {/* 1. DATA SOURCE CONTROLLER BANNER */}
+      {/* 1. DEDICATED LIVE SCRAPER ENGINE STATUS HEADER */}
       <div className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border transition ${
-        isDark ? "bg-[#0b1222] border-[#1e2f4d]" : "bg-white border-slate-200 shadow-sm"
-      }`}>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <span className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
-            isDark ? "text-[#38bdf8]" : "text-sky-700"
-          }`}>
-            <Sparkles className="w-4 h-4 text-[#38bdf8]" />
-            Active Data Source:
-          </span>
-
-          {/* Source Toggle Pills */}
-          <div className={`inline-flex rounded-md p-0.5 border ${
-            isDark ? "bg-[#070d18] border-[#18263e]" : "bg-slate-100 border-slate-300"
-          }`}>
-            <button
-              type="button"
-              onClick={() => setDataSource("live")}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black rounded transition ${
-                dataSource === "live"
-                  ? "bg-[#0284c7] text-white shadow-sm"
-                  : isDark
-                  ? "text-[#94a3b8] hover:text-white"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${
-                activeLiveRows.length > 0 ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
-              }`} />
-              ⚡ Live Scraper Data ({activeLiveRows.length > 0 ? `${activeDatasetRtoCount} RTOs` : "0"})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setDataSource("custom")}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black rounded transition ${
-                dataSource === "custom"
-                  ? "bg-[#0284c7] text-white shadow-sm"
-                  : isDark
-                  ? "text-[#94a3b8] hover:text-white"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              📁 Uploaded Excel ({customRows.length > 0 ? `${customRows.length} rows` : "None"})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setDataSource("benchmark")}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black rounded transition ${
-                dataSource === "benchmark"
-                  ? "bg-[#0284c7] text-white shadow-sm"
-                  : isDark
-                  ? "text-[#94a3b8] hover:text-white"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              📊 Historical Benchmark (2021-2026)
-            </button>
-          </div>
-        </div>
-
-        {/* Upload Excel Button */}
-        <div className="flex items-center gap-2">
-          <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold border cursor-pointer transition ${
-            isDark
-              ? "bg-[#0f172a] hover:bg-[#1e293b] text-[#38bdf8] border-[#38bdf8]/40 hover:border-[#38bdf8]"
-              : "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-300 shadow-sm"
-          }`}>
-            <Upload className="w-3.5 h-3.5" />
-            <span>Load Downloaded Excel (.xlsx)</span>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Source Status Banner */}
-      {dataSource === "live" && (
-        <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
-          activeLiveRows.length > 0
-            ? isDark
-              ? "bg-emerald-950/30 border-emerald-500/40 text-emerald-300"
-              : "bg-emerald-50 border-emerald-300 text-emerald-800"
-            : isDark
-            ? "bg-amber-950/30 border-amber-500/40 text-amber-300"
-            : "bg-amber-50 border-amber-300 text-amber-800"
-        }`}>
-          <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${
-              activeLiveRows.length > 0 ? "bg-emerald-400 animate-ping" : "bg-amber-400"
-            }`} />
-            {activeLiveRows.length > 0 ? (
-              <span>
-                <strong>LIVE SCRAPER FEED ACTIVE:</strong> Displaying real-time market metrics computed from{" "}
-                <strong>{activeLiveRows.length}</strong> scraped records across{" "}
-                <strong>{activeDatasetRtoCount}</strong> Kerala RTOs for FY {selectedYear}.
-              </span>
-            ) : (
-              <span>
-                <strong>NO SCRAPED RECORDS YET:</strong> Head to the <strong>87 RTO Scraper</strong> tab and click{" "}
-                <strong>START BATCH SCRAPER</strong>, or load a downloaded Excel file below.
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {dataSource === "custom" && (
-        <div className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
-          isDark
-            ? "bg-sky-950/30 border-sky-500/40 text-sky-300"
-            : "bg-sky-50 border-sky-300 text-sky-800"
-        }`}>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#38bdf8]" />
-            <span>
-              <strong>CUSTOM EXCEL FILE ACTIVE:</strong> Loaded <strong>{customRows.length}</strong> records from{" "}
-              <strong>&ldquo;{uploadedFileName}&rdquo;</strong> across <strong>{activeDatasetRtoCount}</strong> RTOs.
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* 2. Tactical Filters Header */}
-      <div className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border ${
         isDark ? "bg-[#0a1120] border-[#1b2b48]" : "bg-white border-slate-200 shadow-sm"
       }`}>
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-md bg-[#0284c7]/20 border border-[#0284c7] text-[#38bdf8]">
-            <BarChart3 className="w-5 h-5" />
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div className="p-1.5 rounded bg-[#0284c7]/20 border border-[#0284c7] text-[#38bdf8]">
+              <Zap className="w-4 h-4 fill-[#38bdf8]" />
+            </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className={`text-base sm:text-lg font-black tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
-                EXECUTIVE MARKET ANALYTICS DASHBOARD
+              <h2 className={`text-base font-black tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
+                LIVE SCRAPER EXECUTIVE DASHBOARD
               </h2>
               <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#0284c7] text-white tracking-wider">
                 KL • KERALA
               </span>
             </div>
             <p className={`text-[11px] ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              {dataSource === "live"
-                ? "Dynamically Computing Live Scraper Registrations & Mahindra Market Share"
-                : dataSource === "custom"
-                ? "Dynamically Computing Uploaded Excel Registrations & Market Share"
-                : "Maker Market Share, Territory Volumes & RTO Hierarchy Analytics"}
+              Direct real-time analytics computed strictly from your live scraped vehicle registration database
             </p>
           </div>
         </div>
 
-        {/* Global Controls & Filters */}
+        {/* Live Scraper Stats Badge & Refresh */}
         <div className="flex flex-wrap items-center gap-2">
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-md border text-xs font-bold ${
+            isDark ? "bg-[#070d18] border-[#18263e]" : "bg-slate-100 border-slate-300"
+          }`}>
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <Activity className="w-3.5 h-3.5" />
+              <span>{activeDatasetRows.length.toLocaleString()} Scraped Records</span>
+            </span>
+            <span className="text-slate-500">•</span>
+            <span className="text-[#38bdf8]">{activeDatasetRtoCount} RTOs Loaded</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchDbRegistrations}
+            title="Refresh latest scraped data from Hostinger database"
+            className={`p-1.5 rounded border transition ${
+              isDark
+                ? "bg-[#0c1424] border-[#1e2e4f] text-[#94a3b8] hover:text-white hover:bg-[#131f38]"
+                : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
+            }`}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDb ? "animate-spin text-[#38bdf8]" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Tactical Controls & Filters */}
+      <div className={`flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg border ${
+        isDark ? "bg-[#080e1b] border-[#18243b]" : "bg-white border-slate-200 shadow-sm"
+      }`}>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Year Picker */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
@@ -800,16 +623,16 @@ export default function ExecutiveDashboard({
               ))}
             </select>
           </div>
-
-          {/* Export Button */}
-          <button
-            onClick={handleExportSummaryExcel}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] shadow transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export Summary Excel
-          </button>
         </div>
+
+        {/* Export Button */}
+        <button
+          onClick={handleExportSummaryExcel}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] shadow transition"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Export Live Summary Excel
+        </button>
       </div>
 
       {/* 3. Executive KPI Cards Grid */}
@@ -831,9 +654,7 @@ export default function ExecutiveDashboard({
               {kpiData.totalVehicles.toLocaleString()}
             </span>
             <span className={`block text-[11px] font-medium mt-0.5 ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
-              {dataSource === "live"
-                ? `Across ${activeDatasetRtoCount} Scraped RTOs`
-                : "Across All 87 Kerala RTOs"}
+              Across {activeDatasetRtoCount} Scraped Kerala RTOs
             </span>
           </div>
         </div>
@@ -879,7 +700,7 @@ export default function ExecutiveDashboard({
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
               isDark ? "bg-[#064e3b] text-[#34d399]" : "bg-emerald-100 text-emerald-800"
             }`}>
-              Statewide
+              Statewide Live
             </span>
           </div>
         </div>
@@ -961,7 +782,7 @@ export default function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* 5. Territory & District Summary Table (Image 4 replica & Excel summary sheet) */}
+      {/* 5. Territory & District Summary Table (Image 4 replica) */}
       <div className={`flex flex-col gap-2 rounded-lg border p-3 ${
         isDark ? "bg-[#090f1d] border-[#18263e]" : "bg-white border-slate-200 shadow-sm"
       }`}>
