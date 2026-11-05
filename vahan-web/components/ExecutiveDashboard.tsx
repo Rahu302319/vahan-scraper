@@ -19,7 +19,9 @@ import {
   Activity,
   Zap,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Calendar,
+  RotateCcw
 } from "lucide-react";
 import ExcelJS from "exceljs";
 import summaryDataRaw from "@/lib/summary-data.json";
@@ -42,6 +44,43 @@ interface SummaryRow {
 }
 
 const AVAILABLE_YEARS = ["2026", "2025", "2024", "2023", "2022", "2021"];
+
+const MONTHS_LIST = [
+  { value: "ALL", label: "All Months (Full Year / Cumulative)" },
+  { value: "JAN", label: "01 • January (JAN)" },
+  { value: "FEB", label: "02 • February (FEB)" },
+  { value: "MAR", label: "03 • March (MAR)" },
+  { value: "APR", label: "04 • April (APR)" },
+  { value: "MAY", label: "05 • May (MAY)" },
+  { value: "JUN", label: "06 • June (JUN)" },
+  { value: "JUL", label: "07 • July (JUL)" },
+  { value: "AUG", label: "08 • August (AUG)" },
+  { value: "SEP", label: "09 • September (SEP)" },
+  { value: "OCT", label: "10 • October (OCT)" },
+  { value: "NOV", label: "11 • November (NOV)" },
+  { value: "DEC", label: "12 • December (DEC)" },
+];
+
+export const KERALA_TERRITORIES: Record<string, string[]> = {
+  "North Kerala": [
+    "Kannur",
+    "Kasargod",
+    "Wayanad",
+    "Kozhikode",
+    "Malappuram",
+    "Palakkad",
+    "Thrissur",
+  ],
+  "South Kerala": [
+    "Thiruvananthapuram",
+    "Kollam",
+    "Pathanamthitta",
+    "Alappuzha",
+    "Kottayam",
+    "Idukki",
+    "Ernakulam",
+  ],
+};
 
 const OEM_COLORS: Record<string, string> = {
   Maruti: "#3b82f6",     // Blue
@@ -69,7 +108,18 @@ function cleanRtoName(s: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-function getRowVolume(row: any): number {
+function getRowVolume(row: any, selectedMonth: string = "ALL"): number {
+  if (selectedMonth && selectedMonth !== "ALL") {
+    const colName = selectedMonth.toUpperCase();
+    if (colName === "DEC") {
+      const v = row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0;
+      return Number(v) || 0;
+    }
+    const v = row[colName] ?? row[selectedMonth.toLowerCase()] ?? 0;
+    return Number(v) || 0;
+  }
+
+  // Full Year Cumulative Total
   if (row.TOTAL !== undefined && row.TOTAL !== null && !isNaN(Number(row.TOTAL))) {
     return Number(row.TOTAL);
   }
@@ -99,11 +149,16 @@ export default function ExecutiveDashboard({
 }: DashboardProps) {
   const isDark = theme === "dark";
 
-  // Dashboard Filters
+  // Base summary template rows from JSON (hierarchy structure)
+  const summaryRowsTemplate = summaryDataRaw as SummaryRow[];
+
+  // 1. DEPENDENT FILTER STATES
   const [selectedYear, setSelectedYear] = useState<string>("2026");
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [selectedTerritory, setSelectedTerritory] = useState<string>("ALL");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
-  const [searchRto, setSearchRto] = useState<string>("");
+  const [selectedRto, setSelectedRto] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("ALL");
   const [hideZeroRtos, setHideZeroRtos] = useState<boolean>(false);
 
   // Cached scraped rows from localStorage & database
@@ -150,16 +205,12 @@ export default function ExecutiveDashboard({
   const activeDatasetRows = useMemo(() => {
     if (liveScrapedRows && liveScrapedRows.length > 0) return liveScrapedRows;
     if (cachedScrapedRows && cachedScrapedRows.length > 0) {
-      // Filter by selected year if Year is present
       const filtered = cachedScrapedRows.filter((r) => !r.Year || String(r.Year) === selectedYear);
       if (filtered.length > 0) return filtered;
       return cachedScrapedRows;
     }
     return dbScrapedRows;
   }, [liveScrapedRows, cachedScrapedRows, dbScrapedRows, selectedYear]);
-
-  // Base summary template rows from JSON (hierarchy structure)
-  const summaryRowsTemplate = summaryDataRaw as SummaryRow[];
 
   // Build RTO Name Lookup Table from rtoDt
   const rtoDtLookup = useMemo(() => {
@@ -220,6 +271,70 @@ export default function ExecutiveDashboard({
     return { grouping: "Others", isMahindra: false };
   };
 
+  // -------------------------------------------------------------
+  // 2. DEPENDENT CASCADING DROPDOWN LOGIC
+  // -------------------------------------------------------------
+
+  // A. Available Districts depends on selected Territory
+  const availableDistricts = useMemo(() => {
+    if (selectedTerritory === "North Kerala") {
+      return KERALA_TERRITORIES["North Kerala"];
+    }
+    if (selectedTerritory === "South Kerala") {
+      return KERALA_TERRITORIES["South Kerala"];
+    }
+    return [
+      ...KERALA_TERRITORIES["North Kerala"],
+      ...KERALA_TERRITORIES["South Kerala"],
+    ];
+  }, [selectedTerritory]);
+
+  // When Territory Changes -> Validate/Reset District and RTO
+  const handleTerritoryChange = (newTerr: string) => {
+    setSelectedTerritory(newTerr);
+    if (newTerr !== "ALL") {
+      const allowedDistricts = KERALA_TERRITORIES[newTerr] || [];
+      if (selectedDistrict !== "ALL" && !allowedDistricts.includes(selectedDistrict)) {
+        setSelectedDistrict("ALL");
+        setSelectedRto("ALL");
+      }
+    }
+  };
+
+  // B. Available RTOs depends on selected District and Territory
+  const availableRtos = useMemo(() => {
+    let rtos = summaryRowsTemplate.filter((r) => r.type === "rto");
+    if (selectedTerritory !== "ALL") {
+      rtos = rtos.filter((r) => r.territory === selectedTerritory);
+    }
+    if (selectedDistrict !== "ALL") {
+      rtos = rtos.filter((r) => r.district === selectedDistrict);
+    }
+    return Array.from(new Set(rtos.map((r) => r.rtoName))).sort();
+  }, [selectedTerritory, selectedDistrict, summaryRowsTemplate]);
+
+  // When District Changes -> Auto-sync Territory and Reset RTO
+  const handleDistrictChange = (newDist: string) => {
+    setSelectedDistrict(newDist);
+    if (newDist !== "ALL") {
+      if (KERALA_TERRITORIES["North Kerala"].includes(newDist)) {
+        setSelectedTerritory("North Kerala");
+      } else if (KERALA_TERRITORIES["South Kerala"].includes(newDist)) {
+        setSelectedTerritory("South Kerala");
+      }
+    }
+    setSelectedRto("ALL");
+  };
+
+  // Reset all cascading filters back to ALL
+  const handleResetFilters = () => {
+    setSelectedMonth("ALL");
+    setSelectedTerritory("ALL");
+    setSelectedDistrict("ALL");
+    setSelectedRto("ALL");
+    setSearchQuery("");
+  };
+
   // Distinct RTO count in live scraper dataset
   const activeDatasetRtoCount = useMemo(() => {
     const rtoSet = new Set<string>();
@@ -230,7 +345,7 @@ export default function ExecutiveDashboard({
     return rtoSet.size;
   }, [activeDatasetRows, rtoDtLookup]);
 
-  // Compute Active OEM Market Shares from Live Scraper Data
+  // Compute Active OEM Market Shares from Live Scraper Data (Month & Filters Applied)
   const activeOemBreakdown = useMemo(() => {
     if (!activeDatasetRows || activeDatasetRows.length === 0) return [];
 
@@ -238,11 +353,33 @@ export default function ExecutiveDashboard({
     let totalVal = 0;
 
     activeDatasetRows.forEach((r) => {
+      // 1. Year filter
       const rowYr = String(r.Year || r.FY || r.year || "").trim();
       if (rowYr && rowYr !== selectedYear) return;
 
+      // 2. Territory & District filter on row
+      const finalName = resolveRowToFinalRto(r);
+      const cleanKey = cleanRtoName(finalName);
+
+      // Check RTO filter
+      if (selectedRto !== "ALL" && cleanKey !== cleanRtoName(selectedRto)) {
+        return;
+      }
+
+      // Check District filter
+      if (selectedDistrict !== "ALL") {
+        const rowDist = r.district || r.District || "";
+        if (rowDist && rowDist !== selectedDistrict) return;
+      }
+
+      // Check Territory filter
+      if (selectedTerritory !== "ALL") {
+        const rowTerr = r.territory || r.Territory || "";
+        if (rowTerr && rowTerr !== selectedTerritory) return;
+      }
+
       const { grouping } = resolveRowOem(r);
-      const vol = getRowVolume(r);
+      const vol = getRowVolume(r, selectedMonth);
       groupMap[grouping] = (groupMap[grouping] || 0) + vol;
       totalVal += vol;
     });
@@ -255,11 +392,11 @@ export default function ExecutiveDashboard({
         color: OEM_COLORS[group] || "#64748b",
       }))
       .sort((a, b) => b.count - a.count);
-  }, [selectedYear, selectedTerritory, activeDatasetRows, oemDb, rtoDtLookup]);
+  }, [selectedYear, selectedMonth, selectedTerritory, selectedDistrict, selectedRto, activeDatasetRows, oemDb, rtoDtLookup]);
 
-  // DYNAMIC SUMMARY ROWS ENGINE (Directly aggregated from Live Scraper Data)
+  // DYNAMIC SUMMARY ROWS ENGINE (Month & Cascading Filters Applied)
   const computedSummaryRows = useMemo(() => {
-    // 1. Build volume map for each RTO from activeDatasetRows
+    // 1. Build volume map for each RTO from activeDatasetRows for selectedMonth
     const rtoMap = new Map<string, { total: number; mm: number }>();
 
     activeDatasetRows.forEach((row) => {
@@ -268,7 +405,7 @@ export default function ExecutiveDashboard({
 
       const finalName = resolveRowToFinalRto(row);
       const key = cleanRtoName(finalName);
-      const vol = getRowVolume(row);
+      const vol = getRowVolume(row, selectedMonth);
       const { isMahindra } = resolveRowOem(row);
 
       const curr = rtoMap.get(key) || { total: 0, mm: 0 };
@@ -351,7 +488,7 @@ export default function ExecutiveDashboard({
     });
 
     return newRows;
-  }, [selectedYear, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, oemDb]);
+  }, [selectedYear, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, oemDb]);
 
   // Compute Grand Totals & KPI Cards from live scraper data
   const kpiData = useMemo(() => {
@@ -378,50 +515,63 @@ export default function ExecutiveDashboard({
     };
   }, [computedSummaryRows, selectedYear, activeOemBreakdown]);
 
-  // Filtered Summary Table Rows
+  // Filtered Summary Table Rows (Respects Cascading Dropdown Selections)
   const filteredSummaryRows = useMemo(() => {
     return computedSummaryRows.filter((r) => {
-      // Zero RTO filter
+      // 1. Hide Zero RTO filter
       if (hideZeroRtos && r.type === "rto") {
         const metrics = r.years[selectedYear];
         if (!metrics || metrics.total === 0) return false;
       }
-      // Territory filter
+
+      // 2. Specific RTO filter
+      if (selectedRto !== "ALL") {
+        if (r.type !== "rto") return false;
+        if (cleanRtoName(r.rtoName) !== cleanRtoName(selectedRto)) return false;
+      }
+
+      // 3. Dependent Territory filter
       if (selectedTerritory !== "ALL" && r.territory !== selectedTerritory && r.type !== "grand_total") {
         return false;
       }
-      // District filter
+
+      // 4. Dependent District filter
       if (selectedDistrict !== "ALL") {
         if (r.type === "grand_total" || r.type === "territory_total") return false;
         if (r.district !== selectedDistrict && !r.label.startsWith(selectedDistrict)) return false;
       }
-      // Search filter
-      if (searchRto.trim()) {
-        const q = searchRto.toLowerCase().trim();
+
+      // 5. Search filter
+      if (searchQuery.trim() && searchQuery !== "ALL") {
+        const q = searchQuery.toLowerCase().trim();
         const matches =
           r.label.toLowerCase().includes(q) ||
           r.district.toLowerCase().includes(q) ||
           r.territory.toLowerCase().includes(q);
         if (!matches && r.type !== "grand_total") return false;
       }
+
       return true;
     });
-  }, [computedSummaryRows, selectedTerritory, selectedDistrict, searchRto, hideZeroRtos, selectedYear]);
+  }, [computedSummaryRows, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, selectedYear]);
+
+  // Active Timeframe Label for headers and exports
+  const timeframeLabel = selectedMonth === "ALL" ? `FY ${selectedYear}` : `${selectedMonth} ${selectedYear}`;
 
   // Export Summary Table as formatted Excel
   const handleExportSummaryExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
       workbook.creator = "Vahan Kerala Live Intelligence Dashboard";
-      const sheet = workbook.addWorksheet(`Live_Summary_${selectedYear}`);
+      const sheet = workbook.addWorksheet(`Summary_${timeframeLabel.replace(/\s+/g, "_")}`);
 
       sheet.addRow([
         "Territory",
         "District",
         "Final RTO Name",
-        `Total Registration (${selectedYear})`,
-        `M&M Nos (${selectedYear})`,
-        `M&M MS % (${selectedYear})`,
+        `Total Registration (${timeframeLabel})`,
+        `M&M Nos (${timeframeLabel})`,
+        `M&M MS % (${timeframeLabel})`,
       ]);
 
       const headerRow = sheet.getRow(1);
@@ -470,7 +620,7 @@ export default function ExecutiveDashboard({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Vahan_Kerala_Live_Summary_${selectedYear}.xlsx`;
+      a.download = `Vahan_Kerala_Live_${timeframeLabel.replace(/\s+/g, "_")}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -522,6 +672,8 @@ export default function ExecutiveDashboard({
             </span>
             <span className="text-slate-500">•</span>
             <span className="text-[#38bdf8]">{activeDatasetRtoCount} RTOs Loaded</span>
+            <span className="text-slate-500">•</span>
+            <span className="text-amber-400 font-black">{timeframeLabel}</span>
           </div>
 
           <button
@@ -539,15 +691,15 @@ export default function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* 2. Tactical Controls & Filters */}
-      <div className={`flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg border ${
+      {/* 2. CASCADING DEPENDENT CONTROLS & DRILL-DOWN TOOLBAR */}
+      <div className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border ${
         isDark ? "bg-[#080e1b] border-[#18243b]" : "bg-white border-slate-200 shadow-sm"
       }`}>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* Year Picker */}
+          {/* A. FY Year Dropdown */}
           <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              Year:
+            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#38bdf8]" : "text-sky-700"}`}>
+              FY Year:
             </span>
             <select
               value={selectedYear}
@@ -566,14 +718,38 @@ export default function ExecutiveDashboard({
             </select>
           </div>
 
-          {/* Territory Filter */}
+          {/* B. Month Dropdown (NEW!) */}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-amber-400" : "text-amber-700"}`}>
+              Month:
+            </span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
+                isDark
+                  ? "bg-[#060c18] border-[#1f2f4c] text-amber-400 focus:border-amber-400"
+                  : "bg-amber-50 border-amber-300 text-amber-900 focus:border-amber-500"
+              }`}
+            >
+              {MONTHS_LIST.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span className="hidden lg:inline text-slate-500">|</span>
+
+          {/* C. Territory Dropdown (Parent 1) */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
               Territory:
             </span>
             <select
               value={selectedTerritory}
-              onChange={(e) => setSelectedTerritory(e.target.value)}
+              onChange={(e) => handleTerritoryChange(e.target.value)}
               className={`px-2.5 py-1.5 rounded text-xs font-semibold border focus:outline-none ${
                 isDark
                   ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
@@ -586,43 +762,76 @@ export default function ExecutiveDashboard({
             </select>
           </div>
 
-          {/* District Filter */}
+          {/* D. District Dropdown (Dependent on Territory!) */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
               District:
             </span>
             <select
               value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
+              onChange={(e) => handleDistrictChange(e.target.value)}
               className={`px-2.5 py-1.5 rounded text-xs font-semibold border focus:outline-none ${
                 isDark
                   ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
                   : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
               }`}
             >
-              <option value="ALL">All 14 Districts</option>
-              {[
-                "Kannur",
-                "Kasargod",
-                "Wayanad",
-                "Kozhikode",
-                "Malappuram",
-                "Palakkad",
-                "Thrissur",
-                "Thiruvananthapuram",
-                "Kollam",
-                "Pathanamthitta",
-                "Alappuzha",
-                "Kottayam",
-                "Idukki",
-                "Ernakulam",
-              ].map((d) => (
+              <option value="ALL">
+                {selectedTerritory === "ALL" ? "All 14 Districts" : `All ${selectedTerritory} Districts`}
+              </option>
+              {availableDistricts.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
               ))}
             </select>
           </div>
+
+          {/* E. RTO Dropdown (Dependent on District & Territory!) */}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+              RTO Office:
+            </span>
+            <select
+              value={selectedRto}
+              onChange={(e) => setSelectedRto(e.target.value)}
+              className={`px-2.5 py-1.5 rounded text-xs font-semibold border focus:outline-none max-w-[170px] truncate ${
+                isDark
+                  ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
+                  : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
+              }`}
+            >
+              <option value="ALL">
+                {selectedDistrict === "ALL"
+                  ? selectedTerritory === "ALL"
+                    ? "All 87 RTOs"
+                    : `All ${selectedTerritory} RTOs (${availableRtos.length})`
+                  : `All in ${selectedDistrict} (${availableRtos.length})`}
+              </option>
+              {availableRtos.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Reset Filters Shortcut */}
+          {(selectedMonth !== "ALL" || selectedTerritory !== "ALL" || selectedDistrict !== "ALL" || selectedRto !== "ALL") && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              title="Reset all filters back to All Kerala Full Year"
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-bold border transition ${
+                isDark
+                  ? "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
+                  : "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300"
+              }`}
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset
+            </button>
+          )}
         </div>
 
         {/* Export Button */}
@@ -631,7 +840,7 @@ export default function ExecutiveDashboard({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] shadow transition"
         >
           <Download className="w-3.5 h-3.5" />
-          Export Live Summary Excel
+          Export {timeframeLabel} Excel
         </button>
       </div>
 
@@ -645,7 +854,7 @@ export default function ExecutiveDashboard({
         }`}>
           <div className="flex items-center justify-between">
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              Total Registrations ({selectedYear})
+              Total Registrations ({timeframeLabel})
             </span>
             <Car className="w-4 h-4 text-[#38bdf8]" />
           </div>
@@ -654,7 +863,11 @@ export default function ExecutiveDashboard({
               {kpiData.totalVehicles.toLocaleString()}
             </span>
             <span className={`block text-[11px] font-medium mt-0.5 ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
-              Across {activeDatasetRtoCount} Scraped Kerala RTOs
+              {selectedDistrict !== "ALL"
+                ? `District: ${selectedDistrict}`
+                : selectedTerritory !== "ALL"
+                ? `Territory: ${selectedTerritory}`
+                : `Across ${activeDatasetRtoCount} Scraped Kerala RTOs`}
             </span>
           </div>
         </div>
@@ -676,7 +889,7 @@ export default function ExecutiveDashboard({
               {kpiData.mmVehicles.toLocaleString()}
             </span>
             <span className={`block text-[11px] font-medium mt-0.5 ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
-              Vehicles Registered
+              Vehicles Registered ({timeframeLabel})
             </span>
           </div>
         </div>
@@ -700,7 +913,7 @@ export default function ExecutiveDashboard({
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
               isDark ? "bg-[#064e3b] text-[#34d399]" : "bg-emerald-100 text-emerald-800"
             }`}>
-              Statewide Live
+              {selectedMonth === "ALL" ? "Cumulative" : selectedMonth}
             </span>
           </div>
         </div>
@@ -736,11 +949,17 @@ export default function ExecutiveDashboard({
           <div className="flex items-center gap-2">
             <PieChart className="w-4 h-4 text-[#38bdf8]" />
             <h3 className={`text-xs font-extrabold uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
-              OEM Grouping Market Share Breakdown ({selectedYear})
+              OEM Grouping Market Share Breakdown ({timeframeLabel})
             </h3>
           </div>
           <span className={`text-[11px] ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-            Territory: <span className="font-bold text-[#38bdf8]">{selectedTerritory}</span>
+            Scope: <span className="font-bold text-[#38bdf8]">
+              {selectedRto !== "ALL"
+                ? `RTO ${selectedRto}`
+                : selectedDistrict !== "ALL"
+                ? `District ${selectedDistrict}`
+                : selectedTerritory}
+            </span>
           </span>
         </div>
 
@@ -790,7 +1009,7 @@ export default function ExecutiveDashboard({
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-[#38bdf8]" />
             <h3 className={`text-xs font-extrabold uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
-              Territory & District Registration Summary Table
+              Territory & District Registration Summary Table ({timeframeLabel})
             </h3>
           </div>
 
@@ -818,8 +1037,8 @@ export default function ExecutiveDashboard({
               <Search className={`w-3.5 h-3.5 absolute left-2.5 top-2.5 ${isDark ? "text-[#64748b]" : "text-slate-400"}`} />
               <input
                 type="text"
-                value={searchRto}
-                onChange={(e) => setSearchRto(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Quick filter RTO or District..."
                 className={`pl-8 pr-3 py-1 rounded text-xs border focus:outline-none w-48 sm:w-56 ${
                   isDark
@@ -843,7 +1062,7 @@ export default function ExecutiveDashboard({
                 <th className="p-2 w-36">Territory</th>
                 <th className="p-2 w-44">District</th>
                 <th className="p-2">Final RTO Name</th>
-                <th className="p-2 text-right w-36">Total Registration</th>
+                <th className="p-2 text-right w-36">Total Registration ({timeframeLabel})</th>
                 <th className="p-2 text-right w-28 text-red-400">M&M Nos</th>
                 <th className="p-2 text-right w-28 text-[#34d399]">M&M MS %</th>
               </tr>
@@ -950,7 +1169,7 @@ export default function ExecutiveDashboard({
           isDark ? "text-[#64748b]" : "text-slate-500"
         }`}>
           <span>
-            Displaying {filteredSummaryRows.length} summary rows for FY {selectedYear}
+            Displaying {filteredSummaryRows.length} summary rows for {timeframeLabel}
           </span>
           <span>
             Color Thresholds: <span className="text-emerald-400 font-bold">≥4% MS</span> •{" "}
