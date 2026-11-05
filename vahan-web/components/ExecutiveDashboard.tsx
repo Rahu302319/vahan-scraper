@@ -348,7 +348,7 @@ export default function ExecutiveDashboard({
   const [selectedTerritory, setSelectedTerritory] = useState<string>("ALL");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
   const [selectedRto, setSelectedRto] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [hideZeroRtos, setHideZeroRtos] = useState<boolean>(false);
   const [tableMode, setTableMode] = useState<"summary" | "monthly">("summary");
 
@@ -662,7 +662,7 @@ export default function ExecutiveDashboard({
       .sort((a, b) => b.count - a.count);
   }, [currentPeriod, selectedMonth, selectedTerritory, selectedDistrict, selectedRto, activeDatasetRows, effectiveOemDb, rtoDtLookup, rtoCodeLookup]);
 
-  // DYNAMIC SUMMARY ROWS ENGINE (Month & Cascading Filters Applied)
+  // DYNAMIC SUMMARY ROWS ENGINE (Two-Pass Computation: Pre-accumulate leaf RTOs so totals are never zero)
   const computedSummaryRows = useMemo(() => {
     // 1. Build volume map for each RTO from activeDatasetRows for selectedMonth & individual period months
     const rtoMap = new Map<string, { total: number; mm: number; monthly: Record<string, number> }>();
@@ -686,8 +686,7 @@ export default function ExecutiveDashboard({
       rtoMap.set(key, curr);
     });
 
-    // 2. Clone hierarchy template and calculate sub-totals
-    const newRows: SummaryRow[] = [];
+    // PASS 1: Accumulate leaf RTOs into district and territory accumulators
     const districtAccumulator: Record<string, { total: number; mm: number; monthly: Record<string, number> }> = {};
     const territoryAccumulator: Record<string, { total: number; mm: number; monthly: Record<string, number> }> = {
       "North Kerala": { total: 0, mm: 0, monthly: {} },
@@ -695,14 +694,11 @@ export default function ExecutiveDashboard({
     };
 
     summaryRowsTemplate.forEach((templateRow) => {
-      if (templateRow.district === "District") return; // skip header
-
       if (templateRow.type === "rto") {
         const key = cleanRtoName(templateRow.rtoName);
         const stats = rtoMap.get(key) || { total: 0, mm: 0, monthly: {} };
-        const ms = stats.total > 0 ? (stats.mm / stats.total) * 100 : 0;
 
-        // Accumulate into District & Territory
+        // District Accumulator
         if (!districtAccumulator[templateRow.district]) {
           districtAccumulator[templateRow.district] = { total: 0, mm: 0, monthly: {} };
         }
@@ -713,23 +709,47 @@ export default function ExecutiveDashboard({
             (districtAccumulator[templateRow.district].monthly[m.mmmYy] || 0) + (stats.monthly[m.mmmYy] || 0);
         });
 
-        if (territoryAccumulator[templateRow.territory]) {
-          territoryAccumulator[templateRow.territory].total += stats.total;
-          territoryAccumulator[templateRow.territory].mm += stats.mm;
-          currentPeriod.months.forEach((m) => {
-            territoryAccumulator[templateRow.territory].monthly[m.mmmYy] =
-              (territoryAccumulator[templateRow.territory].monthly[m.mmmYy] || 0) + (stats.monthly[m.mmmYy] || 0);
-          });
-        }
+        // Territory Accumulator
+        const terr = templateRow.territory === "South Kerala" ? "South Kerala" : "North Kerala";
+        territoryAccumulator[terr].total += stats.total;
+        territoryAccumulator[terr].mm += stats.mm;
+        currentPeriod.months.forEach((m) => {
+          territoryAccumulator[terr].monthly[m.mmmYy] =
+            (territoryAccumulator[terr].monthly[m.mmmYy] || 0) + (stats.monthly[m.mmmYy] || 0);
+        });
+      }
+    });
 
-        const finalTotal = stats.total;
-        const finalMm = stats.mm;
-        const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
+    const grandTotalAcc =
+      (territoryAccumulator["North Kerala"]?.total || 0) +
+      (territoryAccumulator["South Kerala"]?.total || 0);
+    const grandMmAcc =
+      (territoryAccumulator["North Kerala"]?.mm || 0) +
+      (territoryAccumulator["South Kerala"]?.mm || 0);
+    const grandMs = grandTotalAcc > 0 ? (grandMmAcc / grandTotalAcc) * 100 : 0;
+
+    const grandMonthly: Record<string, number> = {};
+    currentPeriod.months.forEach((m) => {
+      grandMonthly[m.mmmYy] =
+        (territoryAccumulator["North Kerala"]?.monthly[m.mmmYy] || 0) +
+        (territoryAccumulator["South Kerala"]?.monthly[m.mmmYy] || 0);
+    });
+
+    // PASS 2: Populate all rows from pre-computed accumulators
+    const newRows: SummaryRow[] = [];
+
+    summaryRowsTemplate.forEach((templateRow) => {
+      if (templateRow.district === "District") return; // skip header
+
+      if (templateRow.type === "rto") {
+        const key = cleanRtoName(templateRow.rtoName);
+        const stats = rtoMap.get(key) || { total: 0, mm: 0, monthly: {} };
+        const ms = stats.total > 0 ? (stats.mm / stats.total) * 100 : 0;
 
         newRows.push({
           ...templateRow,
           years: {
-            [currentPeriod.id]: { total: finalTotal, mm: finalMm, ms: finalMs },
+            [currentPeriod.id]: { total: stats.total, mm: stats.mm, ms },
           },
           monthly: stats.monthly,
         });
@@ -755,7 +775,8 @@ export default function ExecutiveDashboard({
         });
       } else if (templateRow.type === "territory_total") {
         const terrName = templateRow.label.replace(/\s+Total$/i, "").trim();
-        const terrStats = territoryAccumulator[terrName] || territoryAccumulator[templateRow.territory] || { total: 0, mm: 0, monthly: {} };
+        const terrKey = terrName === "South Kerala" ? "South Kerala" : "North Kerala";
+        const terrStats = territoryAccumulator[terrKey] || { total: 0, mm: 0, monthly: {} };
         const finalTotal = terrStats.total;
         const finalMm = terrStats.mm;
         const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
@@ -768,25 +789,10 @@ export default function ExecutiveDashboard({
           monthly: terrStats.monthly,
         });
       } else if (templateRow.type === "grand_total") {
-        const grandTotalAcc =
-          (territoryAccumulator["North Kerala"]?.total || 0) +
-          (territoryAccumulator["South Kerala"]?.total || 0);
-        const grandMmAcc =
-          (territoryAccumulator["North Kerala"]?.mm || 0) +
-          (territoryAccumulator["South Kerala"]?.mm || 0);
-        const finalMs = grandTotalAcc > 0 ? (grandMmAcc / grandTotalAcc) * 100 : 0;
-
-        const grandMonthly: Record<string, number> = {};
-        currentPeriod.months.forEach((m) => {
-          grandMonthly[m.mmmYy] =
-            (territoryAccumulator["North Kerala"]?.monthly[m.mmmYy] || 0) +
-            (territoryAccumulator["South Kerala"]?.monthly[m.mmmYy] || 0);
-        });
-
         newRows.push({
           ...templateRow,
           years: {
-            [currentPeriod.id]: { total: grandTotalAcc, mm: grandMmAcc, ms: finalMs },
+            [currentPeriod.id]: { total: grandTotalAcc, mm: grandMmAcc, ms: grandMs },
           },
           monthly: grandMonthly,
         });
@@ -796,30 +802,68 @@ export default function ExecutiveDashboard({
     return newRows;
   }, [currentPeriod, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, rtoCodeLookup, effectiveOemDb]);
 
-  // Compute Grand Totals & KPI Cards from live scraper data
+  // Compute Grand Totals & KPI Cards from live scraper data (Context-Aware for Cascading Slicers)
   const kpiData = useMemo(() => {
-    const grandTotalRow = computedSummaryRows.find((r) => r.type === "grand_total");
+    let totalVehicles = 0;
+    let mmVehicles = 0;
+
+    if (selectedRto !== "ALL") {
+      // Sliced by specific RTO
+      const rtoRow = computedSummaryRows.find(
+        (r) => r.type === "rto" && cleanRtoName(r.rtoName) === cleanRtoName(selectedRto)
+      );
+      const metrics = rtoRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+      totalVehicles = metrics.total;
+      mmVehicles = metrics.mm;
+    } else if (selectedDistrict !== "ALL") {
+      // Sliced by specific District
+      const distRow = computedSummaryRows.find(
+        (r) =>
+          r.type === "district_total" &&
+          (cleanRtoName(r.label) === cleanRtoName(`${selectedDistrict} Total`) || cleanRtoName(r.district) === cleanRtoName(selectedDistrict))
+      );
+      const metrics = distRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+      totalVehicles = metrics.total;
+      mmVehicles = metrics.mm;
+    } else if (selectedTerritory !== "ALL") {
+      // Sliced by specific Territory
+      const terrRow = computedSummaryRows.find(
+        (r) =>
+          r.type === "territory_total" &&
+          (cleanRtoName(r.label) === cleanRtoName(`${selectedTerritory} Total`) || r.territory === selectedTerritory)
+      );
+      const metrics = terrRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+      totalVehicles = metrics.total;
+      mmVehicles = metrics.mm;
+    } else {
+      // All Kerala Grand Total
+      const grandRow = computedSummaryRows.find((r) => r.type === "grand_total");
+      const metrics = grandRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
+      totalVehicles = metrics.total;
+      mmVehicles = metrics.mm;
+    }
+
+    const mmMarketShare = totalVehicles > 0 ? (mmVehicles / totalVehicles) * 100 : 0;
+
     const northTotalRow = computedSummaryRows.find((r) => r.label === "North Kerala Total");
     const southTotalRow = computedSummaryRows.find((r) => r.label === "South Kerala Total");
-
-    const grand = grandTotalRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
     const north = northTotalRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
     const south = southTotalRow?.years[currentPeriod.id] || { total: 0, mm: 0, ms: 0 };
 
     const topOem = activeOemBreakdown[0] || { name: "N/A", share: 0, count: 0 };
 
     return {
-      totalVehicles: grand.total,
-      mmVehicles: grand.mm,
-      mmMarketShare: grand.ms,
+      totalVehicles,
+      mmVehicles,
+      mmMarketShare,
       topOemName: topOem.name,
       topOemShare: topOem.share.toFixed(1),
       northTotal: north.total,
       southTotal: south.total,
-      northShare: grand.total > 0 ? ((north.total / grand.total) * 100).toFixed(1) : "0",
-      southShare: grand.total > 0 ? ((south.total / grand.total) * 100).toFixed(1) : "0",
+      northShare: totalVehicles > 0 ? ((north.total / totalVehicles) * 100).toFixed(1) : "0",
+      southShare: totalVehicles > 0 ? ((south.total / totalVehicles) * 100).toFixed(1) : "0",
     };
-  }, [computedSummaryRows, currentPeriod.id, activeOemBreakdown]);
+  }, [computedSummaryRows, currentPeriod.id, activeOemBreakdown, selectedTerritory, selectedDistrict, selectedRto]);
 
   // Filtered Summary Table Rows (Respects Cascading Dropdown Selections)
   const filteredSummaryRows = useMemo(() => {
@@ -848,7 +892,7 @@ export default function ExecutiveDashboard({
       }
 
       // 5. Search filter
-      if (searchQuery.trim() && searchQuery !== "ALL") {
+      if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matches =
           r.label.toLowerCase().includes(q) ||
@@ -944,13 +988,13 @@ export default function ExecutiveDashboard({
 
   const isDistrictExpanded = (districtName: string): boolean => {
     if (selectedRto !== "ALL") return true;
-    if (searchQuery.trim() && searchQuery.trim() !== "ALL") return true;
+    if (searchQuery.trim()) return true;
     return !!expandedDistricts[districtName];
   };
 
   const filteredTerritoryGroups = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    const hasSearch = q.length > 0 && q !== "all";
+    const hasSearch = q.length > 0;
 
     return territoryGroups
       .map((tg) => {
@@ -1850,22 +1894,22 @@ export default function ExecutiveDashboard({
                               {distIdx === 0 && (
                                 <td
                                   rowSpan={territoryRowCount}
-                                  className={`align-middle text-center p-3 border-r ${
+                                  className={`align-top text-center p-3 border-r ${
                                     isDark
                                       ? "bg-[#070e1b] border-[#1e2f4c] text-white"
                                       : "bg-slate-100 border-slate-300 text-slate-900"
                                   }`}
                                 >
-                                  <div className="flex flex-col items-center justify-center gap-1.5 py-4">
+                                  <div className="sticky top-14 flex flex-col items-center justify-start gap-1.5 py-4">
                                     <Building2 className="w-5 h-5 text-sky-500 dark:text-[#38bdf8]" />
-                                    <span className="font-black text-sm uppercase tracking-wider block">
+                                    <span className="font-black text-base uppercase tracking-wider block text-slate-900 dark:text-white">
                                       {tg.territoryName}
                                     </span>
                                     <span
-                                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                      className={`text-[11px] font-black px-2.5 py-0.5 rounded shadow-sm ${
                                         isDark
-                                          ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
-                                          : "bg-sky-100 text-sky-800"
+                                          ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                                          : "bg-sky-200 text-sky-900 border border-sky-300"
                                       }`}
                                     >
                                       {tg.districts.length} Districts
