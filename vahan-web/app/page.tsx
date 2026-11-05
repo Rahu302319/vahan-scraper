@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Play, Pause, Square, RotateCw, Download, Settings,
   Search, CheckSquare, Square as UncheckedSquare,
@@ -117,6 +117,32 @@ export default function VahanDashboardPage() {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
   const isStoppedRef = useRef<boolean>(false);
+
+  // Multi-Year Scraped Data Partition (year -> rtoCode -> rows)
+  // Ensures downloading 2026 clears old 2026 data, while 2025 is NEVER truncated or lost!
+  const [scrapedDataByYear, setScrapedDataByYear] = useState<Record<string, Record<string, RTORowData[]>>>({});
+
+  const allLiveScrapedRows = useMemo(() => {
+    return Object.values(scrapedDataByYear).flatMap((yearMap) =>
+      Object.values(yearMap).flat()
+    );
+  }, [scrapedDataByYear]);
+
+  const handleYearChange = (newYear: string) => {
+    setYear(newYear);
+    setRtos((prev) =>
+      prev.map((r) => {
+        const yearData = scrapedDataByYear[newYear]?.[r.item.code];
+        return {
+          ...r,
+          status: yearData ? "done" : "pending",
+          data: yearData || undefined,
+          makerCount: yearData ? yearData.length : undefined,
+          totalVehicles: yearData ? yearData.reduce((s, row) => s + (row.TOTAL || 0), 0) : undefined,
+        };
+      })
+    );
+  };
 
   // Progress metrics
   const [processedCount, setProcessedCount] = useState<number>(0);
@@ -339,6 +365,16 @@ export default function VahanDashboardPage() {
     addLog(`🚀 Starting Ultrafast batch scraper for ${targets.length} RTO(s) [Concurrency: ${concurrency} workers, Year: ${year}]...`, "SUCCESS");
     addLog(`💾 All data files will be written to: ${outputPath}`, "INFO");
 
+    // Clear old data for the targeted RTOs for this specific year (fresh mode)
+    // Other years (e.g. 2025 when year=2026, or 2026 when year=2025) are NEVER touched!
+    setScrapedDataByYear((prev) => {
+      const yearMap = { ...(prev[year] || {}) };
+      targets.forEach((t) => {
+        delete yearMap[t.item.code];
+      });
+      return { ...prev, [year]: yearMap };
+    });
+
     const startTime = Date.now();
     let completed = 0;
     const queue = [...targets];
@@ -462,6 +498,13 @@ export default function VahanDashboardPage() {
         setProcessedCount(completed);
 
         if (success) {
+          setScrapedDataByYear((prev) => ({
+            ...prev,
+            [year]: {
+              ...(prev[year] || {}),
+              [target.item.code]: resultData,
+            },
+          }));
           addLog(`✓ [${completed}/${targets.length}] ${target.item.code} — ${target.item.name}: ${resultData.length} makers, ${totalV.toLocaleString()} vehicles [Saved to: ${outputPath}]`, "SUCCESS");
           setActivePreviewRTO(target.item.code);
         } else {
@@ -884,7 +927,7 @@ export default function VahanDashboardPage() {
             </label>
             <select
               value={year}
-              onChange={(e) => setYear(e.target.value)}
+              onChange={(e) => handleYearChange(e.target.value)}
               disabled={isRunning}
               className={`w-full border rounded px-2 py-1.5 text-xs font-semibold focus:outline-none transition ${
                 isDark
@@ -2073,7 +2116,7 @@ export default function VahanDashboardPage() {
       {mainTab === "dashboard" && (
         <ExecutiveDashboard
           theme={theme}
-          liveScrapedRows={rtos.flatMap((r) => r.data || [])}
+          liveScrapedRows={allLiveScrapedRows.length > 0 ? allLiveScrapedRows : rtos.flatMap((r) => r.data || [])}
           oemDb={oemDb}
           rtoDt={rtoDt}
         />

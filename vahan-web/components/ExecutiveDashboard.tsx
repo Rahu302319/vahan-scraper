@@ -287,20 +287,40 @@ export default function ExecutiveDashboard({
     fetchDbRegistrations();
   }, [selectedYear]);
 
-  // Pure Live Scraper Data: live session > localStorage cache > database registrations
+  // Pure Live Scraper Data: Merge database registrations with fresh live session scraped rows
+  // Ensures that when 2025 is scraped, 2026 is NEVER truncated/lost, and when 2026 is scraped, 2026 is cleanly updated!
   const activeDatasetRows = useMemo(() => {
-    if (liveScrapedRows && liveScrapedRows.length > 0) return liveScrapedRows;
-    if (cachedScrapedRows && cachedScrapedRows.length > 0) {
-      const numYr = parseInt(selectedYear, 10) || 2026;
-      const filtered = cachedScrapedRows.filter((r) => {
-        const yr = Number(r.Year || r.year || r.FY);
-        return !yr || yr === numYr || yr === numYr - 1;
-      });
-      if (filtered.length > 0) return filtered;
-      return cachedScrapedRows;
-    }
-    return dbScrapedRows;
-  }, [liveScrapedRows, cachedScrapedRows, dbScrapedRows, selectedYear]);
+    const map = new Map<string, any>();
+
+    // 1. Baseline from MariaDB database (holds 2025, 2026, and all historical years)
+    dbScrapedRows.forEach((r) => {
+      const yr = String(r.Year || r.year || r.FY || "").trim();
+      const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
+      const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
+      const key = `${yr}_${code}_${maker}`;
+      map.set(key, r);
+    });
+
+    // 2. Overlay cached scraped rows
+    cachedScrapedRows.forEach((r) => {
+      const yr = String(r.Year || r.year || r.FY || "").trim();
+      const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
+      const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
+      const key = `${yr}_${code}_${maker}`;
+      map.set(key, r);
+    });
+
+    // 3. Overlay fresh live scraped rows from current session (highest priority for its specific year + RTO)
+    liveScrapedRows.forEach((r) => {
+      const yr = String(r.Year || r.year || r.FY || "").trim();
+      const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
+      const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
+      const key = `${yr}_${code}_${maker}`;
+      map.set(key, r);
+    });
+
+    return Array.from(map.values());
+  }, [liveScrapedRows, cachedScrapedRows, dbScrapedRows]);
 
   // Build RTO Name Lookup Table from rtoDt
   const rtoDtLookup = useMemo(() => {

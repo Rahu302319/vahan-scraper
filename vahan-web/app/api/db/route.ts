@@ -169,11 +169,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // D. Bulk Scraped Registrations Insertion
+    // D. Bulk Scraped Registrations Insertion (Year-Isolated Clean Sync)
     if (type === "registrations" && Array.isArray(data) && data.length > 0) {
       const conn = await pool.getConnection();
       try {
         await conn.beginTransaction();
+
+        // 1. Group records by Year
+        const uniqueYears = Array.from(new Set(data.map((r: any) => Number(r.Year || 2026))));
+
+        // For each year in this batch, delete existing records for that year and specific RTOs
+        // Ensures re-scraping/downloading 2026 clears old 2026 data cleanly, WITHOUT EVER touching or truncating 2025!
+        for (const yr of uniqueYears) {
+          const rtoCodesForYear = Array.from(
+            new Set(
+              data
+                .filter((r: any) => Number(r.Year || 2026) === yr)
+                .map((r: any) => String(r.RTO_Code || "").trim())
+                .filter(Boolean)
+            )
+          );
+
+          if (rtoCodesForYear.length > 0) {
+            await conn.query(
+              `DELETE FROM vahan_registrations WHERE year = ? AND rto_code IN (?)`,
+              [yr, rtoCodesForYear]
+            );
+          }
+        }
+
         const stmt = `
           INSERT INTO vahan_registrations
             (state, rto_code, rto_name, final_rto_name, district, territory, year, maker,

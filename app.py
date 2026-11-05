@@ -561,6 +561,7 @@ class MainWindow(QMainWindow):
         self.rtos_data: List[Dict[str, Any]] = []
         self.worker: Optional[VahanFetchWorker] = None
         self.active_dfs: Dict[str, pd.DataFrame] = {}
+        self.active_dfs_by_year: Dict[str, Dict[str, pd.DataFrame]] = {}
         self.failed_rtos_list: List[Dict[str, Any]] = []
 
         # Filters & Output Directory
@@ -668,6 +669,7 @@ class MainWindow(QMainWindow):
         for y in ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"]:
             self.combo_year.addItem(y, y)
         self.combo_year.setCurrentText("2026")
+        self.combo_year.currentTextChanged.connect(self._on_year_changed)
         year_box.addWidget(lbl_year)
         year_box.addWidget(self.combo_year)
         row1.addLayout(year_box)
@@ -1234,6 +1236,18 @@ class MainWindow(QMainWindow):
             "INFO"
         )
 
+        # Isolate scraped data by year: only clear targeted RTOs for this specific year
+        # Other years (e.g. 2025 vs 2026) are NEVER truncated or lost!
+        curr_yr = str(config['year']).strip()
+        if curr_yr not in self.active_dfs_by_year:
+            self.active_dfs_by_year[curr_yr] = {}
+        for target in selected_items:
+            t_code = target.get("code")
+            if t_code in self.active_dfs_by_year[curr_yr]:
+                del self.active_dfs_by_year[curr_yr][t_code]
+            if t_code in self.active_dfs:
+                del self.active_dfs[t_code]
+
         # Update UI Controls
         self.btn_run.setEnabled(False)
         self.btn_pause.setEnabled(True)
@@ -1327,6 +1341,10 @@ class MainWindow(QMainWindow):
                 v_item.setText(f"{total_v:,}")
 
             if df is not None:
+                yr = str(self.combo_year.currentText()).strip()
+                if yr not in self.active_dfs_by_year:
+                    self.active_dfs_by_year[yr] = {}
+                self.active_dfs_by_year[yr][code] = df
                 self.active_dfs[code] = df
                 self._display_preview_dataframe(df, f"{name} ({code})")
                 self._update_consolidated_tab()
@@ -1336,6 +1354,39 @@ class MainWindow(QMainWindow):
                 status_item.setForeground(QColor("#ef4444"))
 
         self._update_table_counts()
+
+    def _on_year_changed(self, new_year: str):
+        yr = str(new_year).strip()
+        self.active_dfs = dict(self.active_dfs_by_year.get(yr, {}))
+        # Update RTO table row statuses for the selected year
+        for row in range(self.table_rtos.rowCount()):
+            code_item = self.table_rtos.item(row, 2)
+            if not code_item:
+                continue
+            code = code_item.text().strip()
+            df = self.active_dfs.get(code)
+            status_item = self.table_rtos.item(row, 4)
+            m_item = self.table_rtos.item(row, 5)
+            v_item = self.table_rtos.item(row, 6)
+            if df is not None:
+                if status_item:
+                    status_item.setText("Done ✓")
+                    status_item.setForeground(QColor("#10b981"))
+                if m_item:
+                    m_item.setText(str(len(df)))
+                if v_item:
+                    tot = int(df["TOTAL"].sum()) if "TOTAL" in df.columns else 0
+                    v_item.setText(f"{tot:,}")
+            else:
+                if status_item:
+                    status_item.setText("Pending")
+                    status_item.setForeground(QColor("#94a3b8"))
+                if m_item:
+                    m_item.setText("-")
+                if v_item:
+                    v_item.setText("-")
+        self._update_table_counts()
+        self._update_consolidated_tab()
 
     def _on_worker_progress(self, current: int, total: int, eta_str: str):
         pct = int(current / total * 100) if total > 0 else 0
