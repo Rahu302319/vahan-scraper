@@ -810,20 +810,28 @@ export default function VahanDashboardPage() {
 
       {mainTab === "scraper" && (
         <>
-          {/* 2. Combat Control Deck (Two-Tier High-Density HUD) */}
-      <section className="flex flex-col gap-2 p-2.5 bg-[#0b1222] border border-[#1c2a44] rounded-lg shadow-md">
+      {/* 2. Combat Control Deck (Two-Tier High-Density HUD) */}
+      <section className={`flex flex-col gap-2 p-2.5 border rounded-lg shadow-md transition-colors ${
+        isDark ? "bg-[#0b1222] border-[#1c2a44]" : "bg-white border-slate-200 shadow-sm"
+      }`}>
         {/* Tier 1: Parameters + OUTPUT PATH SELECTION OPTION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 items-end">
           {/* A. Target RTO Selection */}
           <div className="md:col-span-3 flex flex-col gap-1">
-            <label className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider">
+            <label className={`text-[10px] font-extrabold uppercase tracking-wider ${
+              isDark ? "text-[#64748b]" : "text-slate-500"
+            }`}>
               Target RTO Selection:
             </label>
             <select
               value={selectedRtoTarget}
               onChange={(e) => handleRtoTargetChange(e.target.value)}
               disabled={isRunning}
-              className="w-full bg-[#070d1a] border border-[#1f2f4c] rounded px-2.5 py-1.5 text-xs font-semibold text-white focus:border-[#38bdf8] focus:outline-none"
+              className={`w-full border rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none transition ${
+                isDark
+                  ? "bg-[#070d1a] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
+                  : "bg-slate-50 border-slate-300 text-slate-800 focus:border-sky-500"
+              }`}
             >
               <option value="ALL">🚀 ALL 87 Kerala RTOs (Sequential Batch)</option>
               {rtos.map((r) => (
@@ -836,14 +844,20 @@ export default function VahanDashboardPage() {
 
           {/* B. Select Year */}
           <div className="md:col-span-1 flex flex-col gap-1">
-            <label className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider">
+            <label className={`text-[10px] font-extrabold uppercase tracking-wider ${
+              isDark ? "text-[#64748b]" : "text-slate-500"
+            }`}>
               Year:
             </label>
             <select
               value={year}
               onChange={(e) => setYear(e.target.value)}
               disabled={isRunning}
-              className="w-full bg-[#070d1a] border border-[#1f2f4c] rounded px-2 py-1.5 text-xs font-semibold text-white focus:border-[#38bdf8] focus:outline-none"
+              className={`w-full border rounded px-2 py-1.5 text-xs font-semibold focus:outline-none transition ${
+                isDark
+                  ? "bg-[#070d1a] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
+                  : "bg-slate-50 border-slate-300 text-slate-800 focus:border-sky-500"
+              }`}
             >
               {["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"].map((y) => (
                 <option key={y} value={y}>
@@ -855,14 +869,20 @@ export default function VahanDashboardPage() {
 
           {/* Dimension (Y-Axis) */}
           <div className="md:col-span-2 flex flex-col gap-1">
-            <label className="text-[10px] font-extrabold text-[#38bdf8] uppercase tracking-wider">
+            <label className={`text-[10px] font-extrabold uppercase tracking-wider ${
+              isDark ? "text-[#38bdf8]" : "text-sky-700"
+            }`}>
               Dimension (Y-Axis):
             </label>
             <select
               value={yaxis}
               onChange={(e) => setYaxis(e.target.value)}
               disabled={isRunning}
-              className="w-full bg-[#070d1a] border border-[#1f2f4c] rounded px-2 py-1.5 text-xs font-semibold text-[#38bdf8] focus:border-[#38bdf8] focus:outline-none"
+              className={`w-full border rounded px-2 py-1.5 text-xs font-semibold focus:outline-none transition ${
+                isDark
+                  ? "bg-[#070d1a] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
+                  : "bg-slate-50 border-slate-300 text-sky-700 focus:border-sky-500 font-bold"
+              }`}
             >
               {YAXIS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -874,14 +894,20 @@ export default function VahanDashboardPage() {
 
           {/* C. Speed Engine */}
           <div className="md:col-span-2 flex flex-col gap-1">
-            <label className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider">
+            <label className={`text-[10px] font-extrabold uppercase tracking-wider ${
+              isDark ? "text-[#64748b]" : "text-slate-500"
+            }`}>
               Speed Mode:
             </label>
             <select
               value={concurrency}
               onChange={(e) => setConcurrency(Number(e.target.value))}
               disabled={isRunning}
-              className="w-full bg-[#070d1a] border border-[#1f2f4c] rounded px-2 py-1.5 text-xs font-semibold text-white focus:border-[#38bdf8] focus:outline-none"
+              className={`w-full border rounded px-2 py-1.5 text-xs font-semibold focus:outline-none transition ${
+                isDark
+                  ? "bg-[#070d1a] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
+                  : "bg-slate-50 border-slate-300 text-slate-800 focus:border-sky-500"
+              }`}
             >
               <option value={6}>⚡ ULTRAFAST (6 Workers)</option>
               <option value={8}>🚀 MAX TURBO (8 Workers)</option>
@@ -892,18 +918,26 @@ export default function VahanDashboardPage() {
 
           {/* D. Filter Parameters (Vehicle Categories & Fuels) */}
           <div className="md:col-span-2 flex flex-col gap-1">
-            <label className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider">
+            <label className={`text-[10px] font-extrabold uppercase tracking-wider ${
+              isDark ? "text-[#64748b]" : "text-slate-500"
+            }`}>
               Filter Parameters:
             </label>
             <button
               onClick={() => setIsFilterOpen(true)}
-              className="flex items-center justify-between w-full bg-[#152238] hover:bg-[#1e3152] border border-[#253757] rounded px-2.5 py-1.5 text-xs font-semibold text-[#cbd5e1] transition"
+              className={`flex items-center justify-between w-full border rounded px-2.5 py-1.5 text-xs font-semibold transition ${
+                isDark
+                  ? "bg-[#152238] hover:bg-[#1e3152] border-[#253757] text-[#cbd5e1]"
+                  : "bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-700"
+              }`}
             >
               <span className="flex items-center gap-1.5 text-[11px] truncate">
-                <Settings className="w-3.5 h-3.5 text-[#38bdf8]" />
+                <Settings className={`w-3.5 h-3.5 ${isDark ? "text-[#38bdf8]" : "text-sky-600"}`} />
                 Filters ({vhCatg.length} Catg, {fuels.length} Fuels)
               </span>
-              <span className="text-[9px] bg-[#0284c7]/20 text-[#38bdf8] px-1 py-0.5 rounded font-bold">
+              <span className={`text-[9px] px-1 py-0.5 rounded font-bold ${
+                isDark ? "bg-[#0284c7]/20 text-[#38bdf8]" : "bg-sky-100 text-sky-700"
+              }`}>
                 LMV+LPV
               </span>
             </button>
@@ -912,12 +946,16 @@ export default function VahanDashboardPage() {
           {/* E. BROWSE PATH SELECTION OPTION (EXPLICIT FOLDER PICKER & DISPLAY) */}
           <div className="md:col-span-4 flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-extrabold text-[#38bdf8] uppercase tracking-wider flex items-center gap-1">
-                <Folder className="w-3.5 h-3.5 text-[#38bdf8]" />
+              <label className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${
+                isDark ? "text-[#38bdf8]" : "text-sky-700"
+              }`}>
+                <Folder className="w-3.5 h-3.5" />
                 Browse Save Path (Excel Folder):
               </label>
               {pathSaveStatus && (
-                <span className="text-[10px] font-semibold text-[#34d399] truncate max-w-[170px]">
+                <span className={`text-[10px] font-semibold truncate max-w-[170px] ${
+                  isDark ? "text-[#34d399]" : "text-emerald-600"
+                }`}>
                   {pathSaveStatus}
                 </span>
               )}
@@ -928,13 +966,17 @@ export default function VahanDashboardPage() {
                 value={outputPath}
                 onChange={(e) => setOutputPath(e.target.value)}
                 placeholder="C:\Users\...\Desktop\NEW VAHAN\output"
-                className="flex-1 bg-[#070d1a] border border-[#1f2f4c] rounded px-2.5 py-1.5 text-xs font-mono text-[#7dd3fc] focus:border-[#38bdf8] focus:outline-none"
+                className={`flex-1 border rounded px-2.5 py-1.5 text-xs font-mono focus:outline-none transition ${
+                  isDark
+                    ? "bg-[#070d1a] border-[#1f2f4c] text-[#7dd3fc] focus:border-[#38bdf8]"
+                    : "bg-slate-50 border-slate-300 text-sky-800 focus:border-sky-500"
+                }`}
                 title="Enter local disk path to save Excel output files (<RTO Name>-<Year>.xlsx)"
               />
               <button
                 type="button"
                 onClick={handleBrowseFolder}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white text-xs font-bold rounded border border-[#3b82f6] transition whitespace-nowrap shadow"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold rounded border border-[#38bdf8] transition whitespace-nowrap shadow"
                 title="Click to browse and choose a folder from your PC"
               >
                 <FolderOpen className="w-3.5 h-3.5" />
@@ -943,7 +985,11 @@ export default function VahanDashboardPage() {
               <button
                 type="button"
                 onClick={handleOpenFolder}
-                className="flex items-center gap-1 px-2 py-1.5 bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] text-xs font-bold rounded border border-[#253757] transition whitespace-nowrap"
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-bold rounded border transition whitespace-nowrap ${
+                  isDark
+                    ? "bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] border-[#253757]"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                }`}
                 title="Open this folder in Windows File Explorer"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -954,7 +1000,9 @@ export default function VahanDashboardPage() {
         </div>
 
         {/* Tier 2: Combat Command Action Toolbar & Telemetry Badges */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#162238]">
+        <div className={`flex flex-wrap items-center justify-between gap-2 pt-1 border-t ${
+          isDark ? "border-[#162238]" : "border-slate-200"
+        }`}>
           <div className="flex items-center gap-2">
             {!isRunning ? (
               <button
@@ -995,7 +1043,11 @@ export default function VahanDashboardPage() {
 
             <button
               onClick={downloadMasterExcel}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#152238] hover:bg-[#1e3152] text-[#38bdf8] font-bold text-xs border border-[#253757] transition"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded font-bold text-xs border transition ${
+                isDark
+                  ? "bg-[#152238] hover:bg-[#1e3152] text-[#38bdf8] border-[#253757]"
+                  : "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-300"
+              }`}
             >
               <Download className="w-3.5 h-3.5" />
               Export Master Excel
@@ -1004,21 +1056,31 @@ export default function VahanDashboardPage() {
 
           {/* Telemetry Live HUD Badges */}
           <div className="flex items-center gap-2 text-xs">
-            <span className="px-2 py-0.5 rounded bg-[#111c33] border border-[#1e2e4f] text-[#94a3b8] font-semibold text-[11px]">
-              Queued: <strong className="text-white">{rtos.filter((r) => selectedRtosMap[r.item.code]).length}</strong>
+            <span className={`px-2 py-0.5 rounded border font-semibold text-[11px] ${
+              isDark ? "bg-[#111c33] border-[#1e2e4f] text-[#94a3b8]" : "bg-slate-100 border-slate-300 text-slate-600"
+            }`}>
+              Queued: <strong className={isDark ? "text-white" : "text-slate-900"}>{rtos.filter((r) => selectedRtosMap[r.item.code]).length}</strong>
             </span>
-            <span className="px-2 py-0.5 rounded bg-[#064e3b]/30 border border-[#059669] text-[#34d399] font-semibold text-[11px]">
+            <span className={`px-2 py-0.5 rounded border font-semibold text-[11px] ${
+              isDark ? "bg-[#064e3b]/30 border-[#059669] text-[#34d399]" : "bg-emerald-50 border-emerald-300 text-emerald-700"
+            }`}>
               Done: <strong>{completedRtosCount}</strong>
             </span>
-            <span className="px-2 py-0.5 rounded bg-[#7f1d1d]/30 border border-[#dc2626] text-[#f87171] font-semibold text-[11px]">
+            <span className={`px-2 py-0.5 rounded border font-semibold text-[11px] ${
+              isDark ? "bg-[#7f1d1d]/30 border-[#dc2626] text-[#f87171]" : "bg-red-50 border-red-300 text-red-700"
+            }`}>
               Failed: <strong>{failedRtosCount}</strong>
             </span>
             {isRunning && (
               <>
-                <span className="px-2 py-0.5 rounded bg-[#0b1b33] border border-[#1e3a8a] text-[#38bdf8] font-semibold text-[11px] animate-pulse">
+                <span className={`px-2 py-0.5 rounded border font-semibold text-[11px] animate-pulse ${
+                  isDark ? "bg-[#0b1b33] border-[#1e3a8a] text-[#38bdf8]" : "bg-sky-50 border-sky-300 text-sky-700"
+                }`}>
                   ⚡ {speedStr}
                 </span>
-                <span className="px-2 py-0.5 rounded bg-[#0b1b33] border border-[#1e3a8a] text-[#fbbf24] font-semibold text-[11px]">
+                <span className={`px-2 py-0.5 rounded border font-semibold text-[11px] ${
+                  isDark ? "bg-[#0b1b33] border-[#1e3a8a] text-[#fbbf24]" : "bg-amber-50 border-amber-300 text-amber-700"
+                }`}>
                   ⏱ ETA: {etaStr}
                 </span>
               </>
@@ -1030,36 +1092,54 @@ export default function VahanDashboardPage() {
       {/* 3. Central Studio Splitter (Left: RTO List, Right: Studio) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 flex-1">
         {/* Left: RTO Manager & Queue Table (5 cols) */}
-        <div className="lg:col-span-5 flex flex-col bg-[#090f1d] border border-[#19253d] rounded-lg p-2.5 shadow-md">
+        <div className={`lg:col-span-5 flex flex-col border rounded-lg p-2.5 shadow-md ${
+          isDark ? "bg-[#090f1d] border-[#19253d]" : "bg-white border-slate-200 shadow-sm"
+        }`}>
           <div className="flex items-center justify-between gap-1.5 mb-2">
             <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-[#64748b]" />
+              <Search className={`w-3.5 h-3.5 absolute left-2.5 top-2 ${isDark ? "text-[#64748b]" : "text-slate-400"}`} />
               <input
                 type="text"
                 placeholder="🔍 Quick Filter RTO (e.g. KL26, Adoor)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#070d18] border border-[#1c2b47] rounded pl-8 pr-2 py-1 text-xs text-white focus:border-[#38bdf8] focus:outline-none"
+                className={`w-full border rounded pl-8 pr-2 py-1 text-xs focus:outline-none transition ${
+                  isDark
+                    ? "bg-[#070d18] border-[#1c2b47] text-white focus:border-[#38bdf8]"
+                    : "bg-slate-50 border-slate-300 text-slate-800 focus:border-sky-500"
+                }`}
               />
             </div>
             <button
               onClick={() => handleSelectAll(true)}
-              className="text-[11px] px-2 py-1 bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] font-bold rounded border border-[#253757]"
+              className={`text-[11px] px-2 py-1 font-bold rounded border transition ${
+                isDark
+                  ? "bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] border-[#253757]"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+              }`}
             >
               All
             </button>
             <button
               onClick={() => handleSelectAll(false)}
-              className="text-[11px] px-2 py-1 bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] font-bold rounded border border-[#253757]"
+              className={`text-[11px] px-2 py-1 font-bold rounded border transition ${
+                isDark
+                  ? "bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] border-[#253757]"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+              }`}
             >
               Clear
             </button>
           </div>
 
           {/* Compact Tactical Table */}
-          <div className="flex-1 overflow-auto rounded border border-[#1a2842] max-h-[580px]">
+          <div className={`flex-1 overflow-auto rounded border max-h-[580px] ${
+            isDark ? "border-[#1a2842]" : "border-slate-200"
+          }`}>
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="sticky top-0 bg-[#0e172a] text-[#818cf8] font-bold border-b border-[#243555] z-10 text-[10px] uppercase">
+              <thead className={`sticky top-0 font-bold border-b z-10 text-[10px] uppercase ${
+                isDark ? "bg-[#0e172a] text-[#818cf8] border-[#243555]" : "bg-slate-100 text-slate-700 border-slate-300"
+              }`}>
                 <tr>
                   <th className="p-1.5 w-7 text-center">✔</th>
                   <th className="p-1.5 w-14 text-center">Code</th>
@@ -1068,7 +1148,7 @@ export default function VahanDashboardPage() {
                   <th className="p-1.5 text-right w-16">Vehicles</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#111a2d]">
+              <tbody className={`divide-y ${isDark ? "divide-[#111a2d]" : "divide-slate-200"}`}>
                 {filteredRtos.map((r, idx) => {
                   const isChecked = !!selectedRtosMap[r.item.code];
                   const isSelected = activePreviewRTO === r.item.code;
@@ -1081,10 +1161,16 @@ export default function VahanDashboardPage() {
                       }}
                       className={`cursor-pointer transition ${
                         isSelected
-                          ? "bg-[#1e3a8a]/40"
+                          ? isDark
+                            ? "bg-[#1e3a8a]/40"
+                            : "bg-sky-100 text-sky-900 font-semibold"
                           : idx % 2 === 0
-                          ? "bg-[#070d18] hover:bg-[#101b33]"
-                          : "bg-[#0c1424] hover:bg-[#14223d]"
+                          ? isDark
+                            ? "bg-[#070d18] hover:bg-[#101b33]"
+                            : "bg-white hover:bg-slate-50"
+                          : isDark
+                          ? "bg-[#0c1424] hover:bg-[#14223d]"
+                          : "bg-slate-50/70 hover:bg-slate-100"
                       }`}
                     >
                       <td
@@ -1095,20 +1181,26 @@ export default function VahanDashboardPage() {
                         }}
                       >
                         {isChecked ? (
-                          <CheckSquare className="w-3.5 h-3.5 text-[#38bdf8] inline" />
+                          <CheckSquare className="w-3.5 h-3.5 text-[#0284c7] inline" />
                         ) : (
-                          <UncheckedSquare className="w-3.5 h-3.5 text-[#64748b] inline" />
+                          <UncheckedSquare className={`w-3.5 h-3.5 inline ${isDark ? "text-[#64748b]" : "text-slate-400"}`} />
                         )}
                       </td>
-                      <td className="p-1.5 font-mono font-bold text-[#38bdf8] text-center text-[11px]">
+                      <td className={`p-1.5 font-mono font-bold text-center text-[11px] ${
+                        isDark ? "text-[#38bdf8]" : "text-sky-700"
+                      }`}>
                         {r.item.code}
                       </td>
-                      <td className="p-1.5 text-[#e2e8f0] font-medium truncate max-w-[150px] text-[11px]">
+                      <td className={`p-1.5 font-medium truncate max-w-[150px] text-[11px] ${
+                        isDark ? "text-[#e2e8f0]" : "text-slate-800"
+                      }`}>
                         {r.item.name}
                       </td>
                       <td className="p-1.5 text-center">
                         {r.status === "pending" && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#111c33] text-[#64748b]">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            isDark ? "bg-[#111c33] text-[#64748b]" : "bg-slate-100 text-slate-500 border border-slate-200"
+                          }`}>
                             Pending
                           </span>
                         )}
@@ -1118,13 +1210,17 @@ export default function VahanDashboardPage() {
                           </span>
                         )}
                         {r.status === "retry" && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#92400e]/30 text-[#fbbf24] border border-[#d97706]">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                            isDark ? "bg-[#92400e]/30 text-[#fbbf24] border-[#d97706]" : "bg-amber-50 text-amber-700 border-amber-300"
+                          }`}>
                             Retry {r.retryAttempt}/3 🔄
                           </span>
                         )}
                         {r.status === "done" && (
                           <div className="flex items-center justify-center gap-1">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#064e3b]/40 text-[#34d399] border border-[#059669]">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                              isDark ? "bg-[#064e3b]/40 text-[#34d399] border-[#059669]" : "bg-emerald-50 text-emerald-700 border-emerald-300"
+                            }`}>
                               Done ✓
                             </span>
                             {r.data && r.data.length > 0 && (
@@ -1135,7 +1231,7 @@ export default function VahanDashboardPage() {
                                   downloadSingleRtoExcel(r.item, r.data!);
                                 }}
                                 title={`Download ${getCleanRtoFileName(r.item.name, year)}`}
-                                className="p-0.5 rounded bg-[#0284c7]/20 hover:bg-[#0284c7] text-[#38bdf8] hover:text-white transition"
+                                className="p-0.5 rounded bg-[#0284c7]/20 hover:bg-[#0284c7] text-[#0284c7] hover:text-white transition"
                               >
                                 <Download className="w-3 h-3" />
                               </button>
@@ -1143,12 +1239,16 @@ export default function VahanDashboardPage() {
                           </div>
                         )}
                         {r.status === "failed" && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#7f1d1d]/40 text-[#f87171] border border-[#dc2626]">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                            isDark ? "bg-[#7f1d1d]/40 text-[#f87171] border-[#dc2626]" : "bg-red-50 text-red-700 border-red-300"
+                          }`}>
                             Failed (3x) ✗
                           </span>
                         )}
                       </td>
-                      <td className="p-1.5 text-right font-mono font-bold text-[#f1f5f9] text-[11px]">
+                      <td className={`p-1.5 text-right font-mono font-bold text-[11px] ${
+                        isDark ? "text-[#f1f5f9]" : "text-slate-900"
+                      }`}>
                         {r.totalVehicles ? r.totalVehicles.toLocaleString() : "-"}
                       </td>
                     </tr>
@@ -1158,22 +1258,32 @@ export default function VahanDashboardPage() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-[#64748b] pt-1.5">
+          <div className={`flex items-center justify-between text-[11px] pt-1.5 ${
+            isDark ? "text-[#64748b]" : "text-slate-500"
+          }`}>
             <span>Loaded: {rtos.length} Kerala RTOs</span>
             <span>Selected: {rtos.filter((r) => selectedRtosMap[r.item.code]).length}</span>
           </div>
         </div>
 
         {/* Right: Studio (Live Preview, Summary, Logs) (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col bg-[#090f1d] border border-[#19253d] rounded-lg p-2.5 shadow-md">
+        <div className={`lg:col-span-7 flex flex-col border rounded-lg p-2.5 shadow-md ${
+          isDark ? "bg-[#090f1d] border-[#19253d]" : "bg-white border-slate-200 shadow-sm"
+        }`}>
           {/* Tabs */}
-          <div className="flex items-center gap-1 border-b border-[#1a2842] pb-1.5 mb-2">
+          <div className={`flex items-center gap-1 border-b pb-1.5 mb-2 ${
+            isDark ? "border-[#1a2842]" : "border-slate-200"
+          }`}>
             <button
               onClick={() => setActiveTab("preview")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition ${
                 activeTab === "preview"
-                  ? "bg-[#0b152b] text-[#38bdf8] border border-[#38bdf8]"
-                  : "text-[#64748b] hover:text-[#cbd5e1] hover:bg-[#0c1424]"
+                  ? isDark
+                    ? "bg-[#0b152b] text-[#38bdf8] border border-[#38bdf8]"
+                    : "bg-sky-50 text-sky-700 border border-sky-400 shadow-sm"
+                  : isDark
+                  ? "text-[#64748b] hover:text-[#cbd5e1] hover:bg-[#0c1424]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <Activity className="w-3.5 h-3.5" />
@@ -1183,8 +1293,12 @@ export default function VahanDashboardPage() {
               onClick={() => setActiveTab("summary")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition ${
                 activeTab === "summary"
-                  ? "bg-[#0b152b] text-[#38bdf8] border border-[#38bdf8]"
-                  : "text-[#64748b] hover:text-[#cbd5e1] hover:bg-[#0c1424]"
+                  ? isDark
+                    ? "bg-[#0b152b] text-[#38bdf8] border border-[#38bdf8]"
+                    : "bg-sky-50 text-sky-700 border border-sky-400 shadow-sm"
+                  : isDark
+                  ? "text-[#64748b] hover:text-[#cbd5e1] hover:bg-[#0c1424]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -1194,8 +1308,12 @@ export default function VahanDashboardPage() {
               onClick={() => setActiveTab("logs")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition ${
                 activeTab === "logs"
-                  ? "bg-[#0b152b] text-[#38bdf8] border border-[#38bdf8]"
-                  : "text-[#64748b] hover:text-[#cbd5e1] hover:bg-[#0c1424]"
+                  ? isDark
+                    ? "bg-[#0b152b] text-[#38bdf8] border border-[#38bdf8]"
+                    : "bg-sky-50 text-sky-700 border border-sky-400 shadow-sm"
+                  : isDark
+                  ? "text-[#64748b] hover:text-[#cbd5e1] hover:bg-[#0c1424]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -1208,35 +1326,59 @@ export default function VahanDashboardPage() {
             <div className="flex flex-col gap-2 flex-1">
               {/* Compact HUD KPI Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="p-2 bg-gradient-to-r from-[#0c1424] to-[#101b33] border-l-2 border-[#38bdf8] border border-[#1e2e4f] rounded">
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider block">
+                <div className={`p-2 border-l-2 border-[#38bdf8] border rounded ${
+                  isDark ? "bg-gradient-to-r from-[#0c1424] to-[#101b33] border-[#1e2e4f]" : "bg-slate-50 border-slate-200 shadow-sm"
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                    isDark ? "text-[#64748b]" : "text-slate-500"
+                  }`}>
                     Active Office
                   </span>
-                  <span className="text-sm font-extrabold text-[#38bdf8] truncate block">
+                  <span className={`text-sm font-extrabold truncate block ${
+                    isDark ? "text-[#38bdf8]" : "text-sky-700"
+                  }`}>
                     {currentPreviewRecord?.item.name || "None Selected"}
                   </span>
                 </div>
-                <div className="p-2 bg-gradient-to-r from-[#0c1424] to-[#101b33] border-l-2 border-[#a78bfa] border border-[#1e2e4f] rounded">
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider block">
+                <div className={`p-2 border-l-2 border-[#a78bfa] border rounded ${
+                  isDark ? "bg-gradient-to-r from-[#0c1424] to-[#101b33] border-[#1e2e4f]" : "bg-slate-50 border-slate-200 shadow-sm"
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                    isDark ? "text-[#64748b]" : "text-slate-500"
+                  }`}>
                     Active {yaxis}s
                   </span>
-                  <span className="text-sm font-extrabold text-[#a78bfa]">
+                  <span className={`text-sm font-extrabold ${
+                    isDark ? "text-[#a78bfa]" : "text-purple-700"
+                  }`}>
                     {currentPreviewData.length}
                   </span>
                 </div>
-                <div className="p-2 bg-gradient-to-r from-[#0c1424] to-[#101b33] border-l-2 border-[#34d399] border border-[#1e2e4f] rounded">
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider block">
+                <div className={`p-2 border-l-2 border-[#34d399] border rounded ${
+                  isDark ? "bg-gradient-to-r from-[#0c1424] to-[#101b33] border-[#1e2e4f]" : "bg-slate-50 border-slate-200 shadow-sm"
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                    isDark ? "text-[#64748b]" : "text-slate-500"
+                  }`}>
                     Total Vehicles
                   </span>
-                  <span className="text-sm font-extrabold text-[#34d399]">
+                  <span className={`text-sm font-extrabold ${
+                    isDark ? "text-[#34d399]" : "text-emerald-700"
+                  }`}>
                     {(currentPreviewRecord?.totalVehicles || 0).toLocaleString()}
                   </span>
                 </div>
-                <div className="p-2 bg-gradient-to-r from-[#0c1424] to-[#101b33] border-l-2 border-[#fbbf24] border border-[#1e2e4f] rounded">
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider block">
+                <div className={`p-2 border-l-2 border-[#fbbf24] border rounded ${
+                  isDark ? "bg-gradient-to-r from-[#0c1424] to-[#101b33] border-[#1e2e4f]" : "bg-slate-50 border-slate-200 shadow-sm"
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                    isDark ? "text-[#64748b]" : "text-slate-500"
+                  }`}>
                     Top {yaxis}
                   </span>
-                  <span className="text-sm font-extrabold text-[#fbbf24] truncate block">
+                  <span className={`text-sm font-extrabold truncate block ${
+                    isDark ? "text-[#fbbf24]" : "text-amber-700"
+                  }`}>
                     {currentPreviewData.length > 0
                       ? (currentPreviewData[0][yaxis] || currentPreviewData[0].Maker)?.substring(0, 20)
                       : "N/A"}
@@ -1246,9 +1388,11 @@ export default function VahanDashboardPage() {
 
               {/* Quick Single RTO Download Bar */}
               {currentPreviewRecord && currentPreviewData.length > 0 && (
-                <div className="flex items-center justify-between p-2 bg-[#0c1629] border border-[#1d2d4a] rounded shadow-sm">
-                  <span className="text-xs font-semibold text-[#94a3b8]">
-                    Selected RTO: <span className="text-[#38bdf8] font-bold">{currentPreviewRecord.item.name}</span> ({year})
+                <div className={`flex items-center justify-between p-2 rounded shadow-sm border ${
+                  isDark ? "bg-[#0c1629] border-[#1d2d4a]" : "bg-slate-50 border-slate-200"
+                }`}>
+                  <span className={`text-xs font-semibold ${isDark ? "text-[#94a3b8]" : "text-slate-600"}`}>
+                    Selected RTO: <span className={`font-bold ${isDark ? "text-[#38bdf8]" : "text-sky-700"}`}>{currentPreviewRecord.item.name}</span> ({year})
                   </span>
                   <button
                     onClick={() => downloadSingleRtoExcel(currentPreviewRecord.item, currentPreviewData)}
@@ -1261,10 +1405,14 @@ export default function VahanDashboardPage() {
               )}
 
               {/* Data Table */}
-              <div className="flex-1 overflow-auto rounded border border-[#1a2842] max-h-[500px]">
+              <div className={`flex-1 overflow-auto rounded border max-h-[500px] ${
+                isDark ? "border-[#1a2842]" : "border-slate-200"
+              }`}>
                 {currentPreviewData.length > 0 ? (
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="sticky top-0 bg-[#0e172a] text-[#818cf8] font-bold border-b border-[#243555] z-10 text-[10px]">
+                    <thead className={`sticky top-0 font-bold border-b z-10 text-[10px] ${
+                      isDark ? "bg-[#0e172a] text-[#818cf8] border-[#243555]" : "bg-slate-100 text-slate-700 border-slate-300"
+                    }`}>
                       <tr>
                         <th className="p-1.5 text-center w-10">#</th>
                         <th className="p-1.5">{yaxis}</th>
@@ -1275,36 +1423,44 @@ export default function VahanDashboardPage() {
                             </th>
                           )
                         )}
-                        <th className="p-1.5 text-right font-extrabold text-[#38bdf8] w-14">
+                        <th className={`p-1.5 text-right font-extrabold w-14 ${
+                          isDark ? "text-[#38bdf8]" : "text-sky-700"
+                        }`}>
                           TOTAL
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#111a2d]">
+                    <tbody className={`divide-y ${isDark ? "divide-[#111a2d]" : "divide-slate-200"}`}>
                       {currentPreviewData.map((row, idx) => (
                         <tr
                           key={idx}
-                          className={idx % 2 === 0 ? "bg-[#070d18]" : "bg-[#0c1424]"}
+                          className={idx % 2 === 0 ? (isDark ? "bg-[#070d18]" : "bg-white") : (isDark ? "bg-[#0c1424]" : "bg-slate-50/70")}
                         >
-                          <td className="p-1.5 text-center text-[#64748b] font-mono text-[10px]">
+                          <td className={`p-1.5 text-center font-mono text-[10px] ${
+                            isDark ? "text-[#64748b]" : "text-slate-400"
+                          }`}>
                             {row.S_No}
                           </td>
-                          <td className="p-1.5 font-semibold text-white truncate max-w-[200px] text-[11px]">
+                          <td className={`p-1.5 font-semibold truncate max-w-[200px] text-[11px] ${
+                            isDark ? "text-white" : "text-slate-800"
+                          }`}>
                             {row[yaxis] || row.Maker}
                           </td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.JAN || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.FEB || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.MAR || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.APR || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.MAY || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.JUN || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.JUL || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.AUG || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.SEP || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.OCT || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.NOV || 0}</td>
-                          <td className="p-1.5 text-right font-mono text-[#cbd5e1] text-[11px]">{row.DEC || 0}</td>
-                          <td className="p-1.5 text-right font-mono font-bold text-[#38bdf8] text-[11px]">
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.JAN || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.FEB || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.MAR || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.APR || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.MAY || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.JUN || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.JUL || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.AUG || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.SEP || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.OCT || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.NOV || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.DEC || 0}</td>
+                          <td className={`p-1.5 text-right font-mono font-bold text-[11px] ${
+                            isDark ? "text-[#38bdf8]" : "text-sky-700"
+                          }`}>
                             {(row.TOTAL || 0).toLocaleString()}
                           </td>
                         </tr>
@@ -1312,8 +1468,10 @@ export default function VahanDashboardPage() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-[#64748b] gap-2">
-                    <Activity className="w-8 h-8 text-[#334155] animate-pulse" />
+                  <div className={`flex flex-col items-center justify-center h-64 gap-2 ${
+                    isDark ? "text-[#64748b]" : "text-slate-400"
+                  }`}>
+                    <Activity className={`w-8 h-8 animate-pulse ${isDark ? "text-[#334155]" : "text-slate-300"}`} />
                     <p className="text-xs">
                       {currentPreviewRecord
                         ? `Office ${currentPreviewRecord.item.code} (${currentPreviewRecord.item.name}) selected. Click 'START BATCH SCRAPER' to fetch data.`
@@ -1329,61 +1487,91 @@ export default function VahanDashboardPage() {
           {activeTab === "summary" && (
             <div className="flex flex-col gap-2 flex-1">
               <div className="grid grid-cols-3 gap-2">
-                <div className="p-2 bg-[#0c1424] border-l-2 border-[#34d399] border border-[#1e2e4f] rounded">
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase block">
+                <div className={`p-2 border-l-2 border-[#34d399] border rounded ${
+                  isDark ? "bg-[#0c1424] border-[#1e2e4f]" : "bg-slate-50 border-slate-200 shadow-sm"
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase block ${
+                    isDark ? "text-[#64748b]" : "text-slate-500"
+                  }`}>
                     Kerala Grand Total
                   </span>
-                  <span className="text-base font-extrabold text-[#34d399]">
+                  <span className={`text-base font-extrabold ${
+                    isDark ? "text-[#34d399]" : "text-emerald-700"
+                  }`}>
                     {totalVehiclesAll.toLocaleString()}
                   </span>
                 </div>
-                <div className="p-2 bg-[#0c1424] border-l-2 border-[#38bdf8] border border-[#1e2e4f] rounded">
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase block">
+                <div className={`p-2 border-l-2 border-[#38bdf8] border rounded ${
+                  isDark ? "bg-[#0c1424] border-[#1e2e4f]" : "bg-slate-50 border-slate-200 shadow-sm"
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase block ${
+                    isDark ? "text-[#64748b]" : "text-slate-500"
+                  }`}>
                     Completed RTOs
                   </span>
-                  <span className="text-base font-extrabold text-[#38bdf8]">
+                  <span className={`text-base font-extrabold ${
+                    isDark ? "text-[#38bdf8]" : "text-sky-700"
+                  }`}>
                     {completedRtosCount} / {rtos.length}
                   </span>
                 </div>
-                <div className="p-2 bg-[#0c1424] border-l-2 border-[#a78bfa] border border-[#1e2e4f] rounded">
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase block">
+                <div className={`p-2 border-l-2 border-[#a78bfa] border rounded ${
+                  isDark ? "bg-[#0c1424] border-[#1e2e4f]" : "bg-slate-50 border-slate-200 shadow-sm"
+                }`}>
+                  <span className={`text-[10px] font-bold uppercase block ${
+                    isDark ? "text-[#64748b]" : "text-slate-500"
+                  }`}>
                     Export Output Path
                   </span>
-                  <span className="text-xs font-mono font-bold text-[#7dd3fc] truncate block">
+                  <span className={`text-xs font-mono font-bold truncate block ${
+                    isDark ? "text-[#7dd3fc]" : "text-sky-800"
+                  }`}>
                     {outputPath}
                   </span>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto rounded border border-[#1a2842] max-h-[500px]">
+              <div className={`flex-1 overflow-auto rounded border max-h-[500px] ${
+                isDark ? "border-[#1a2842]" : "border-slate-200"
+              }`}>
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 bg-[#0e172a] text-[#818cf8] font-bold border-b border-[#243555] z-10 text-[10px] uppercase">
+                  <thead className={`sticky top-0 font-bold border-b z-10 text-[10px] uppercase ${
+                    isDark ? "bg-[#0e172a] text-[#818cf8] border-[#243555]" : "bg-slate-100 text-slate-700 border-slate-300"
+                  }`}>
                     <tr>
                       <th className="p-1.5 w-16 text-center">Code</th>
                       <th className="p-1.5">RTO Office Name</th>
                       <th className="p-1.5 text-center w-24">Makers Count</th>
-                      <th className="p-1.5 text-right w-24 text-[#34d399]">Total Vehicles</th>
+                      <th className={`p-1.5 text-right w-24 ${isDark ? "text-[#34d399]" : "text-emerald-700"}`}>Total Vehicles</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#111a2d]">
+                  <tbody className={`divide-y ${isDark ? "divide-[#111a2d]" : "divide-slate-200"}`}>
                     {rtos
                       .filter((r) => r.status === "done")
                       .sort((a, b) => (b.totalVehicles || 0) - (a.totalVehicles || 0))
                       .map((r, idx) => (
                         <tr
                           key={r.item.code}
-                          className={idx % 2 === 0 ? "bg-[#070d18]" : "bg-[#0c1424]"}
+                          className={idx % 2 === 0 ? (isDark ? "bg-[#070d18]" : "bg-white") : (isDark ? "bg-[#0c1424]" : "bg-slate-50/70")}
                         >
-                          <td className="p-1.5 font-mono font-bold text-[#38bdf8] text-center text-[11px]">
+                          <td className={`p-1.5 font-mono font-bold text-center text-[11px] ${
+                            isDark ? "text-[#38bdf8]" : "text-sky-700"
+                          }`}>
                             {r.item.code}
                           </td>
-                          <td className="p-1.5 text-[#e2e8f0] font-medium text-[11px]">
+                          <td className={`p-1.5 font-medium text-[11px] ${
+                            isDark ? "text-[#e2e8f0]" : "text-slate-800"
+                          }`}>
                             {r.item.name}
                           </td>
-                          <td className="p-1.5 text-center font-mono text-[#a78bfa] text-[11px]">
+                          <td className={`p-1.5 text-center font-mono text-[11px] ${
+                            isDark ? "text-[#a78bfa]" : "text-purple-700"
+                          }`}>
                             {r.makerCount}
                           </td>
-                          <td className="p-1.5 text-right font-mono font-bold text-[#34d399] text-[11px]">
+                          <td className={`p-1.5 text-right font-mono font-bold text-[11px] ${
+                            isDark ? "text-[#34d399]" : "text-emerald-700"
+                          }`}>
                             {(r.totalVehicles || 0).toLocaleString()}
                           </td>
                         </tr>
@@ -1397,16 +1585,24 @@ export default function VahanDashboardPage() {
           {/* TAB 3: Execution Log */}
           {activeTab === "logs" && (
             <div className="flex flex-col flex-1 gap-2">
-              <div className="flex items-center justify-between text-[11px] text-[#64748b]">
+              <div className={`flex items-center justify-between text-[11px] ${
+                isDark ? "text-[#64748b]" : "text-slate-500"
+              }`}>
                 <span>Real-Time Engine Log:</span>
                 <button
                   onClick={() => setLogs([])}
-                  className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] rounded border border-[#253757]"
+                  className={`px-2 py-0.5 rounded border transition ${
+                    isDark
+                      ? "bg-[#152238] hover:bg-[#1e3152] text-[#cbd5e1] border-[#253757]"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                  }`}
                 >
                   Clear Log
                 </button>
               </div>
-              <div className="flex-1 bg-[#04070e] border border-[#162238] rounded p-2.5 overflow-auto font-mono text-xs max-h-[500px]">
+              <div className={`flex-1 rounded p-2.5 overflow-auto font-mono text-xs max-h-[500px] border ${
+                isDark ? "bg-[#04070e] border-[#162238]" : "bg-slate-900 border-slate-800 text-slate-100"
+              }`}>
                 {logs.map((l, i) => {
                   const color =
                     l.level === "SUCCESS"
@@ -1415,7 +1611,7 @@ export default function VahanDashboardPage() {
                       ? "text-[#fbbf24]"
                       : l.level === "ERROR"
                       ? "text-[#f87171]"
-                      : "text-[#94a3b8]";
+                      : isDark ? "text-[#94a3b8]" : "text-slate-400";
                   return (
                     <div key={i} className="py-0.5 leading-relaxed">
                       <span className="text-[#64748b]">[{l.time}]</span>{" "}
@@ -1432,26 +1628,32 @@ export default function VahanDashboardPage() {
       </div>
 
       {/* 4. Slim Tactical Progress Telemetry Bar */}
-      <footer className="flex flex-col gap-1 p-2 bg-[#090f1d] border border-[#19253d] rounded-lg shadow-md">
-        <div className="w-full bg-[#070d18] rounded border border-[#1a2944] h-[18px] overflow-hidden relative">
+      <footer className={`flex flex-col gap-1 p-2 border rounded-lg shadow-md transition-colors ${
+        isDark ? "bg-[#090f1d] border-[#19253d]" : "bg-white border-slate-200 shadow-sm"
+      }`}>
+        <div className={`w-full rounded border h-[18px] overflow-hidden relative ${
+          isDark ? "bg-[#070d18] border-[#1a2944]" : "bg-slate-100 border-slate-300"
+        }`}>
           <div
             className="h-full bg-gradient-to-r from-[#0284c7] via-[#06b6d4] to-[#10b981] transition-all duration-300"
             style={{
               width: `${totalToProcess > 0 ? (processedCount / totalToProcess) * 100 : 0}%`,
             }}
           />
-          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-extrabold text-white">
+          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-extrabold text-white drop-shadow">
             Progress: {processedCount} / {totalToProcess} ({totalToProcess > 0 ? Math.round((processedCount / totalToProcess) * 100) : 0}%)
           </span>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-[#64748b]">
+        <div className={`flex items-center justify-between text-[11px] ${
+          isDark ? "text-[#64748b]" : "text-slate-500"
+        }`}>
           <span>
             {isRunning
               ? `⚡ Scraping Kerala RTOs in parallel (${speedStr})... Data saving to: ${outputPath}`
               : `Ready. Data will be saved to: ${outputPath}`}
           </span>
-          <span className="font-mono font-bold text-[#38bdf8]">
+          <span className={`font-mono font-bold ${isDark ? "text-[#38bdf8]" : "text-sky-700"}`}>
             ETA: {etaStr}
           </span>
         </div>
@@ -1459,29 +1661,37 @@ export default function VahanDashboardPage() {
 
       {/* Filter Modal Dialog */}
       {isFilterOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#0b1222] border border-[#1c2a44] rounded-xl max-w-3xl w-full p-4 shadow-2xl flex flex-col gap-3 max-h-[88vh]">
-            <div className="flex items-center justify-between border-b border-[#162238] pb-2">
-              <h2 className="text-sm font-extrabold text-[#38bdf8] flex items-center gap-2">
-                <Settings className="w-4 h-4 text-[#38bdf8]" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className={`border rounded-xl max-w-3xl w-full p-4 shadow-2xl flex flex-col gap-3 max-h-[88vh] ${
+            isDark ? "bg-[#0b1222] border-[#1c2a44]" : "bg-white border-slate-200"
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-2 ${
+              isDark ? "border-[#162238]" : "border-slate-200"
+            }`}>
+              <h2 className={`text-sm font-extrabold flex items-center gap-2 ${
+                isDark ? "text-[#38bdf8]" : "text-sky-700"
+              }`}>
+                <Settings className="w-4 h-4" />
                 Filter Parameters (Vehicle Categories & Fuels)
               </h2>
               <button
                 onClick={() => setIsFilterOpen(false)}
-                className="text-[#64748b] hover:text-white text-sm font-bold"
+                className={`text-sm font-bold ${isDark ? "text-[#64748b] hover:text-white" : "text-slate-400 hover:text-slate-700"}`}
               >
                 ✕
               </button>
             </div>
 
             {/* Filter Sub-Tabs */}
-            <div className="flex gap-1 border-b border-[#1c2a44] pb-1">
+            <div className={`flex gap-1 border-b pb-1 ${isDark ? "border-[#1c2a44]" : "border-slate-200"}`}>
               <button
                 onClick={() => setFilterTab("catg")}
                 className={`px-3 py-1 rounded text-xs font-bold transition ${
                   filterTab === "catg"
                     ? "bg-[#0284c7] text-white"
-                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 Vehicle Categories ({vhCatg.length})
@@ -1491,7 +1701,9 @@ export default function VahanDashboardPage() {
                 className={`px-3 py-1 rounded text-xs font-bold transition ${
                   filterTab === "fuels"
                     ? "bg-[#0284c7] text-white"
-                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 Fuel Types ({fuels.length})
@@ -1501,7 +1713,9 @@ export default function VahanDashboardPage() {
                 className={`px-3 py-1 rounded text-xs font-bold transition ${
                   filterTab === "norms"
                     ? "bg-[#0284c7] text-white"
-                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 Norms ({norms.length > 0 ? `${norms.length} filtered` : "All"})
@@ -1511,7 +1725,9 @@ export default function VahanDashboardPage() {
                 className={`px-3 py-1 rounded text-xs font-bold transition ${
                   filterTab === "class"
                     ? "bg-[#0284c7] text-white"
-                    : "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 Vehicle Classes ({vhClass.length > 0 ? `${vhClass.length} filtered` : "All"})
@@ -1522,7 +1738,11 @@ export default function VahanDashboardPage() {
               {/* Tab 1: Vehicle Categories */}
               {filterTab === "catg" && (
                 <div className="flex flex-col gap-2.5">
-                  <div className="p-2.5 bg-[#0284c7]/10 border border-[#0284c7]/40 rounded text-[11px] text-[#7dd3fc] font-semibold flex items-center justify-between">
+                  <div className={`p-2.5 border rounded text-[11px] font-semibold flex items-center justify-between ${
+                    isDark
+                      ? "bg-[#0284c7]/10 border-[#0284c7]/40 text-[#7dd3fc]"
+                      : "bg-sky-50 border-sky-200 text-sky-800"
+                  }`}>
                     <span>
                       ⭐ <strong>Default Required:</strong> LIGHT MOTOR VEHICLE (LMV) & LIGHT PASSENGER VEHICLE (LPV)
                     </span>
@@ -1537,20 +1757,25 @@ export default function VahanDashboardPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setVhCatg(ALL_VH_CATG)}
-                      className="px-2 py-1 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      className={`px-2 py-1 rounded text-[10px] transition ${
+                        isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      }`}
                     >
                       Select All ({ALL_VH_CATG.length})
                     </button>
                     <button
                       onClick={() => setVhCatg([])}
-                      className="px-2 py-1 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                      className={`px-2 py-1 rounded text-[10px] transition ${
+                        isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      }`}
                     >
                       Clear All
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
-                    {/* Priority LMV & LPV first */}
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded border max-h-[380px] overflow-auto ${
+                    isDark ? "bg-[#070d18] border-[#1a2842]" : "bg-slate-50 border-slate-200"
+                  }`}>
                     {(['LMV', 'LPV', ...ALL_VH_CATG.filter(c => !['LMV', 'LPV'].includes(c))]).map((catg) => {
                       const isDefault = DEFAULT_VH_CATG.includes(catg);
                       const fullName = ALL_VH_CATG_DICT[catg] || catg;
@@ -1559,8 +1784,12 @@ export default function VahanDashboardPage() {
                           key={catg}
                           className={`flex items-center gap-2 p-1.5 rounded cursor-pointer text-[11px] border transition ${
                             isDefault
-                              ? "bg-[#0e1f38] border-[#0284c7]/50 text-[#38bdf8] font-bold"
-                              : "bg-[#0b1424] border-[#16233a] text-[#cbd5e1] hover:border-[#253757]"
+                              ? isDark
+                                ? "bg-[#0e1f38] border-[#0284c7]/50 text-[#38bdf8] font-bold"
+                                : "bg-sky-50 border-sky-300 text-sky-800 font-bold"
+                              : isDark
+                              ? "bg-[#0b1424] border-[#16233a] text-[#cbd5e1] hover:border-[#253757]"
+                              : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
                           }`}
                         >
                           <input
@@ -1570,7 +1799,7 @@ export default function VahanDashboardPage() {
                               if (e.target.checked) setVhCatg([...vhCatg, catg]);
                               else setVhCatg(vhCatg.filter((c) => c !== catg));
                             }}
-                            className="rounded border-[#1f2f4c] text-[#0284c7]"
+                            className="rounded border-slate-300 text-[#0284c7]"
                           />
                           <span className="truncate">
                             {isDefault ? "⭐ " : ""}{fullName} ({catg})
@@ -1586,7 +1815,7 @@ export default function VahanDashboardPage() {
               {filterTab === "fuels" && (
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[#818cf8] uppercase">
+                    <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#818cf8]" : "text-indigo-600"}`}>
                       Select Fuel Types ({fuels.length} / {Object.keys(ALL_FUELS_DICT).length} Active)
                     </span>
                     <div className="flex gap-2">
@@ -1598,22 +1827,35 @@ export default function VahanDashboardPage() {
                       </button>
                       <button
                         onClick={() => setFuels(Object.keys(ALL_FUELS_DICT))}
-                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                        className={`px-2 py-0.5 rounded text-[10px] ${
+                          isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        }`}
                       >
                         Select All
                       </button>
                       <button
                         onClick={() => setFuels([])}
-                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                        className={`px-2 py-0.5 rounded text-[10px] ${
+                          isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        }`}
                       >
                         Clear All
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
+                  <div className={`grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 rounded border max-h-[380px] overflow-auto ${
+                    isDark ? "bg-[#070d18] border-[#1a2842]" : "bg-slate-50 border-slate-200"
+                  }`}>
                     {Object.entries(ALL_FUELS_DICT).map(([code, name]) => (
-                      <label key={code} className="flex items-center gap-1.5 p-1 rounded hover:bg-[#0f1b30] cursor-pointer text-[11px] text-[#cbd5e1]">
+                      <label
+                        key={code}
+                        className={`flex items-center gap-1.5 p-1 rounded cursor-pointer text-[11px] transition ${
+                          isDark
+                            ? "hover:bg-[#0f1b30] text-[#cbd5e1]"
+                            : "hover:bg-slate-100 text-slate-700"
+                        }`}
+                      >
                         <input
                           type="checkbox"
                           checked={fuels.includes(code)}
@@ -1621,7 +1863,7 @@ export default function VahanDashboardPage() {
                             if (e.target.checked) setFuels([...fuels, code]);
                             else setFuels(fuels.filter((f) => f !== code));
                           }}
-                          className="rounded border-[#1f2f4c] text-[#0284c7]"
+                          className="rounded border-slate-300 text-[#0284c7]"
                         />
                         <span className="truncate">{name}</span>
                       </label>
@@ -1634,28 +1876,41 @@ export default function VahanDashboardPage() {
               {filterTab === "norms" && (
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[#818cf8] uppercase">
+                    <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#818cf8]" : "text-indigo-600"}`}>
                       Emission Norms ({norms.length > 0 ? `${norms.length} filtered` : "All Norms"})
                     </span>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setNorms(Object.keys(ALL_NORMS_DICT))}
-                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                        className={`px-2 py-0.5 rounded text-[10px] ${
+                          isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        }`}
                       >
                         Select All
                       </button>
                       <button
                         onClick={() => setNorms([])}
-                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                        className={`px-2 py-0.5 rounded text-[10px] ${
+                          isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        }`}
                       >
                         Clear All (No Filter)
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
+                  <div className={`grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 rounded border max-h-[380px] overflow-auto ${
+                    isDark ? "bg-[#070d18] border-[#1a2842]" : "bg-slate-50 border-slate-200"
+                  }`}>
                     {Object.entries(ALL_NORMS_DICT).map(([code, name]) => (
-                      <label key={code} className="flex items-center gap-1.5 p-1 rounded hover:bg-[#0f1b30] cursor-pointer text-[11px] text-[#cbd5e1]">
+                      <label
+                        key={code}
+                        className={`flex items-center gap-1.5 p-1 rounded cursor-pointer text-[11px] transition ${
+                          isDark
+                            ? "hover:bg-[#0f1b30] text-[#cbd5e1]"
+                            : "hover:bg-slate-100 text-slate-700"
+                        }`}
+                      >
                         <input
                           type="checkbox"
                           checked={norms.includes(code)}
@@ -1663,7 +1918,7 @@ export default function VahanDashboardPage() {
                             if (e.target.checked) setNorms([...norms, code]);
                             else setNorms(norms.filter((n) => n !== code));
                           }}
-                          className="rounded border-[#1f2f4c] text-[#0284c7]"
+                          className="rounded border-slate-300 text-[#0284c7]"
                         />
                         <span className="truncate">{name}</span>
                       </label>
@@ -1676,28 +1931,41 @@ export default function VahanDashboardPage() {
               {filterTab === "class" && (
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[#818cf8] uppercase">
+                    <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#818cf8]" : "text-indigo-600"}`}>
                       Vehicle Classes ({vhClass.length > 0 ? `${vhClass.length} filtered` : "All Classes"})
                     </span>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setVhClass(Object.keys(ALL_VHCLASS_DICT))}
-                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                        className={`px-2 py-0.5 rounded text-[10px] ${
+                          isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        }`}
                       >
                         Select All
                       </button>
                       <button
                         onClick={() => setVhClass([])}
-                        className="px-2 py-0.5 bg-[#152238] hover:bg-[#1e3152] rounded text-[10px] text-[#94a3b8]"
+                        className={`px-2 py-0.5 rounded text-[10px] ${
+                          isDark ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        }`}
                       >
                         Clear All (No Filter)
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 bg-[#070d18] p-3 rounded border border-[#1a2842] max-h-[380px] overflow-auto">
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-3 rounded border max-h-[380px] overflow-auto ${
+                    isDark ? "bg-[#070d18] border-[#1a2842]" : "bg-slate-50 border-slate-200"
+                  }`}>
                     {Object.entries(ALL_VHCLASS_DICT).map(([code, name]) => (
-                      <label key={code} className="flex items-center gap-1.5 p-1 rounded hover:bg-[#0f1b30] cursor-pointer text-[11px] text-[#cbd5e1]">
+                      <label
+                        key={code}
+                        className={`flex items-center gap-1.5 p-1 rounded cursor-pointer text-[11px] transition ${
+                          isDark
+                            ? "hover:bg-[#0f1b30] text-[#cbd5e1]"
+                            : "hover:bg-slate-100 text-slate-700"
+                        }`}
+                      >
                         <input
                           type="checkbox"
                           checked={vhClass.includes(code)}
@@ -1705,7 +1973,7 @@ export default function VahanDashboardPage() {
                             if (e.target.checked) setVhClass([...vhClass, code]);
                             else setVhClass(vhClass.filter((c) => c !== code));
                           }}
-                          className="rounded border-[#1f2f4c] text-[#0284c7]"
+                          className="rounded border-slate-300 text-[#0284c7]"
                         />
                         <span className="truncate">{name}</span>
                       </label>
@@ -1715,7 +1983,9 @@ export default function VahanDashboardPage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#162238]">
+            <div className={`flex justify-end gap-2 pt-2 border-t ${
+              isDark ? "border-[#162238]" : "border-slate-200"
+            }`}>
               <button
                 onClick={() => {
                   setVhCatg(DEFAULT_VH_CATG);
@@ -1723,13 +1993,17 @@ export default function VahanDashboardPage() {
                   setNorms([]);
                   setVhClass([]);
                 }}
-                className="px-3 py-1 bg-[#152238] hover:bg-[#1e3152] text-xs font-semibold rounded text-[#94a3b8]"
+                className={`px-3 py-1 text-xs font-semibold rounded transition ${
+                  isDark
+                    ? "bg-[#152238] hover:bg-[#1e3152] text-[#94a3b8]"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                }`}
               >
                 Reset Required Defaults (LMV+LPV)
               </button>
               <button
                 onClick={() => setIsFilterOpen(false)}
-                className="px-4 py-1 bg-[#0284c7] hover:bg-[#0369a1] text-xs font-bold rounded text-white"
+                className="px-4 py-1 bg-[#0284c7] hover:bg-[#0369a1] text-xs font-bold rounded text-white shadow"
               >
                 Save & Apply Filters
               </button>
