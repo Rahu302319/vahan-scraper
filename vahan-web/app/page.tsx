@@ -5,8 +5,11 @@ import {
   Play, Pause, Square, RotateCw, Download, Settings,
   Search, CheckSquare, Square as UncheckedSquare,
   Activity, Car, Building2, Trophy, AlertTriangle, FileSpreadsheet,
-  CheckCircle2, Folder, FolderOpen, ExternalLink, HardDrive, ShieldCheck, Zap
+  CheckCircle2, Folder, FolderOpen, ExternalLink, HardDrive, ShieldCheck, Zap,
+  Sun, Moon, LayoutDashboard, Database as DatabaseIcon, Gauge, Sparkles
 } from "lucide-react";
+import ExecutiveDashboard from "@/components/ExecutiveDashboard";
+import DatabaseManager, { OEMRecord, RTORecord } from "@/components/DatabaseManager";
 import {
   RTOItem, RTORowData, DEFAULT_VH_CATG, ALL_VH_CATG, ALL_VH_CATG_DICT,
   DEFAULT_FUELS, ALL_FUELS_DICT, ALL_NORMS_DICT, ALL_VHCLASS_DICT, YAXIS_OPTIONS
@@ -32,6 +35,46 @@ export default function VahanDashboardPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activePreviewRTO, setActivePreviewRTO] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "summary" | "logs">("preview");
+
+  // Main Tab Navigation: "scraper" | "dashboard" | "database"
+  const [mainTab, setMainTab] = useState<"scraper" | "dashboard" | "database">("scraper");
+
+  // Global Theme: "dark" | "light"
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  // Shared OEM and RTO database state
+  const [oemDb, setOemDb] = useState<OEMRecord[]>([]);
+  const [rtoDt, setRtoDt] = useState<RTORecord[]>([]);
+
+  // Theme persistence & document class sync
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem("vahan_theme") as "dark" | "light" | null;
+      if (savedTheme) {
+        setTheme(savedTheme);
+      }
+    } catch {}
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem("vahan_theme", nextTheme);
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (theme === "light") {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
+      } else {
+        document.documentElement.classList.remove("light");
+        document.documentElement.classList.add("dark");
+      }
+    }
+  }, [theme]);
 
   // Output Path Selection Option
   const [outputPath, setOutputPath] = useState<string>("C:\\Users\\Rah\\Desktop\\NEW VAHAN\\output");
@@ -638,31 +681,126 @@ export default function VahanDashboardPage() {
   const completedRtosCount = rtos.filter((r) => r.status === "done").length;
   const failedRtosCount = rtos.filter((r) => r.status === "failed").length;
 
+  const isDark = theme === "dark";
+
   return (
-    <div className="flex flex-col min-h-screen p-2 sm:p-3 gap-2.5 max-w-[1750px] mx-auto bg-[#060911] text-[#cbd5e1]">
-      {/* 1. Tactical Compact Header Bar */}
-      <header className="flex flex-wrap items-center justify-between p-2.5 px-3.5 bg-gradient-to-r from-[#0a1120] to-[#0f1a30] border border-[#1e2c47] rounded-lg shadow-md">
+    <div
+      className={`flex flex-col min-h-screen p-2 sm:p-3 gap-2.5 max-w-[1750px] mx-auto transition-colors duration-200 ${
+        isDark ? "bg-[#060911] text-[#cbd5e1]" : "bg-slate-100 text-slate-800"
+      }`}
+    >
+      {/* 1. Tactical Compact Header Bar with Global Navigation & Theme Toggle */}
+      <header
+        className={`flex flex-wrap items-center justify-between p-2.5 px-3.5 border rounded-lg shadow-md transition-colors gap-2.5 ${
+          isDark
+            ? "bg-gradient-to-r from-[#0a1120] to-[#0f1a30] border-[#1e2c47]"
+            : "bg-white border-slate-200 shadow-sm"
+        }`}
+      >
         <div className="flex items-center gap-2.5">
           <span className="px-2 py-0.5 rounded text-[11px] font-extrabold bg-[#0284c7] text-white tracking-wider">
             KL • KERALA
           </span>
-          <h1 className="text-base sm:text-lg font-extrabold text-[#38bdf8] tracking-wide flex items-center gap-2">
-            <Car className="w-4 h-4 text-[#38bdf8]" />
-            VAHAN 4 DASHBOARD — 87 RTO ENGINE
+          <h1
+            className={`text-base sm:text-lg font-extrabold tracking-wide flex items-center gap-2 ${
+              isDark ? "text-[#38bdf8]" : "text-sky-700"
+            }`}
+          >
+            <Car className={`w-4 h-4 ${isDark ? "text-[#38bdf8]" : "text-sky-600"}`} />
+            VAHAN 4 INTELLIGENCE PLATFORM
           </h1>
-          <span className="hidden md:inline-block text-xs text-[#64748b]">
-            | Maker Month-Wise Registration Analytics
+          <span className={`hidden xl:inline-block text-xs ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+            | 87 RTO Engine • Executive Dashboard • OEM Database
           </span>
         </div>
 
+        {/* 2. Top-Level Main Navigation Pills */}
+        <nav
+          className={`flex items-center gap-1 p-1 rounded-lg border ${
+            isDark ? "bg-[#070d18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
+          }`}
+        >
+          <button
+            onClick={() => setMainTab("scraper")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition ${
+              mainTab === "scraper"
+                ? "bg-[#0284c7] text-white shadow-sm"
+                : isDark
+                ? "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+            }`}
+          >
+            <Gauge className="w-3.5 h-3.5" />
+            <span>87 RTO Scraper</span>
+          </button>
+
+          <button
+            onClick={() => setMainTab("dashboard")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition ${
+              mainTab === "dashboard"
+                ? "bg-gradient-to-r from-[#0284c7] to-[#0d9488] text-white shadow-sm"
+                : isDark
+                ? "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+            }`}
+          >
+            <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Executive Dashboard</span>
+            <span className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              New
+            </span>
+          </button>
+
+          <button
+            onClick={() => setMainTab("database")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition ${
+              mainTab === "database"
+                ? "bg-[#0284c7] text-white shadow-sm"
+                : isDark
+                ? "text-[#94a3b8] hover:text-white hover:bg-[#152238]"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+            }`}
+          >
+            <DatabaseIcon className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Database Manager</span>
+            <span className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              OEM_DB
+            </span>
+          </button>
+        </nav>
+
+        {/* 3. Global Actions & Theme Switcher */}
         <div className="flex items-center gap-2 mt-1 sm:mt-0">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-[#064e3b]/60 text-[#34d399] border border-[#059669]">
+          <button
+            onClick={toggleTheme}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold border transition ${
+              isDark
+                ? "bg-[#111c33] border-[#1e2e4f] text-[#cbd5e1] hover:bg-[#1a2b4c]"
+                : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
+            }`}
+            title={`Switch to ${isDark ? "Light" : "Dark"} Mode`}
+          >
+            {isDark ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span>Light</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-slate-700" />
+                <span>Dark</span>
+              </>
+            )}
+          </button>
+
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-[#064e3b]/60 text-[#34d399] border border-[#059669]">
             <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
             Portal Online ({rtos.length} RTOs)
           </span>
+
           <button
             onClick={downloadMasterExcel}
-            className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold bg-gradient-to-r from-[#065f46] to-[#047857] hover:from-[#047857] hover:to-[#059669] text-white border border-[#10b981] transition shadow"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold bg-gradient-to-r from-[#065f46] to-[#047857] hover:from-[#047857] hover:to-[#059669] text-white border border-[#10b981] transition shadow"
           >
             <Download className="w-3.5 h-3.5" />
             Download Master Excel
@@ -670,7 +808,9 @@ export default function VahanDashboardPage() {
         </div>
       </header>
 
-      {/* 2. Combat Control Deck (Two-Tier High-Density HUD) */}
+      {mainTab === "scraper" && (
+        <>
+          {/* 2. Combat Control Deck (Two-Tier High-Density HUD) */}
       <section className="flex flex-col gap-2 p-2.5 bg-[#0b1222] border border-[#1c2a44] rounded-lg shadow-md">
         {/* Tier 1: Parameters + OUTPUT PATH SELECTION OPTION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 items-end">
@@ -1596,6 +1736,27 @@ export default function VahanDashboardPage() {
             </div>
           </div>
         </div>
+      )}
+        </>
+      )}
+
+      {/* EXECUTIVE ANALYTICS DASHBOARD TAB */}
+      {mainTab === "dashboard" && (
+        <ExecutiveDashboard
+          theme={theme}
+          liveScrapedRows={rtos.flatMap((r) => r.data || [])}
+          oemDb={oemDb}
+          rtoDt={rtoDt}
+        />
+      )}
+
+      {/* OEM & RTO DATABASE MANAGER TAB */}
+      {mainTab === "database" && (
+        <DatabaseManager
+          theme={theme}
+          onOemDbChange={setOemDb}
+          onRtoDtChange={setRtoDt}
+        />
       )}
     </div>
   );

@@ -1,0 +1,632 @@
+[
+  {
+    "oemName": "ASHOK LEYLAND LTD",
+    "oemFinal": "ASHOK LEYLAND LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "AUDI AG",
+    "oemFinal": "AUDI AG",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "AUTOMOBILI LAMBORGHINI S.P.A",
+    "oemFinal": "AUTOMOBILI LAMBORGHINI S.P.A",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "BAJAJ AUTO LTD",
+    "oemFinal": "BAJAJ AUTO LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "BMW INDIA PVT LTD",
+    "oemFinal": "BMW INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "BYD INDIA PRIVATE LIMITED",
+    "oemFinal": "BYD INDIA PRIVATE LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "FIAT INDIA AUTOMOBILES PVT LTD",
+    "oemFinal": "FIAT INDIA AUTOMOBILES PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "FORCE MOTORS LIMITED, A FIRODIA ENTERPRISE",
+    "oemFinal": "FORCE MOTORS LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "FORD INDIA PVT LTD",
+    "oemFinal": "FORD INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "HONDA CARS INDIA LTD",
+    "oemFinal": "HONDA CARS INDIA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Honda"
+  },
+  {
+    "oemName": "HYUNDAI MOTOR INDIA LTD",
+    "oemFinal": "HYUNDAI MOTOR INDIA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Hyundai"
+  },
+  {
+    "oemName": "HYUNDAI MOTORS LTD, SOUTH KOREA",
+    "oemFinal": "HYUNDAI MOTOR INDIA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Hyundai"
+  },
+  {
+    "oemName": "JAGUAR LAND ROVER INDIA LIMITED",
+    "oemFinal": "JAGUAR LAND ROVER INDIA LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "KIA MOTORS INDIA PVT LTD",
+    "oemFinal": "KIA INDIA PRIVATE LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Kia"
+  },
+  {
+    "oemName": "MAHINDRA & MAHINDRA LIMITED",
+    "oemFinal": "MAHINDRA & MAHINDRA LIMITED",
+    "oemGroup": "M&M",
+    "oemGrouping": "Mahindra"
+  },
+  {
+    "oemName": "MARUTI SUZUKI INDIA LTD",
+    "oemFinal": "MARUTI SUZUKI INDIA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Maruti"
+  },
+  {
+    "oemName": "MARUTI UDYOG LTD",
+    "oemFinal": "MARUTI SUZUKI INDIA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Maruti"
+  },
+  {
+    "oemName": "MERCEDES -BENZ AG",
+    "oemFinal": "MERCEDES-BENZ INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "MERCEDES-BENZ INDIA PVT LTD",
+    "oemFinal": "MERCEDES-BENZ INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "MG MOTOR INDIA PVT LTD",
+    "oemFinal": "MG MOTOR INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "MG"
+  },
+  {
+    "oemName": "NISSAN MOTOR INDIA PVT LTD",
+    "oemFinal": "NISSAN MOTOR INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "PORSCHE AG GERMANY",
+    "oemFinal": "PORSCHE AG GERMANY",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "RENAULT INDIA PVT LTD",
+    "oemFinal": "RENAULT INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "SKODA AUTO INDIA PVT LTD",
+    "oemFinal": "SKODA AUTO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "SKODA AUTO VOLKSWAGEN INDIA PVT LTD",
+    "oemFinal": "SKODA AUTO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "TATA MOTORS LTD",
+    "oemFinal": "TATA MOTORS LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Tata"
+  },
+  {
+    "oemName": "TATA MOTORS PASSENGER VEHICLES LTD",
+    "oemFinal": "TATA MOTORS LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Tata"
+  },
+  {
+    "oemName": "TOYOTA KIRLOSKAR MOTOR PVT LTD",
+    "oemFinal": "TOYOTA KIRLOSKAR MOTOR PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Toyota"
+  },
+  {
+    "oemName": "VOLKSWAGEN AG",
+    "oemFinal": "SKODA AUTO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "VOLVO AUTO INDIA PVT LTD",
+    "oemFinal": "VOLVO AUTO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "TATA PASSENGER ELECTRIC MOBILITY LTD",
+    "oemFinal": "TATA MOTORS LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Tata"
+  },
+  {
+    "oemName": "PCA AUTOMOBILES INDIA PVT LTD",
+    "oemFinal": "PCA AUTOMOBILES INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "SUZUKI JAPAN",
+    "oemFinal": "MARUTI SUZUKI INDIA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Maruti"
+  },
+  {
+    "oemName": "ISUZU MOTORS INDIA PVT LTD",
+    "oemFinal": "ISUZU MOTORS INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "CATERPILLAR INDIA PRIVATE LIMITED",
+    "oemFinal": "CATERPILLAR INDIA PRIVATE LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "CNH INDUSTRIAL (INDIA) PVT LTD",
+    "oemFinal": "CNH INDUSTRIAL (INDIA) PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "ESCORTS KUBOTA LIMITED (AGRI MACHINERY GROUP)",
+    "oemFinal": "ESCORTS KUBOTA LIMITED (AGRI MACHINERY GROUP)",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "FCA INDIA AUTOMOBILES PRIVATE LIMITED",
+    "oemFinal": "FIAT INDIA AUTOMOBILES PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "FORCE MOTORS LIMITED",
+    "oemFinal": "FORCE MOTORS LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "GROMAX AGRI EQUIPMENT LTD",
+    "oemFinal": "GROMAX AGRI EQUIPMENT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "INTERNATIONAL TRACTORS LIMITED",
+    "oemFinal": "INTERNATIONAL TRACTORS LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "JCB INDIA LIMITED",
+    "oemFinal": "JCB INDIA LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "JOHN DEERE INDIA  PVT LTD(TRACTOR DEVISION)",
+    "oemFinal": "JOHN DEERE INDIA  PVT LTD(TRACTOR DEVISION)",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "KIA INDIA PRIVATE LIMITED",
+    "oemFinal": "KIA INDIA PRIVATE LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Kia"
+  },
+  {
+    "oemName": "KUBOTA AGRICULTURAL MACHINERY INDIA PVT.LTD.",
+    "oemFinal": "KUBOTA AGRICULTURAL MACHINERY INDIA PVT.LTD.",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "L&T CONSTRUCTION EQUIPMENT LIMITED",
+    "oemFinal": "L&T CONSTRUCTION EQUIPMENT LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "MAHINDRA & MAHINDRA LIMITED (SWARAJ DIVISION)",
+    "oemFinal": "MAHINDRA & MAHINDRA LIMITED (SWARAJ DIVISION)",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "MAHINDRA & MAHINDRA LIMITED (TRACTOR)",
+    "oemFinal": "MAHINDRA & MAHINDRA LIMITED (TRACTOR)",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "P M DIESELS PVT LTD",
+    "oemFinal": "P M DIESELS PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "PIAGGIO VEHICLES PVT LTD",
+    "oemFinal": "PIAGGIO VEHICLES PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "ROLLS ROYCE MOTOR (IMPORTER: KUN MOTOR)",
+    "oemFinal": "ROLLS ROYCE MOTOR (IMPORTER: KUN MOTOR)",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "SAME DEUTZ - FAHR INDIA (P) LTD.",
+    "oemFinal": "SAME DEUTZ - FAHR INDIA (P) LTD.",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "SML ISUZU LTD",
+    "oemFinal": "SML ISUZU LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "TAFE LIMITED",
+    "oemFinal": "TAFE LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "TORK MOTORS PVT LTD",
+    "oemFinal": "TORK MOTORS PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "TVS MOTOR COMPANY LTD",
+    "oemFinal": "TVS MOTOR COMPANY LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "V.S.T. TILLERS TRACTORS LIMITED",
+    "oemFinal": "V.S.T. TILLERS TRACTORS LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "VE COMMERCIAL VEHICLES LTD",
+    "oemFinal": "VE COMMERCIAL VEHICLES LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "VOLKSWAGEN INDIA PVT LTD",
+    "oemFinal": "SKODA AUTO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "AJAX ENGINEERING PVT LTD",
+    "oemFinal": "AJAX ENGINEERING PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "DOOSAN BOBCAT INDIA PVT LTD",
+    "oemFinal": "DOOSAN BOBCAT INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "KERALA AGRO MACHINERY CORP. LTD.",
+    "oemFinal": "KERALA AGRO MACHINERY CORP. LTD.",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "SKODA AUTO AS",
+    "oemFinal": "SKODA AUTO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "AGRI KING TRACTORS & EQUIPMENTS PVT LTD",
+    "oemFinal": "AGRI KING TRACTORS & EQUIPMENTS PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "JAYEM AUTOMOTIVES PVT LTD",
+    "oemFinal": "JAYEM AUTOMOTIVES PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "HERO HONDA MOTORS  LTD",
+    "oemFinal": "HERO HONDA MOTORS  LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "DAIMLER AG",
+    "oemFinal": "DAIMLER AG",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "HONDA MOTORCYCLE AND SCOOTER INDIA (P) LTD",
+    "oemFinal": "HONDA MOTORCYCLE AND SCOOTER INDIA (P) LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "INDIA YAMAHA MOTOR PVT LTD",
+    "oemFinal": "INDIA YAMAHA MOTOR PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "KINETIC MOTOR COMPANY LIMITED",
+    "oemFinal": "KINETIC MOTOR COMPANY LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "OTHERS",
+    "oemFinal": "OTHERS",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "TELCO LTD",
+    "oemFinal": "TELCO LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "EICHER TRACTORS",
+    "oemFinal": "EICHER TRACTORS",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "HINDUSTAN MOTOR CORPORATION",
+    "oemFinal": "HINDUSTAN MOTOR CORPORATION",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "EICHER MOTORS LTD",
+    "oemFinal": "EICHER MOTORS LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "ASTON MARTIN LAGONDA LTD",
+    "oemFinal": "ASTON MARTIN LAGONDA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "CAPTAIN TRACTORS PVT. LTD.",
+    "oemFinal": "CAPTAIN TRACTORS PVT. LTD.",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "DOOSAN INT INDIA PVT LTD",
+    "oemFinal": "DOOSAN INT INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "MAHINDRA ELECTRIC MOBILITY LIMITED",
+    "oemFinal": "MAHINDRA ELECTRIC AUTOMOBILE LTD",
+    "oemGroup": "M&M",
+    "oemGrouping": "Mahindra"
+  },
+  {
+    "oemName": "M/S SCHWING STETTER (INDIA) PRIVATE LIMITED",
+    "oemFinal": "M/S SCHWING STETTER (INDIA) PRIVATE LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "MARUTI INDUSTRIES",
+    "oemFinal": "MARUTI INDUSTRIES",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "BULL MACHINES PVT LTD",
+    "oemFinal": "BULL MACHINES PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "DYNAPAC ROAD CONSTRUCTION EQUIPMENT INDIA PVT LTD",
+    "oemFinal": "DYNAPAC ROAD CONSTRUCTION EQUIPMENT INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "BENTLEY MOTORS LIMITED",
+    "oemFinal": "BENTLEY MOTORS LIMITED",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "ACTION CONSTRUCTION EQUIPMENT LTD.",
+    "oemFinal": "ACTION CONSTRUCTION EQUIPMENT LTD.",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "MAHINDRA ELECTRIC AUTOMOBILE LTD",
+    "oemFinal": "MAHINDRA ELECTRIC AUTOMOBILE LTD",
+    "oemGroup": "M&M",
+    "oemGrouping": "Mahindra"
+  },
+  {
+    "oemName": "TOYOTA HIACE GL COMMUTER",
+    "oemFinal": "TOYOTA KIRLOSKAR MOTOR PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Toyota"
+  },
+  {
+    "oemName": "KION INDIA PVT LTD",
+    "oemFinal": "KION INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "JSW MG MOTOR INDIA PVT LTD",
+    "oemFinal": "MG MOTOR INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "MG"
+  },
+  {
+    "oemName": "AJAX ENGINEERING LTD",
+    "oemFinal": "AJAX ENGINEERING LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "MERCEDES BENZ",
+    "oemFinal": "MERCEDES-BENZ INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Premium"
+  },
+  {
+    "oemName": "HINDUSTAN MOTORS LTD",
+    "oemFinal": "HINDUSTAN MOTOR CORPORATION",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "FERRARI SPA (IMPORTER:SELECT CARS P LTD)",
+    "oemFinal": "FERRARI SPA (IMPORTER:SELECT CARS P LTD)",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "AMMANN APOLLO INDIA PVT LTD",
+    "oemFinal": "AMMANN APOLLO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "POLARIS INDIA PVT LTD",
+    "oemFinal": "POLARIS INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "STELLANTIS AUTOMOBILES INDIA PVT LTD",
+    "oemFinal": "STELLANTIS AUTOMOBILES INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "STELLANTIS INDIA PVT LTD",
+    "oemFinal": "STELLANTIS INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "VINFAST AUTO INDIA PVT LTD",
+    "oemFinal": "VINFAST AUTO INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "DAIMLER INDIA COMMERCIAL VEHICLES PVT. LTD",
+    "oemFinal": "DAIMLER INDIA COMMERCIAL VEHICLES PVT. LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "SML MAHINDRA LTD",
+    "oemFinal": "SML MAHINDRA LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "MASERATI S.P.A",
+    "oemFinal": "MASERATI S.P.A",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "RIVER MOBILITY PVT LTD",
+    "oemFinal": "RIVER MOBILITY PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "AMMANN INDIA PVT LTD",
+    "oemFinal": "AMMANN INDIA PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "EICHER POLARIS PVT. LTD.",
+    "oemFinal": "EICHER POLARIS PVT. LTD.",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  },
+  {
+    "oemName": "TESLA INDIA MOTORS AND ENERGY PVT LTD",
+    "oemFinal": "TESLA INDIA MOTORS AND ENERGY PVT LTD",
+    "oemGroup": "Other OEM",
+    "oemGrouping": "Others"
+  }
+]

@@ -1,0 +1,992 @@
+[
+  {
+    "srtOffice": "Parasala",
+    "finalRtoName": "Parasala",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Neyyattinkara",
+    "finalRtoName": "Neyyattinkara",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Nedumangadu",
+    "finalRtoName": "Nedumangadu",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kazhakuttom",
+    "finalRtoName": "Kazhakuttom",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Karunagapally",
+    "finalRtoName": "Karunagapally",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kottarakkara",
+    "finalRtoName": "Kottarakkara",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Punalur",
+    "finalRtoName": "Punalur",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Adoor",
+    "finalRtoName": "Adoor",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Thiruvalla",
+    "finalRtoName": "Thiruvalla",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Mallappally",
+    "finalRtoName": "Mallappally",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kayamkulam",
+    "finalRtoName": "Kayamkulam",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Chengannur",
+    "finalRtoName": "Chengannur",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Mavelikkara",
+    "finalRtoName": "Mavelikkara",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Cherthala",
+    "finalRtoName": "Cherthala",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Changanachery",
+    "finalRtoName": "Changanachery",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kanjirapally",
+    "finalRtoName": "Kanjirapally",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Pala",
+    "finalRtoName": "Pala",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Vaikom",
+    "finalRtoName": "Vaikom",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Vandiperiyar",
+    "finalRtoName": "Vandiperiyar",
+    "district": "Idukki",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Thodupuzha",
+    "finalRtoName": "Thodupuzha",
+    "district": "Idukki",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Thripunithura",
+    "finalRtoName": "Thripunithura",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Perumbavur",
+    "finalRtoName": "Perumbavur",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Aluva",
+    "finalRtoName": "Aluva",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "North Paravur",
+    "finalRtoName": "North Paravur",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Mattanchery",
+    "finalRtoName": "Mattanchery",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kothamangalam",
+    "finalRtoName": "Kothamangalam",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Irinjalakkuda",
+    "finalRtoName": "Irinjalakkuda",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Guruvayur",
+    "finalRtoName": "Guruvayur",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kodungallur",
+    "finalRtoName": "Kodungallur",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Wadakkanchery",
+    "finalRtoName": "Wadakkanchery",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Alathur",
+    "finalRtoName": "Alathur",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Mannarkkad",
+    "finalRtoName": "Mannarkkad",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Ottappalam",
+    "finalRtoName": "Ottappalam",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Pattambi",
+    "finalRtoName": "Pattambi",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Perintalmanna",
+    "finalRtoName": "Perintalmanna",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Ponnani",
+    "finalRtoName": "Ponnani",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Tirur",
+    "finalRtoName": "Tirur",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Koilandy",
+    "finalRtoName": "Koilandy",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Koduvally",
+    "finalRtoName": "Koduvally",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thalassery",
+    "finalRtoName": "Thalassery",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thaliparamba",
+    "finalRtoName": "Thaliparamba",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kanhangad",
+    "finalRtoName": "Kanhangad",
+    "district": "Kasargod",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kunnathur",
+    "finalRtoName": "Kunnathur",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Ranni",
+    "finalRtoName": "Ranni",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Angamali",
+    "finalRtoName": "Angamali",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Chalakkudy",
+    "finalRtoName": "Chalakkudy",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kuttanadu",
+    "finalRtoName": "Kuttanadu",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Uzhavur",
+    "finalRtoName": "Uzhavur",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Devikulam",
+    "finalRtoName": "Devikulam",
+    "district": "Idukki",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Udumbanchola",
+    "finalRtoName": "Udumbanchola",
+    "district": "Idukki",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Chittur",
+    "finalRtoName": "Chittur",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Nilambur",
+    "finalRtoName": "Nilambur",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Mananthavady",
+    "finalRtoName": "Mananthavady",
+    "district": "Wayanad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Sulthan Bathery",
+    "finalRtoName": "Sulthan Bathery",
+    "district": "Wayanad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kattakkada",
+    "finalRtoName": "Kattakkada",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Thriprayar",
+    "finalRtoName": "Thriprayar",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Nanmanda",
+    "finalRtoName": "Nanmanda",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Perambra",
+    "finalRtoName": "Perambra",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Iritty",
+    "finalRtoName": "Iritty",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Vellarikundu",
+    "finalRtoName": "Vellarikundu",
+    "district": "Kasargod",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Pathanapuram",
+    "finalRtoName": "Pathanapuram",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Varkala",
+    "finalRtoName": "Varkala",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Chadayamangalam",
+    "finalRtoName": "Chadayamangalam",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Konni",
+    "finalRtoName": "Konni",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kondotty",
+    "finalRtoName": "Kondotty",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Ramanattukara",
+    "finalRtoName": "Ramanattukara",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Payyannur",
+    "finalRtoName": "Payyannur",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Attingal",
+    "finalRtoName": "Attingal",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Muvattupuzha",
+    "finalRtoName": "Muvattupuzha",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Vadakara",
+    "finalRtoName": "Vadakara",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Alappuzha",
+    "finalRtoName": "Alappuzha",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Ernakulam",
+    "finalRtoName": "Ernakulam",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Idukki",
+    "finalRtoName": "Idukki",
+    "district": "Idukki",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kannur",
+    "finalRtoName": "Kannur",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kasaragode",
+    "finalRtoName": "Kasaragode",
+    "district": "Kasargod",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kollam",
+    "finalRtoName": "Kollam",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kottayam",
+    "finalRtoName": "Kottayam",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kozhikkode",
+    "finalRtoName": "Kozhikkode",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Malappuram",
+    "finalRtoName": "Malappuram",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Palakkad",
+    "finalRtoName": "Palakkad",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Pathanamthitta",
+    "finalRtoName": "Pathanamthitta",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Tirurangadi",
+    "finalRtoName": "Tirurangadi",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thrissur",
+    "finalRtoName": "Thrissur",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thiruvananthapuram",
+    "finalRtoName": "Thiruvananthapuram",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Wayanad",
+    "finalRtoName": "Wayanad",
+    "district": "Wayanad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Alapuzha",
+    "finalRtoName": "Alappuzha",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Chalakudy",
+    "finalRtoName": "Chalakkudy",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Changanaserry",
+    "finalRtoName": "Changanachery",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Chathayamangalam",
+    "finalRtoName": "Chadayamangalam",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Irringalakuda",
+    "finalRtoName": "Irinjalakkuda",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Irritty",
+    "finalRtoName": "Iritty",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kajirapally",
+    "finalRtoName": "Kanjirapally",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kanhagad",
+    "finalRtoName": "Kanhangad",
+    "district": "Kasargod",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kasargode",
+    "finalRtoName": "Kasaragode",
+    "district": "Kasargod",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kattakada",
+    "finalRtoName": "Kattakkada",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kazhakoottam",
+    "finalRtoName": "Kazhakuttom",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kodungalloor",
+    "finalRtoName": "Kodungallur",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kotayam",
+    "finalRtoName": "Kottayam",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kottarakara",
+    "finalRtoName": "Kottarakkara",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kozhikode",
+    "finalRtoName": "Kozhikkode",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kuttandu",
+    "finalRtoName": "Kuttanadu",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Mallapally",
+    "finalRtoName": "Mallappally",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Manathavady",
+    "finalRtoName": "Mananthavady",
+    "district": "Wayanad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Mavelikara",
+    "finalRtoName": "Mavelikkara",
+    "district": "Alappuzha",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Neyyattingara",
+    "finalRtoName": "Neyyattinkara",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "North paravoor",
+    "finalRtoName": "North Paravur",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Ottapalam",
+    "finalRtoName": "Ottappalam",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Palai",
+    "finalRtoName": "Pala",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Payyanur",
+    "finalRtoName": "Payyannur",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Perinthalmanna",
+    "finalRtoName": "Perintalmanna",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Perumbavoor",
+    "finalRtoName": "Perumbavur",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Punaloor",
+    "finalRtoName": "Punalur",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Rani",
+    "finalRtoName": "Ranni",
+    "district": "Pathanamthitta",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Sulthanbatherry",
+    "finalRtoName": "Sulthan Bathery",
+    "district": "Wayanad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thalaserry",
+    "finalRtoName": "Thalassery",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thirurangadi",
+    "finalRtoName": "Tirurangadi",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thripunnithara",
+    "finalRtoName": "Thripunithura",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Thrivandram",
+    "finalRtoName": "Thiruvananthapuram",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Tirrur",
+    "finalRtoName": "Tirur",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Udumbumchola",
+    "finalRtoName": "Udumbanchola",
+    "district": "Idukki",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Uzhavoor",
+    "finalRtoName": "Uzhavur",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Vaikkom",
+    "finalRtoName": "Vaikom",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Wadakanchery",
+    "finalRtoName": "Wadakkanchery",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Chadayamangala",
+    "finalRtoName": "Chadayamangalam",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Guruvayoor",
+    "finalRtoName": "Guruvayur",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Irinjalakuda",
+    "finalRtoName": "Irinjalakkuda",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Kothamanagalam",
+    "finalRtoName": "Kothamanaagalam",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Mannaragat",
+    "finalRtoName": "Mannarkkad",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Mattancherry",
+    "finalRtoName": "Mattanchery",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Nanmanada",
+    "finalRtoName": "Nanmanda",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Neyyatinkara",
+    "finalRtoName": "Neyyattinkara",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Norath Paravoor",
+    "finalRtoName": "North Paravur",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Palakad",
+    "finalRtoName": "Palakkad",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Perumbavor",
+    "finalRtoName": "Perumbavur",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Thalasery",
+    "finalRtoName": "Thalassery",
+    "district": "Kannur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Thirur",
+    "finalRtoName": "Tirur",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Angamaly",
+    "finalRtoName": "Angamali",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Attingal",
+    "finalRtoName": "Attingal",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Changanassery",
+    "finalRtoName": "Changanachery",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Eranakulam",
+    "finalRtoName": "Ernakulam",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kanjirappally",
+    "finalRtoName": "Kanjirapally",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Karunagappalli",
+    "finalRtoName": "Karunagapally",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Kasargod",
+    "finalRtoName": "Kasaragode",
+    "district": "Kasargod",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Koyilandy",
+    "finalRtoName": "Koilandy",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Nedumangad",
+    "finalRtoName": "Nedumangadu",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Parassala",
+    "finalRtoName": "Parasala",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Ramanattukara (Feroke)",
+    "finalRtoName": "Ramanattukara",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Vadakara",
+    "finalRtoName": "Vadakara",
+    "district": "Kozhikode",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Chadhayamangalam",
+    "finalRtoName": "Chadayamangalam",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Chalakudi",
+    "finalRtoName": "Chalakkudy",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "iringalakuda",
+    "finalRtoName": "Irinjalakkuda",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "kazhakuttam",
+    "finalRtoName": "Kazhakuttom",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Mannarangatt",
+    "finalRtoName": "Mannarkkad",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Nilampur",
+    "finalRtoName": "Nilambur",
+    "district": "Malappuram",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "Sulthanbathery",
+    "finalRtoName": "Sulthan Bathery",
+    "district": "Wayanad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "trivandram",
+    "finalRtoName": "Thiruvananthapuram",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Vadakkanchery",
+    "finalRtoName": "Wadakkanchery",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "varakala",
+    "finalRtoName": "Varkala",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Changanacherry",
+    "finalRtoName": "Changanachery",
+    "district": "Kottayam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Karunagappally",
+    "finalRtoName": "Karunagapally",
+    "district": "Kollam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Mannarghat",
+    "finalRtoName": "Mannarkkad",
+    "district": "Palakkad",
+    "territory": "North Kerala"
+  },
+  {
+    "srtOffice": "North",
+    "finalRtoName": "North Paravur",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Tripunithura",
+    "finalRtoName": "Thripunithura",
+    "district": "Ernakulam",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Trivandrum",
+    "finalRtoName": "Thiruvananthapuram",
+    "district": "Thiruvananthapuram",
+    "territory": "South Kerala"
+  },
+  {
+    "srtOffice": "Wadakkancherry",
+    "finalRtoName": "Wadakkanchery",
+    "district": "Thrissur",
+    "territory": "North Kerala"
+  }
+]

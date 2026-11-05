@@ -1,0 +1,234 @@
+{
+  "byYear": {
+    "2021": {
+      "Honda": 8978,
+      "Hyundai": 21956,
+      "Kia": 10837,
+      "MG": 1541,
+      "Mahindra": 5567,
+      "Maruti": 113108,
+      "Others": 19086,
+      "Premium": 1299,
+      "Tata": 33522,
+      "Toyota": 11279
+    },
+    "2022": {
+      "Honda": 14275,
+      "Hyundai": 32392,
+      "Kia": 19909,
+      "MG": 2733,
+      "Mahindra": 12738,
+      "Maruti": 172202,
+      "Others": 37745,
+      "Premium": 2267,
+      "Tata": 60637,
+      "Toyota": 22546
+    },
+    "2023": {
+      "Honda": 9262,
+      "Hyundai": 25776,
+      "Kia": 18424,
+      "MG": 1864,
+      "Mahindra": 10379,
+      "Maruti": 134783,
+      "Others": 22182,
+      "Premium": 1959,
+      "Tata": 34765,
+      "Toyota": 18409
+    },
+    "2024": {
+      "Honda": 5839,
+      "Hyundai": 19508,
+      "Kia": 11457,
+      "MG": 1934,
+      "Mahindra": 7764,
+      "Maruti": 97341,
+      "Others": 14141,
+      "Premium": 1596,
+      "Tata": 23684,
+      "Toyota": 15973
+    },
+    "2025": {
+      "Honda": 4920,
+      "Hyundai": 19115,
+      "Kia": 12269,
+      "MG": 3569,
+      "Mahindra": 11837,
+      "Maruti": 109773,
+      "Others": 14026,
+      "Premium": 1878,
+      "Tata": 20762,
+      "Toyota": 22365
+    },
+    "2026": {
+      "Honda": 5117,
+      "Hyundai": 20604,
+      "Kia": 14111,
+      "MG": 5517,
+      "Mahindra": 22095,
+      "Maruti": 133989,
+      "Others": 17422,
+      "Premium": 2219,
+      "Tata": 26716,
+      "Toyota": 31169
+    }
+  },
+  "byTerritory": {
+    "2021": {
+      "North Kerala": {
+        "Honda": 3495,
+        "Hyundai": 10878,
+        "Kia": 4589,
+        "MG": 678,
+        "Mahindra": 2451,
+        "Maruti": 56362,
+        "Others": 7480,
+        "Premium": 545,
+        "Tata": 15805,
+        "Toyota": 6002
+      },
+      "South Kerala": {
+        "Honda": 5483,
+        "Hyundai": 11078,
+        "Kia": 6248,
+        "MG": 863,
+        "Mahindra": 3116,
+        "Maruti": 56746,
+        "Others": 11606,
+        "Premium": 754,
+        "Tata": 17717,
+        "Toyota": 5277
+      }
+    },
+    "2022": {
+      "North Kerala": {
+        "Honda": 5591,
+        "Hyundai": 15245,
+        "Kia": 8136,
+        "MG": 1133,
+        "Mahindra": 5764,
+        "Maruti": 84283,
+        "Others": 15064,
+        "Premium": 933,
+        "Tata": 28204,
+        "Toyota": 11314
+      },
+      "South Kerala": {
+        "Honda": 8684,
+        "Hyundai": 17147,
+        "Kia": 11773,
+        "MG": 1600,
+        "Mahindra": 6974,
+        "Maruti": 87919,
+        "Others": 22681,
+        "Premium": 1334,
+        "Tata": 32433,
+        "Toyota": 11232
+      }
+    },
+    "2023": {
+      "North Kerala": {
+        "Honda": 3292,
+        "Hyundai": 10744,
+        "Kia": 7127,
+        "MG": 691,
+        "Mahindra": 4188,
+        "Maruti": 61317,
+        "Others": 8009,
+        "Premium": 748,
+        "Tata": 15379,
+        "Toyota": 8253
+      },
+      "South Kerala": {
+        "Honda": 5970,
+        "Hyundai": 15032,
+        "Kia": 11297,
+        "MG": 1173,
+        "Mahindra": 6191,
+        "Maruti": 73466,
+        "Others": 14173,
+        "Premium": 1211,
+        "Tata": 19386,
+        "Toyota": 10156
+      }
+    },
+    "2024": {
+      "North Kerala": {
+        "Honda": 2265,
+        "Hyundai": 9062,
+        "Kia": 4918,
+        "MG": 733,
+        "Mahindra": 3280,
+        "Maruti": 47101,
+        "Others": 5468,
+        "Premium": 574,
+        "Tata": 10908,
+        "Toyota": 7077
+      },
+      "South Kerala": {
+        "Honda": 3574,
+        "Hyundai": 10446,
+        "Kia": 6539,
+        "MG": 1201,
+        "Mahindra": 4484,
+        "Maruti": 50240,
+        "Others": 8673,
+        "Premium": 1022,
+        "Tata": 12776,
+        "Toyota": 8896
+      }
+    },
+    "2025": {
+      "North Kerala": {
+        "Honda": 1928,
+        "Hyundai": 8926,
+        "Kia": 5369,
+        "MG": 1181,
+        "Mahindra": 5221,
+        "Maruti": 53530,
+        "Others": 5225,
+        "Premium": 697,
+        "Tata": 9766,
+        "Toyota": 9838
+      },
+      "South Kerala": {
+        "Honda": 2992,
+        "Hyundai": 10189,
+        "Kia": 6900,
+        "MG": 2388,
+        "Mahindra": 6616,
+        "Maruti": 56243,
+        "Others": 8801,
+        "Premium": 1181,
+        "Tata": 10996,
+        "Toyota": 12527
+      }
+    },
+    "2026": {
+      "North Kerala": {
+        "Honda": 2039,
+        "Hyundai": 10347,
+        "Kia": 5954,
+        "MG": 1707,
+        "Mahindra": 10039,
+        "Maruti": 65032,
+        "Others": 6456,
+        "Premium": 798,
+        "Tata": 12508,
+        "Toyota": 14159
+      },
+      "South Kerala": {
+        "Honda": 3078,
+        "Hyundai": 10257,
+        "Kia": 8157,
+        "MG": 3810,
+        "Mahindra": 12056,
+        "Maruti": 68957,
+        "Others": 10966,
+        "Premium": 1421,
+        "Tata": 14208,
+        "Toyota": 17010
+      }
+    }
+  }
+}
