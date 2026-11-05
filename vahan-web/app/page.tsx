@@ -517,6 +517,24 @@ export default function VahanDashboardPage() {
         addLog(`Notice on auto-saving Excel: ${err.message}`, "WARNING");
       }
 
+      // Sync scraped rows directly to Hostinger MariaDB 'vahan'
+      try {
+        fetch("/api/db", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "registrations", data: accumulatedRows }),
+        })
+          .then((r) => r.json())
+          .then((res) => {
+            if (res.success) {
+              addLog(`★ Synced ${res.count} records directly to Hostinger MariaDB table [vahan_registrations]!`, "SUCCESS");
+            }
+          })
+          .catch(() => {});
+      } catch (dbSyncErr) {
+        console.warn("DB sync warning:", dbSyncErr);
+      }
+
       // If user selected a local folder via Browse Path, save Master Excel directly into it
       if (directoryHandleRef.current) {
         try {
