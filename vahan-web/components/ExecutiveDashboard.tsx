@@ -145,33 +145,7 @@ function cleanRtoName(s: string): string {
 }
 
 function getRowVolume(row: any, selectedMonth: string = "ALL", selectedFyYear: string = "2026"): number {
-  const fyMonths = getFyMonthSequence(selectedFyYear);
-  const numYr = parseInt(selectedFyYear, 10) || 2026;
-  const startYr = numYr - 1;
-  const endYr = numYr;
-
   if (selectedMonth && selectedMonth !== "ALL") {
-    // 1. Match month item from FY sequence
-    const target = fyMonths.find(
-      (m) => m.mmmYy.toUpperCase() === selectedMonth.toUpperCase() ||
-             m.code.toUpperCase() === selectedMonth.toUpperCase() ||
-             m.name.toUpperCase() === selectedMonth.toUpperCase()
-    );
-
-    if (target) {
-      const rowYr = Number(row.Year || row.year || row.FY);
-      // If dataset contains multi-year rows, ensure year matches the target FY calendar year
-      if (rowYr && (rowYr === startYr || rowYr === endYr) && rowYr !== target.calYear) {
-        return 0;
-      }
-      const col = target.code;
-      if (col === "DEC") {
-        return Number(row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0) || 0;
-      }
-      return Number(row[col] ?? row[col.toLowerCase()] ?? row[target.mmmYy] ?? 0) || 0;
-    }
-
-    // Direct month abbreviation fallback (e.g. "APR")
     const colName = selectedMonth.slice(0, 3).toUpperCase();
     if (colName === "DEC") {
       return Number(row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0) || 0;
@@ -179,29 +153,7 @@ function getRowVolume(row: any, selectedMonth: string = "ALL", selectedFyYear: s
     return Number(row[colName] ?? row[colName.toLowerCase()] ?? 0) || 0;
   }
 
-  // 2. Full Financial Year Cumulative (Apr to Mar):
-  const rowYr = Number(row.Year || row.year || row.FY);
-  if (rowYr === startYr) {
-    // Months April - December of startYear
-    const aprDec = ["APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "dec_val"];
-    let s = 0;
-    for (const m of aprDec) {
-      const v = row[m] ?? row[m.toLowerCase()];
-      if (v !== undefined && !isNaN(Number(v))) s += Number(v);
-    }
-    return s;
-  } else if (rowYr === endYr) {
-    // Months January - March of endYear
-    const janMar = ["JAN", "FEB", "MAR"];
-    let s = 0;
-    for (const m of janMar) {
-      const v = row[m] ?? row[m.toLowerCase()];
-      if (v !== undefined && !isNaN(Number(v))) s += Number(v);
-    }
-    return s;
-  }
-
-  // If single-year dataset or row without Year: take TOTAL or sum all 12 FY months
+  // selectedMonth === "ALL": Return row's total registrations
   if (row.TOTAL !== undefined && row.TOTAL !== null && !isNaN(Number(row.TOTAL))) {
     return Number(row.TOTAL);
   }
@@ -210,15 +162,11 @@ function getRowVolume(row: any, selectedMonth: string = "ALL", selectedFyYear: s
   }
   const allMonths = ["APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "dec_val", "JAN", "FEB", "MAR"];
   let sum = 0;
-  let found = false;
   for (const m of allMonths) {
     const v = row[m] ?? row[m.toLowerCase()];
-    if (v !== undefined && !isNaN(Number(v))) {
-      sum += Number(v);
-      found = true;
-    }
+    if (v !== undefined && !isNaN(Number(v))) sum += Number(v);
   }
-  return found ? sum : 0;
+  return sum;
 }
 
 export default function ExecutiveDashboard({
@@ -268,19 +216,20 @@ export default function ExecutiveDashboard({
     } catch {}
   }, []);
 
-  // Fetch live registrations from Hostinger database (fetches both FY calendar years)
+  // Fetch live registrations from Hostinger database strictly for the selected FY calendar year
   const fetchDbRegistrations = async () => {
     setIsLoadingDb(true);
     try {
-      const numYr = parseInt(selectedYear, 10) || 2026;
-      const yearsNeeded = `${numYr - 1},${numYr}`;
-      const res = await fetch(`/api/db?type=registrations&year=${yearsNeeded}`);
+      const res = await fetch(`/api/db?type=registrations&year=${selectedYear}`);
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         setDbScrapedRows(json.data);
+      } else {
+        setDbScrapedRows([]);
       }
     } catch (err) {
       console.warn("DB registrations fetch note:", err);
+      setDbScrapedRows([]);
     } finally {
       setIsLoadingDb(false);
     }
@@ -290,51 +239,65 @@ export default function ExecutiveDashboard({
     fetchDbRegistrations();
   }, [selectedYear]);
 
-  // Pure Live Scraper Data: Merge database registrations with fresh live session scraped rows
-  // Ensures that when 2025 is scraped, 2026 is NEVER truncated/lost, and when 2026 is scraped, 2026 is cleanly updated!
-  // Segments (PV, CV, BEV) are partitioned cleanly by composite key (year + segment + rto + maker)
-  const activeDatasetRows = useMemo(() => {
+  // Combined dataset from database and current live scraper session (Zero stale cache)
+  const allDatasetRows = useMemo(() => {
     const map = new Map<string, any>();
 
-    // 1. Baseline from MariaDB database (holds 2025, 2026, and all historical years & segments)
+    // 1. MariaDB database registrations
     dbScrapedRows.forEach((r) => {
       const yr = String(r.Year || r.year || r.FY || "").trim();
       const seg = String(r.segment || r.Segment || "PV").toUpperCase().trim();
       const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
       const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
-      const key = `${yr}_${seg}_${code}_${maker}`;
-      map.set(key, r);
+      map.set(`${yr}_${seg}_${code}_${maker}`, r);
     });
 
-    // 2. Overlay cached scraped rows
-    cachedScrapedRows.forEach((r) => {
-      const yr = String(r.Year || r.year || r.FY || "").trim();
-      const seg = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-      const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
-      const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
-      const key = `${yr}_${seg}_${code}_${maker}`;
-      map.set(key, r);
-    });
-
-    // 3. Overlay fresh live scraped rows from current session (highest priority for its specific year + segment + RTO)
+    // 2. Current live scraping session
     liveScrapedRows.forEach((r) => {
       const yr = String(r.Year || r.year || r.FY || "").trim();
       const seg = String(r.segment || r.Segment || "PV").toUpperCase().trim();
       const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
       const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
-      const key = `${yr}_${seg}_${code}_${maker}`;
-      map.set(key, r);
+      map.set(`${yr}_${seg}_${code}_${maker}`, r);
     });
 
-    const allRows = Array.from(map.values());
-    if (selectedSegment === "ALL") {
-      return allRows;
+    return Array.from(map.values());
+  }, [liveScrapedRows, dbScrapedRows]);
+
+  // Real-time Segment registration volume totals
+  const segmentStats = useMemo(() => {
+    let pv = 0, cv = 0, bev = 0;
+    allDatasetRows.forEach((r) => {
+      const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+      const vol = Number(r.TOTAL || r.total || 0);
+      if (s === "PV") pv += vol;
+      else if (s === "CV") cv += vol;
+      else if (s === "BEV") bev += vol;
+    });
+    return { pv, cv, bev, all: pv + cv + bev };
+  }, [allDatasetRows]);
+
+  // Auto-switch to active segment if current segment has 0 records but another segment has scraped data
+  useEffect(() => {
+    if (segmentStats.all > 0) {
+      if (selectedSegment === "PV" && segmentStats.pv === 0) {
+        if (segmentStats.bev > 0) setSelectedSegment("BEV");
+        else if (segmentStats.cv > 0) setSelectedSegment("CV");
+        else setSelectedSegment("ALL");
+      }
     }
-    return allRows.filter((r) => {
+  }, [segmentStats, selectedSegment]);
+
+  // Filter rows strictly for the chosen segment
+  const activeDatasetRows = useMemo(() => {
+    if (selectedSegment === "ALL") {
+      return allDatasetRows;
+    }
+    return allDatasetRows.filter((r) => {
       const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
       return s === selectedSegment;
     });
-  }, [liveScrapedRows, cachedScrapedRows, dbScrapedRows, selectedSegment]);
+  }, [allDatasetRows, selectedSegment]);
 
   // Build RTO Name Lookup Table from rtoDt
   const rtoDtLookup = useMemo(() => {
@@ -575,15 +538,13 @@ export default function ExecutiveDashboard({
           });
         }
 
-        const existingYears = templateRow.years || {};
-        const finalTotal = activeDatasetRows.length > 0 ? stats.total : (existingYears[selectedYear]?.total || 0);
-        const finalMm = activeDatasetRows.length > 0 ? stats.mm : (existingYears[selectedYear]?.mm || 0);
+        const finalTotal = stats.total;
+        const finalMm = stats.mm;
         const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
 
         newRows.push({
           ...templateRow,
           years: {
-            ...existingYears,
             [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: stats.monthly,
@@ -591,15 +552,13 @@ export default function ExecutiveDashboard({
       } else if (templateRow.type === "district_total") {
         const distKey = templateRow.label.replace(/\s+Total$/i, "").trim();
         const distStats = districtAccumulator[distKey] || districtAccumulator[templateRow.district] || { total: 0, mm: 0, monthly: {} };
-        const existingYears = templateRow.years || {};
-        const finalTotal = activeDatasetRows.length > 0 ? distStats.total : (existingYears[selectedYear]?.total || 0);
-        const finalMm = activeDatasetRows.length > 0 ? distStats.mm : (existingYears[selectedYear]?.mm || 0);
+        const finalTotal = distStats.total;
+        const finalMm = distStats.mm;
         const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
 
         newRows.push({
           ...templateRow,
           years: {
-            ...existingYears,
             [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: distStats.monthly,
@@ -607,15 +566,13 @@ export default function ExecutiveDashboard({
       } else if (templateRow.type === "territory_total") {
         const terrName = templateRow.label.replace(/\s+Total$/i, "").trim();
         const terrStats = territoryAccumulator[terrName] || territoryAccumulator[templateRow.territory] || { total: 0, mm: 0, monthly: {} };
-        const existingYears = templateRow.years || {};
-        const finalTotal = activeDatasetRows.length > 0 ? terrStats.total : (existingYears[selectedYear]?.total || 0);
-        const finalMm = activeDatasetRows.length > 0 ? terrStats.mm : (existingYears[selectedYear]?.mm || 0);
+        const finalTotal = terrStats.total;
+        const finalMm = terrStats.mm;
         const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
 
         newRows.push({
           ...templateRow,
           years: {
-            ...existingYears,
             [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
           },
           monthly: terrStats.monthly,
@@ -627,11 +584,7 @@ export default function ExecutiveDashboard({
         const grandMmAcc =
           (territoryAccumulator["North Kerala"]?.mm || 0) +
           (territoryAccumulator["South Kerala"]?.mm || 0);
-
-        const existingYears = templateRow.years || {};
-        const finalTotal = activeDatasetRows.length > 0 ? grandTotalAcc : (existingYears[selectedYear]?.total || 0);
-        const finalMm = activeDatasetRows.length > 0 ? grandMmAcc : (existingYears[selectedYear]?.mm || 0);
-        const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
+        const finalMs = grandTotalAcc > 0 ? (grandMmAcc / grandTotalAcc) * 100 : 0;
 
         const grandMonthly: Record<string, number> = {};
         fyMonths.forEach((m) => {
@@ -643,8 +596,7 @@ export default function ExecutiveDashboard({
         newRows.push({
           ...templateRow,
           years: {
-            ...existingYears,
-            [selectedYear]: { total: finalTotal, mm: finalMm, ms: finalMs },
+            [selectedYear]: { total: grandTotalAcc, mm: grandMmAcc, ms: finalMs },
           },
           monthly: grandMonthly,
         });
@@ -1138,7 +1090,7 @@ export default function ExecutiveDashboard({
                 }`}
                 title="Filter by Passenger Vehicles (LMV+LPV, Non-EV)"
               >
-                🚗 PV
+                🚗 PV {segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
@@ -1152,7 +1104,7 @@ export default function ExecutiveDashboard({
                 }`}
                 title="Filter by Commercial Vehicles (LGV, Full Tick)"
               >
-                🚛 CV
+                🚛 CV {segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
@@ -1166,7 +1118,7 @@ export default function ExecutiveDashboard({
                 }`}
                 title="Filter by Battery Electric Vehicles (BOV + Pure EV)"
               >
-                ⚡ BEV
+                ⚡ BEV {segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
@@ -1180,7 +1132,7 @@ export default function ExecutiveDashboard({
                 }`}
                 title="Consolidated (All Segments Combined)"
               >
-                All
+                All {segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}
               </button>
             </div>
           </div>
