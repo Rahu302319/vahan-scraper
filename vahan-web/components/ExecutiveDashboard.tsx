@@ -1187,45 +1187,38 @@ export default function ExecutiveDashboard({
   };
 
   return (
-    <div className={`flex flex-col gap-3 rounded-lg border p-3 sm:p-4 transition-colors ${
+    <div className={`flex flex-col gap-2 rounded-lg border p-2 sm:p-2.5 transition-colors ${
       isDark ? "bg-[#060a14] border-[#18233a] text-[#cbd5e1]" : "bg-slate-50 border-slate-200 text-slate-800"
     }`}>
-      {/* 1. DEDICATED LIVE SCRAPER ENGINE STATUS HEADER */}
-      <div className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border transition ${
+      {/* 1. DEDICATED LIVE SCRAPER ENGINE STATUS HEADER (Compact) */}
+      <div className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-md border transition ${
         isDark ? "bg-[#0a1120] border-[#1b2b48]" : "bg-white border-slate-200 shadow-sm"
       }`}>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <div className="p-1.5 rounded bg-[#0284c7]/20 border border-[#0284c7] text-[#38bdf8]">
-              <Zap className="w-4 h-4 fill-[#38bdf8]" />
-            </div>
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <div className="p-1 rounded bg-[#0284c7]/20 border border-[#0284c7] text-[#38bdf8]">
+            <Zap className="w-3.5 h-3.5 fill-[#38bdf8]" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className={`text-base font-black tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
-                LIVE SCRAPER EXECUTIVE DASHBOARD
-              </h2>
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#0284c7] text-white tracking-wider">
-                KL • KERALA
-              </span>
-            </div>
-            <p className={`text-[11px] ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              Direct real-time analytics computed strictly from your live scraped vehicle registration database
-            </p>
+          <div className="flex items-center gap-1.5">
+            <h2 className={`text-xs sm:text-sm font-black tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
+              LIVE SCRAPER EXECUTIVE DASHBOARD
+            </h2>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#0284c7] text-white tracking-wider">
+              KL • KERALA
+            </span>
           </div>
         </div>
 
         {/* Live Scraper Stats Badge & Refresh */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-md border text-xs font-bold ${
-            isDark ? "bg-[#070d18] border-[#18263e]" : "bg-slate-100 border-slate-300"
+        <div className="flex items-center gap-1.5">
+          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] font-bold ${
+            isDark ? "bg-[#070d18] border-[#18263e]" : "bg-slate-100 border-slate-200"
           }`}>
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <Activity className="w-3.5 h-3.5" />
+            <span className="flex items-center gap-1 text-emerald-400">
+              <Activity className="w-3 h-3" />
               <span>{activeDatasetRows.length.toLocaleString()} Records</span>
             </span>
             <span className="text-slate-500">•</span>
@@ -1242,7 +1235,7 @@ export default function ExecutiveDashboard({
             type="button"
             onClick={fetchDbRegistrations}
             title="Refresh latest scraped data from Hostinger database"
-            className={`p-1.5 rounded border transition ${
+            className={`p-1 rounded border transition ${
               isDark
                 ? "bg-[#0c1424] border-[#1e2e4f] text-[#94a3b8] hover:text-white hover:bg-[#131f38]"
                 : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
@@ -1253,16 +1246,14 @@ export default function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* 2. CASCADING DEPENDENT CONTROLS & DRILL-DOWN TOOLBAR */}
-      <div className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border ${
+      {/* 2. CASCADING CONTROLS COCKPIT TOOLBAR (Compact 2-Row Layout) */}
+      <div className={`flex flex-col gap-1.5 p-2 rounded-md border ${
         isDark ? "bg-[#080e1b] border-[#18243b]" : "bg-white border-slate-200 shadow-sm"
       }`}>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* Period Type Mode Toggle: Financial Year vs Calendar Year */}
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#38bdf8]" : "text-sky-700"}`}>
-              Period View:
-            </span>
+        {/* ROW 1: Period, Year, Month, Segment, and Export Button */}
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/* FY / CY Mode Switch */}
             <div className={`flex items-center rounded border p-0.5 ${
               isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
             }`}>
@@ -1272,17 +1263,15 @@ export default function ExecutiveDashboard({
                   setPeriodType("FY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-black rounded transition ${
+                className={`flex items-center gap-1 px-2 py-0.5 text-[11px] font-black rounded transition ${
                   periodType === "FY"
-                    ? "bg-[#0284c7] text-white shadow"
-                    : isDark
-                    ? "text-[#94a3b8] hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
                 title="Indian Financial Year (Apr to Mar)"
               >
-                <Calendar className="w-3.5 h-3.5" />
-                FY (Apr-Mar)
+                <Calendar className="w-3 h-3" />
+                FY
               </button>
               <button
                 type="button"
@@ -1290,26 +1279,19 @@ export default function ExecutiveDashboard({
                   setPeriodType("CY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-black rounded transition ${
+                className={`flex items-center gap-1 px-2 py-0.5 text-[11px] font-black rounded transition ${
                   periodType === "CY"
-                    ? "bg-[#0284c7] text-white shadow"
-                    : isDark
-                    ? "text-[#94a3b8] hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
                 title="Calendar Year (Jan to Dec)"
               >
-                <Calendar className="w-3.5 h-3.5" />
-                CY (Jan-Dec)
+                <Calendar className="w-3 h-3" />
+                CY
               </button>
             </div>
-          </div>
 
-          {/* Period Selection Dropdown (FY or CY) */}
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#38bdf8]" : "text-sky-700"}`}>
-              {periodType === "FY" ? "FY Year:" : "CY Year:"}
-            </span>
+            {/* Period Dropdown */}
             {periodType === "FY" ? (
               <select
                 value={selectedFyId}
@@ -1317,10 +1299,10 @@ export default function ExecutiveDashboard({
                   setSelectedFyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
+                className={`px-2 py-1 rounded text-xs font-bold border focus:outline-none ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
-                    : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
+                    : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
                 }`}
               >
                 {ALL_FY_OPTIONS.map((f) => (
@@ -1336,10 +1318,10 @@ export default function ExecutiveDashboard({
                   setSelectedCyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
+                className={`px-2 py-1 rounded text-xs font-bold border focus:outline-none ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
-                    : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
+                    : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
                 }`}
               >
                 {ALL_CY_OPTIONS.map((c) => (
@@ -1349,24 +1331,19 @@ export default function ExecutiveDashboard({
                 ))}
               </select>
             )}
-          </div>
 
-          {/* Month Dropdown (Strictly aligned with selected Period in mmm-yy format) */}
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-amber-400" : "text-amber-700"}`}>
-              Month ({periodType === "FY" ? "Apr-Mar" : "Jan-Dec"}):
-            </span>
+            {/* Month Dropdown */}
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
+              className={`px-2 py-1 rounded text-xs font-bold border focus:outline-none ${
                 isDark
                   ? "bg-[#060c18] border-[#1f2f4c] text-amber-400 focus:border-amber-400"
                   : "bg-amber-50 border-amber-300 text-amber-900 focus:border-amber-500"
               }`}
             >
               <option value="ALL">
-                All Months ({currentPeriod.subLabel} • Full {currentPeriod.type})
+                All Months ({currentPeriod.type === "FY" ? "Apr-Mar" : "Jan-Dec"})
               </option>
               {currentPeriod.months.map((m) => (
                 <option key={m.mmmYy} value={m.mmmYy}>
@@ -1374,149 +1351,144 @@ export default function ExecutiveDashboard({
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* C. Segment Selector (PV, CV, BEV, ALL) */}
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-emerald-400" : "text-emerald-700"}`}>
-              Segment:
-            </span>
+            {/* Segment Selector Chips */}
             <div className={`flex items-center rounded border p-0.5 ${
               isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
             }`}>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("PV")}
-                className={`px-2.5 py-1 text-xs font-black rounded transition ${
+                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
                   selectedSegment === "PV"
-                    ? "bg-[#0284c7] text-white shadow"
-                    : isDark
-                    ? "text-[#94a3b8] hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
-                title="Filter by Passenger Vehicles (LMV+LPV, Non-EV)"
               >
-                🚗 PV {segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}
+                PV {segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("CV")}
-                className={`px-2.5 py-1 text-xs font-black rounded transition ${
+                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
                   selectedSegment === "CV"
-                    ? "bg-[#0284c7] text-white shadow"
-                    : isDark
-                    ? "text-[#94a3b8] hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
-                title="Filter by Commercial Vehicles (LGV, Full Tick)"
               >
-                🚛 CV {segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}
+                CV {segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("BEV")}
-                className={`px-2.5 py-1 text-xs font-black rounded transition ${
+                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
                   selectedSegment === "BEV"
-                    ? "bg-[#0284c7] text-white shadow"
-                    : isDark
-                    ? "text-[#94a3b8] hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
-                title="Filter by Battery Electric Vehicles (BOV + Pure EV)"
               >
                 ⚡ BEV {segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("ALL")}
-                className={`px-2 py-1 text-xs font-black rounded transition ${
+                className={`px-2 py-0.5 text-[11px] font-black rounded transition ${
                   selectedSegment === "ALL"
-                    ? "bg-[#0284c7] text-white shadow"
-                    : isDark
-                    ? "text-[#94a3b8] hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-[#94a3b8] hover:text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
-                title="Consolidated (All Segments Combined)"
               >
                 All {segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}
               </button>
             </div>
           </div>
 
-          <span className="hidden lg:inline text-slate-500">|</span>
+          {/* Export Button */}
+          <button
+            onClick={handleExportSummaryExcel}
+            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] shadow-sm transition"
+          >
+            <Download className="w-3 h-3" />
+            Export Excel
+          </button>
+        </div>
 
-          {/* D. Territory Dropdown (Parent 1) */}
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              Territory:
-            </span>
-            <select
-              value={selectedTerritory}
-              onChange={(e) => handleTerritoryChange(e.target.value)}
-              className={`px-2.5 py-1.5 rounded text-xs font-semibold border focus:outline-none ${
-                isDark
-                  ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
-                  : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
-              }`}
-            >
-              <option value="ALL">All Kerala</option>
-              <option value="North Kerala">North Kerala</option>
-              <option value="South Kerala">South Kerala</option>
-            </select>
-          </div>
+        {/* ROW 2: Cascading Geographic Drill-Down (Territory, District, RTO Office) */}
+        <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-[#1f2f4c]/30">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Territory Dropdown */}
+            <div className="flex items-center gap-1">
+              <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+                Territory:
+              </span>
+              <select
+                value={selectedTerritory}
+                onChange={(e) => handleTerritoryChange(e.target.value)}
+                className={`px-2 py-0.5 rounded text-xs font-semibold border focus:outline-none ${
+                  isDark
+                    ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
+                    : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
+                }`}
+              >
+                <option value="ALL">All Kerala</option>
+                <option value="North Kerala">North Kerala</option>
+                <option value="South Kerala">South Kerala</option>
+              </select>
+            </div>
 
-          {/* D. District Dropdown (Dependent on Territory!) */}
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              District:
-            </span>
-            <select
-              value={selectedDistrict}
-              onChange={(e) => handleDistrictChange(e.target.value)}
-              className={`px-2.5 py-1.5 rounded text-xs font-semibold border focus:outline-none ${
-                isDark
-                  ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
-                  : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
-              }`}
-            >
-              <option value="ALL">
-                {selectedTerritory === "ALL" ? "All 14 Districts" : `All ${selectedTerritory} Districts`}
-              </option>
-              {availableDistricts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
+            {/* District Dropdown */}
+            <div className="flex items-center gap-1">
+              <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+                District:
+              </span>
+              <select
+                value={selectedDistrict}
+                onChange={(e) => handleDistrictChange(e.target.value)}
+                className={`px-2 py-0.5 rounded text-xs font-semibold border focus:outline-none ${
+                  isDark
+                    ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
+                    : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
+                }`}
+              >
+                <option value="ALL">
+                  {selectedTerritory === "ALL" ? "All 14 Districts" : `All ${selectedTerritory} Districts`}
                 </option>
-              ))}
-            </select>
-          </div>
+                {availableDistricts.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* E. RTO Dropdown (Dependent on District & Territory!) */}
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              RTO Office:
-            </span>
-            <select
-              value={selectedRto}
-              onChange={(e) => setSelectedRto(e.target.value)}
-              className={`px-2.5 py-1.5 rounded text-xs font-semibold border focus:outline-none max-w-[170px] truncate ${
-                isDark
-                  ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
-                  : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
-              }`}
-            >
-              <option value="ALL">
-                {selectedDistrict === "ALL"
-                  ? selectedTerritory === "ALL"
-                    ? "All 87 RTOs"
-                    : `All ${selectedTerritory} RTOs (${availableRtos.length})`
-                  : `All in ${selectedDistrict} (${availableRtos.length})`}
-              </option>
-              {availableRtos.map((r) => (
-                <option key={r} value={r}>
-                  {r}
+            {/* RTO Office Dropdown */}
+            <div className="flex items-center gap-1">
+              <span className={`text-[10px] font-bold uppercase ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+                RTO:
+              </span>
+              <select
+                value={selectedRto}
+                onChange={(e) => setSelectedRto(e.target.value)}
+                className={`px-2 py-0.5 rounded text-xs font-semibold border focus:outline-none max-w-[170px] truncate ${
+                  isDark
+                    ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
+                    : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
+                }`}
+              >
+                <option value="ALL">
+                  {selectedDistrict === "ALL"
+                    ? selectedTerritory === "ALL"
+                      ? "All 87 RTOs"
+                      : `All ${selectedTerritory} RTOs (${availableRtos.length})`
+                    : `All in ${selectedDistrict} (${availableRtos.length})`}
                 </option>
-              ))}
-            </select>
+                {availableRtos.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Reset Filters Shortcut */}
@@ -1525,48 +1497,41 @@ export default function ExecutiveDashboard({
               type="button"
               onClick={handleResetFilters}
               title="Reset all filters back to All Kerala Full Year"
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-bold border transition ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition ${
                 isDark
                   ? "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
                   : "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300"
               }`}
             >
-              <RotateCcw className="w-3 h-3" />
-              Reset
+              <RotateCcw className="w-2.5 h-2.5" />
+              Reset Filters
             </button>
           )}
         </div>
-
-        {/* Export Button */}
-        <button
-          onClick={handleExportSummaryExcel}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white border border-[#38bdf8] shadow transition"
-        >
-          <Download className="w-3.5 h-3.5" />
-          Export {timeframeLabel} Excel
-        </button>
       </div>
 
-      {/* 3. Executive KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+      {/* 3. Executive KPI Cards Grid (Compact Tiles) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {/* Total Registrations */}
-        <div className={`p-3 rounded-lg border flex flex-col justify-between transition ${
+        <div className={`p-2.5 rounded-md border flex flex-col justify-between transition ${
           isDark
             ? "bg-gradient-to-br from-[#0c1424] to-[#111c33] border-[#1f2f4c] border-l-4 border-l-[#38bdf8]"
             : "bg-white border-slate-200 border-l-4 border-l-sky-500 shadow-sm"
         }`}>
           <div className="flex items-center justify-between">
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              Total Registrations ({timeframeLabel})
+              Total Registrations
             </span>
-            <Car className="w-4 h-4 text-[#38bdf8]" />
+            <Car className="w-3.5 h-3.5 text-[#38bdf8]" />
           </div>
-          <div className="mt-2">
+          <div className="mt-1">
             <span className={`text-xl sm:text-2xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>
               {kpiData.totalVehicles.toLocaleString()}
             </span>
-            <span className={`block text-[11px] font-medium mt-0.5 ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
-              {selectedDistrict !== "ALL"
+            <span className={`block text-[10px] font-medium mt-0.5 truncate ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
+              {selectedRto !== "ALL"
+                ? `RTO: ${selectedRto}`
+                : selectedDistrict !== "ALL"
                 ? `District: ${selectedDistrict}`
                 : selectedTerritory !== "ALL"
                 ? `Territory: ${selectedTerritory}`
@@ -1576,7 +1541,7 @@ export default function ExecutiveDashboard({
         </div>
 
         {/* Mahindra (M&M) Registrations */}
-        <div className={`p-3 rounded-lg border flex flex-col justify-between transition ${
+        <div className={`p-2.5 rounded-md border flex flex-col justify-between transition ${
           isDark
             ? "bg-gradient-to-br from-[#0c1424] to-[#111c33] border-[#1f2f4c] border-l-4 border-l-red-500"
             : "bg-white border-slate-200 border-l-4 border-l-red-500 shadow-sm"
@@ -1585,20 +1550,20 @@ export default function ExecutiveDashboard({
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
               M&M Volume (Mahindra)
             </span>
-            <Award className="w-4 h-4 text-red-400" />
+            <Award className="w-3.5 h-3.5 text-red-400" />
           </div>
-          <div className="mt-2">
+          <div className="mt-1">
             <span className="text-xl sm:text-2xl font-black text-red-400">
               {kpiData.mmVehicles.toLocaleString()}
             </span>
-            <span className={`block text-[11px] font-medium mt-0.5 ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
+            <span className={`block text-[10px] font-medium mt-0.5 truncate ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
               Vehicles Registered ({timeframeLabel})
             </span>
           </div>
         </div>
 
         {/* M&M Market Share */}
-        <div className={`p-3 rounded-lg border flex flex-col justify-between transition ${
+        <div className={`p-2.5 rounded-md border flex flex-col justify-between transition ${
           isDark
             ? "bg-gradient-to-br from-[#0c1424] to-[#111c33] border-[#1f2f4c] border-l-4 border-l-[#34d399]"
             : "bg-white border-slate-200 border-l-4 border-l-emerald-500 shadow-sm"
@@ -1607,13 +1572,13 @@ export default function ExecutiveDashboard({
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
               M&M Market Share (MS %)
             </span>
-            <TrendingUp className="w-4 h-4 text-[#34d399]" />
+            <TrendingUp className="w-3.5 h-3.5 text-[#34d399]" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-black text-[#34d399]">
               {kpiData.mmMarketShare.toFixed(2)}%
             </span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+            <span className={`px-1 py-0.2 rounded text-[9px] font-extrabold ${
               isDark ? "bg-[#064e3b] text-[#34d399]" : "bg-emerald-100 text-emerald-800"
             }`}>
               {selectedMonth === "ALL" ? "Cumulative" : selectedMonth}
@@ -1622,18 +1587,18 @@ export default function ExecutiveDashboard({
         </div>
 
         {/* Market Leader OEM */}
-        <div className={`p-3 rounded-lg border flex flex-col justify-between transition ${
+        <div className={`p-2.5 rounded-md border flex flex-col justify-between transition ${
           isDark
             ? "bg-gradient-to-br from-[#0c1424] to-[#111c33] border-[#1f2f4c] border-l-4 border-l-[#a78bfa]"
             : "bg-white border-slate-200 border-l-4 border-l-indigo-500 shadow-sm"
         }`}>
           <div className="flex items-center justify-between">
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-              Market Leader (OEM Grouping)
+              Market Leader (OEM)
             </span>
-            <Layers className="w-4 h-4 text-[#a78bfa]" />
+            <Layers className="w-3.5 h-3.5 text-[#a78bfa]" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-1 flex items-baseline gap-1.5">
             <span className={`text-xl sm:text-2xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>
               {kpiData.topOemName}
             </span>
@@ -1644,18 +1609,18 @@ export default function ExecutiveDashboard({
         </div>
       </div>
 
-      {/* 4. Visual Charts & OEM Market Share Distribution */}
-      <div className={`p-3 rounded-lg border ${
+      {/* 4. Visual Charts & OEM Market Share Distribution (Compact) */}
+      <div className={`p-2.5 rounded-md border ${
         isDark ? "bg-[#090f1d] border-[#18263e]" : "bg-white border-slate-200 shadow-sm"
       }`}>
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1f2f4c]/40">
-          <div className="flex items-center gap-2">
-            <PieChart className="w-4 h-4 text-[#38bdf8]" />
+        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#1f2f4c]/40">
+          <div className="flex items-center gap-1.5">
+            <PieChart className="w-3.5 h-3.5 text-[#38bdf8]" />
             <h3 className={`text-xs font-extrabold uppercase tracking-wide ${isDark ? "text-white" : "text-slate-900"}`}>
               OEM Grouping Market Share Breakdown ({timeframeLabel})
             </h3>
           </div>
-          <span className={`text-[11px] ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
+          <span className={`text-[10px] ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
             Scope: <span className="font-bold text-[#38bdf8]">
               {selectedRto !== "ALL"
                 ? `RTO ${selectedRto}`
@@ -1667,7 +1632,7 @@ export default function ExecutiveDashboard({
         </div>
 
         {/* Progress Bar Distribution */}
-        <div className={`w-full h-3 rounded-full overflow-hidden flex my-2 ${
+        <div className={`w-full h-2 rounded-full overflow-hidden flex my-1.5 ${
           isDark ? "bg-slate-800" : "bg-slate-200"
         }`}>
           {activeOemBreakdown.map((item) => (
@@ -1680,25 +1645,25 @@ export default function ExecutiveDashboard({
           ))}
         </div>
 
-        {/* Legend & Breakdown Tags */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-3">
+        {/* Compact Legend Chips Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 mt-2">
           {activeOemBreakdown.map((item) => (
             <div
               key={item.name}
-              className={`p-2 rounded border flex flex-col justify-between ${
+              className={`px-2 py-1.5 rounded border flex items-center justify-between text-xs ${
                 isDark ? "bg-[#060c18] border-[#1b2842]" : "bg-slate-50 border-slate-200"
               }`}
             >
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="flex items-center gap-1.5 truncate">
-                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: item.color }} />
-                  {item.name}
-                </span>
-                <span style={{ color: item.color }}>{item.share.toFixed(1)}%</span>
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="font-bold truncate">{item.name}</span>
               </div>
-              <span className={`text-[10px] font-mono mt-1 ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
-                {item.count.toLocaleString()} units
-              </span>
+              <div className="flex items-baseline gap-1 shrink-0 ml-1">
+                <span className="font-extrabold" style={{ color: item.color }}>{item.share.toFixed(1)}%</span>
+                <span className={`text-[9px] font-mono ${isDark ? "text-[#94a3b8]" : "text-slate-500"}`}>
+                  ({item.count.toLocaleString()})
+                </span>
+              </div>
             </div>
           ))}
         </div>
