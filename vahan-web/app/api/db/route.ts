@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") || "oem";
     const year = searchParams.get("year");
+    const segment = searchParams.get("segment");
 
     // 1. Fetch OEMs from MariaDB table 'oem_master'
     if (type === "oem") {
@@ -47,22 +48,31 @@ export async function GET(req: NextRequest) {
       try {
         let sql = `
           SELECT state, rto_code as RTO_Code, rto_name as RTO_Name, final_rto_name as finalRtoName,
-                 district, territory, year as Year, maker as Maker, oem_final as oemFinal,
+                 district, territory, year as Year, segment as segment, segment as Segment,
+                 maker as Maker, oem_final as oemFinal,
                  oem_group as oemGroup, oem_grouping as oemGrouping,
                  jan as JAN, feb as FEB, mar as MAR, apr as APR, may as MAY, jun as JUN,
                  jul as JUL, aug as AUG, sep as SEP, oct as OCT, nov as NOV, dec_val as \`DEC\`, total as TOTAL
           FROM vahan_registrations
         `;
+        const whereClauses: string[] = [];
         const params: any[] = [];
         if (year && year !== "ALL") {
           const yearList = year.split(",").map((y) => Number(y.trim())).filter((n) => !isNaN(n));
           if (yearList.length === 1) {
-            sql += " WHERE year = ?";
+            whereClauses.push("year = ?");
             params.push(yearList[0]);
           } else if (yearList.length > 1) {
-            sql += ` WHERE year IN (${yearList.map(() => "?").join(",")})`;
+            whereClauses.push(`year IN (${yearList.map(() => "?").join(",")})`);
             params.push(...yearList);
           }
+        }
+        if (segment && segment !== "ALL") {
+          whereClauses.push("segment = ?");
+          params.push(segment.toUpperCase().trim());
+        }
+        if (whereClauses.length > 0) {
+          sql += " WHERE " + whereClauses.join(" AND ");
         }
         sql += " ORDER BY rto_code, maker";
 
@@ -169,38 +179,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // D. Bulk Scraped Registrations Insertion (Year-Isolated Clean Sync)
+    // D. Bulk Scraped Registrations Insertion (Year & Segment Isolated Clean Sync)
     if (type === "registrations" && Array.isArray(data) && data.length > 0) {
       const conn = await pool.getConnection();
       try {
         await conn.beginTransaction();
 
-        // 1. Group records by Year
-        const uniqueYears = Array.from(new Set(data.map((r: any) => Number(r.Year || 2026))));
+        // 1. Group records by Year and Segment
+        const yearSegmentKeys = Array.from(
+          new Set(
+            data.map(
+              (r: any) =>
+                `${Number(r.Year || r.year || 2026)}___${String(r.segment || r.Segment || "PV").toUpperCase().trim()}`
+            )
+          )
+        );
 
-        // For each year in this batch, delete existing records for that year and specific RTOs
-        // Ensures re-scraping/downloading 2026 clears old 2026 data cleanly, WITHOUT EVER touching or truncating 2025!
-        for (const yr of uniqueYears) {
-          const rtoCodesForYear = Array.from(
+        // For each (year, segment) in this batch, delete existing records for those specific RTOs
+        // Ensures scraping PV never touches CV, scraping CV never touches PV, and 2025/2026 are completely isolated!
+        for (const ys of yearSegmentKeys) {
+          const [yrStr, segStr] = ys.split("___");
+          const yr = Number(yrStr);
+          const rtoCodes = Array.from(
             new Set(
               data
-                .filter((r: any) => Number(r.Year || 2026) === yr)
+                .filter(
+                  (r: any) =>
+                    Number(r.Year || r.year || 2026) === yr &&
+                    String(r.segment || r.Segment || "PV").toUpperCase().trim() === segStr
+                )
                 .map((r: any) => String(r.RTO_Code || "").trim())
                 .filter(Boolean)
             )
           );
 
-          if (rtoCodesForYear.length > 0) {
+          if (rtoCodes.length > 0) {
             await conn.query(
-              `DELETE FROM vahan_registrations WHERE year = ? AND rto_code IN (?)`,
-              [yr, rtoCodesForYear]
+              `DELETE FROM vahan_registrations WHERE year = ? AND segment = ? AND rto_code IN (?)`,
+              [yr, segStr, rtoCodes]
             );
           }
         }
 
         const stmt = `
           INSERT INTO vahan_registrations
-            (state, rto_code, rto_name, final_rto_name, district, territory, year, maker,
+            (state, rto_code, rto_name, final_rto_name, district, territory, year, segment, maker,
              oem_final, oem_group, oem_grouping, jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec_val, total)
           VALUES ?
           ON DUPLICATE KEY UPDATE
@@ -218,9 +241,10 @@ export async function POST(req: NextRequest) {
           r.finalRtoName || r.RTO_Name || "",
           r.district || "",
           r.territory || "",
-          Number(r.Year || 2026),
-          r.Maker || "",
-          r.oemFinal || r.Maker || "",
+          Number(r.Year || r.year || 2026),
+          String(r.segment || r.Segment || "PV").toUpperCase().trim(),
+          r.Maker || r.maker || "",
+          r.oemFinal || r.Maker || r.maker || "",
           r.oemGroup || "Other OEM",
           r.oemGrouping || "Others",
           Number(r.JAN || 0),

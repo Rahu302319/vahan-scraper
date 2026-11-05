@@ -130,6 +130,7 @@ export default function VahanDashboardPage() {
       setFuels(["4", "23"]); // Only ELECTRIC(BOV) & PURE EV
       addLog("Segment changed to BEV: LMV + LPV, Electric Fuels Only (BOV + Pure EV)", "INFO");
     }
+    syncRtoTableStatuses(year, seg);
   };
 
   const updateSegmentFromSelections = (newCatg: string[], newFuels: string[]) => {
@@ -171,30 +172,36 @@ export default function VahanDashboardPage() {
   const isPausedRef = useRef<boolean>(false);
   const isStoppedRef = useRef<boolean>(false);
 
-  // Multi-Year Scraped Data Partition (year -> rtoCode -> rows)
-  // Ensures downloading 2026 clears old 2026 data, while 2025 is NEVER truncated or lost!
-  const [scrapedDataByYear, setScrapedDataByYear] = useState<Record<string, Record<string, RTORowData[]>>>({});
+  // Multi-Year & Multi-Segment Scraped Data Partition (year -> segment -> rtoCode -> rows)
+  // Ensures downloading 2026 CV never truncates 2026 PV, and 2025/2026 are completely preserved!
+  const [scrapedDataByYearSeg, setScrapedDataByYearSeg] = useState<
+    Record<string, Record<string, Record<string, RTORowData[]>>>
+  >({});
 
   const allLiveScrapedRows = useMemo(() => {
-    return Object.values(scrapedDataByYear).flatMap((yearMap) =>
-      Object.values(yearMap).flat()
+    return Object.values(scrapedDataByYearSeg).flatMap((segMap) =>
+      Object.values(segMap).flatMap((rtoMap) => Object.values(rtoMap).flat())
     );
-  }, [scrapedDataByYear]);
+  }, [scrapedDataByYearSeg]);
 
-  const handleYearChange = (newYear: string) => {
-    setYear(newYear);
+  const syncRtoTableStatuses = (currYear: string, currSeg: string) => {
     setRtos((prev) =>
       prev.map((r) => {
-        const yearData = scrapedDataByYear[newYear]?.[r.item.code];
+        const yearSegData = scrapedDataByYearSeg[currYear]?.[currSeg]?.[r.item.code];
         return {
           ...r,
-          status: yearData ? "done" : "pending",
-          data: yearData || undefined,
-          makerCount: yearData ? yearData.length : undefined,
-          totalVehicles: yearData ? yearData.reduce((s, row) => s + (row.TOTAL || 0), 0) : undefined,
+          status: yearSegData ? "done" : "pending",
+          data: yearSegData || undefined,
+          makerCount: yearSegData ? yearSegData.length : undefined,
+          totalVehicles: yearSegData ? yearSegData.reduce((s, row) => s + (row.TOTAL || 0), 0) : undefined,
         };
       })
     );
+  };
+
+  const handleYearChange = (newYear: string) => {
+    setYear(newYear);
+    syncRtoTableStatuses(newYear, segment);
   };
 
   // Progress metrics
@@ -420,11 +427,14 @@ export default function VahanDashboardPage() {
 
     // Clear old data for the targeted RTOs for this specific year (fresh mode)
     // Other years (e.g. 2025 when year=2026, or 2026 when year=2025) are NEVER touched!
-    setScrapedDataByYear((prev) => {
+    // Clear old data for targeted RTOs for this specific (year, segment)
+    setScrapedDataByYearSeg((prev) => {
       const yearMap = { ...(prev[year] || {}) };
+      const segMap = { ...(yearMap[segment] || {}) };
       targets.forEach((t) => {
-        delete yearMap[t.item.code];
+        delete segMap[t.item.code];
       });
+      yearMap[segment] = segMap;
       return { ...prev, [year]: yearMap };
     });
 
@@ -551,11 +561,18 @@ export default function VahanDashboardPage() {
         setProcessedCount(completed);
 
         if (success) {
-          setScrapedDataByYear((prev) => ({
+          resultData.forEach((row: any) => {
+            row.segment = segment;
+            row.Segment = segment;
+          });
+          setScrapedDataByYearSeg((prev) => ({
             ...prev,
             [year]: {
               ...(prev[year] || {}),
-              [target.item.code]: resultData,
+              [segment]: {
+                ...((prev[year] && prev[year][segment]) || {}),
+                [target.item.code]: resultData,
+              },
             },
           }));
           addLog(`✓ [${completed}/${targets.length}] ${target.item.code} — ${target.item.name}: ${resultData.length} makers, ${totalV.toLocaleString()} vehicles [Saved to: ${outputPath}]`, "SUCCESS");
@@ -635,7 +652,7 @@ export default function VahanDashboardPage() {
       if (directoryHandleRef.current) {
         try {
           const completedRtos = rtos.filter((r) => r.data && r.data.length > 0);
-          let masterName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}.xlsx`;
+          let masterName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}_${segment}.xlsx`;
           if (completedRtos.length === 1) {
             masterName = getCleanRtoFileName(completedRtos[0].item.name, year);
           }
@@ -689,7 +706,7 @@ export default function VahanDashboardPage() {
     }
 
     // Required format: If single RTO -> <RTO Name without SRTO/RTO>-<Year>.xlsx
-    let targetFileName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}.xlsx`;
+    let targetFileName = `KL_ALL_${completedRtos.length}_RTO_CONSOLIDATED_${year}_${segment}.xlsx`;
     if (completedRtos.length === 1) {
       targetFileName = getCleanRtoFileName(completedRtos[0].item.name, year);
     }

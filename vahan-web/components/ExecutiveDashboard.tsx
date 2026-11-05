@@ -233,6 +233,7 @@ export default function ExecutiveDashboard({
   // 1. DEPENDENT FILTER STATES
   const [selectedYear, setSelectedYear] = useState<string>("2026");
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [selectedSegment, setSelectedSegment] = useState<"PV" | "CV" | "BEV" | "ALL">("PV");
   const [selectedTerritory, setSelectedTerritory] = useState<string>("ALL");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
   const [selectedRto, setSelectedRto] = useState<string>("ALL");
@@ -289,38 +290,49 @@ export default function ExecutiveDashboard({
 
   // Pure Live Scraper Data: Merge database registrations with fresh live session scraped rows
   // Ensures that when 2025 is scraped, 2026 is NEVER truncated/lost, and when 2026 is scraped, 2026 is cleanly updated!
+  // Segments (PV, CV, BEV) are partitioned cleanly by composite key (year + segment + rto + maker)
   const activeDatasetRows = useMemo(() => {
     const map = new Map<string, any>();
 
-    // 1. Baseline from MariaDB database (holds 2025, 2026, and all historical years)
+    // 1. Baseline from MariaDB database (holds 2025, 2026, and all historical years & segments)
     dbScrapedRows.forEach((r) => {
       const yr = String(r.Year || r.year || r.FY || "").trim();
+      const seg = String(r.segment || r.Segment || "PV").toUpperCase().trim();
       const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
       const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
-      const key = `${yr}_${code}_${maker}`;
+      const key = `${yr}_${seg}_${code}_${maker}`;
       map.set(key, r);
     });
 
     // 2. Overlay cached scraped rows
     cachedScrapedRows.forEach((r) => {
       const yr = String(r.Year || r.year || r.FY || "").trim();
+      const seg = String(r.segment || r.Segment || "PV").toUpperCase().trim();
       const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
       const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
-      const key = `${yr}_${code}_${maker}`;
+      const key = `${yr}_${seg}_${code}_${maker}`;
       map.set(key, r);
     });
 
-    // 3. Overlay fresh live scraped rows from current session (highest priority for its specific year + RTO)
+    // 3. Overlay fresh live scraped rows from current session (highest priority for its specific year + segment + RTO)
     liveScrapedRows.forEach((r) => {
       const yr = String(r.Year || r.year || r.FY || "").trim();
+      const seg = String(r.segment || r.Segment || "PV").toUpperCase().trim();
       const code = String(r.RTO_Code || r.rto_code || r.Code || "").toUpperCase().trim();
       const maker = String(r.Maker || r.maker || "").toUpperCase().trim();
-      const key = `${yr}_${code}_${maker}`;
+      const key = `${yr}_${seg}_${code}_${maker}`;
       map.set(key, r);
     });
 
-    return Array.from(map.values());
-  }, [liveScrapedRows, cachedScrapedRows, dbScrapedRows]);
+    const allRows = Array.from(map.values());
+    if (selectedSegment === "ALL") {
+      return allRows;
+    }
+    return allRows.filter((r) => {
+      const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+      return s === selectedSegment;
+    });
+  }, [liveScrapedRows, cachedScrapedRows, dbScrapedRows, selectedSegment]);
 
   // Build RTO Name Lookup Table from rtoDt
   const rtoDtLookup = useMemo(() => {
@@ -847,10 +859,14 @@ export default function ExecutiveDashboard({
           }`}>
             <span className="flex items-center gap-1.5 text-emerald-400">
               <Activity className="w-3.5 h-3.5" />
-              <span>{activeDatasetRows.length.toLocaleString()} Scraped Records</span>
+              <span>{activeDatasetRows.length.toLocaleString()} Records</span>
             </span>
             <span className="text-slate-500">•</span>
-            <span className="text-[#38bdf8]">{activeDatasetRtoCount} RTOs Loaded</span>
+            <span className="text-[#38bdf8] font-bold">
+              {selectedSegment === "ALL" ? "All Segments" : `${selectedSegment} Segment`}
+            </span>
+            <span className="text-slate-500">•</span>
+            <span className="text-sky-300">{activeDatasetRtoCount} RTOs</span>
             <span className="text-slate-500">•</span>
             <span className="text-amber-400 font-black">{timeframeLabel}</span>
           </div>
@@ -925,9 +941,76 @@ export default function ExecutiveDashboard({
             </select>
           </div>
 
+          {/* C. Segment Selector (PV, CV, BEV, ALL) */}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-emerald-400" : "text-emerald-700"}`}>
+              Segment:
+            </span>
+            <div className={`flex items-center rounded border p-0.5 ${
+              isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
+            }`}>
+              <button
+                type="button"
+                onClick={() => setSelectedSegment("PV")}
+                className={`px-2.5 py-1 text-xs font-black rounded transition ${
+                  selectedSegment === "PV"
+                    ? "bg-[#0284c7] text-white shadow"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Filter by Passenger Vehicles (LMV+LPV, Non-EV)"
+              >
+                🚗 PV
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedSegment("CV")}
+                className={`px-2.5 py-1 text-xs font-black rounded transition ${
+                  selectedSegment === "CV"
+                    ? "bg-[#0284c7] text-white shadow"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Filter by Commercial Vehicles (LGV, Full Tick)"
+              >
+                🚛 CV
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedSegment("BEV")}
+                className={`px-2.5 py-1 text-xs font-black rounded transition ${
+                  selectedSegment === "BEV"
+                    ? "bg-[#0284c7] text-white shadow"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Filter by Battery Electric Vehicles (BOV + Pure EV)"
+              >
+                ⚡ BEV
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedSegment("ALL")}
+                className={`px-2 py-1 text-xs font-black rounded transition ${
+                  selectedSegment === "ALL"
+                    ? "bg-[#0284c7] text-white shadow"
+                    : isDark
+                    ? "text-[#94a3b8] hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Consolidated (All Segments Combined)"
+              >
+                All
+              </button>
+            </div>
+          </div>
+
           <span className="hidden lg:inline text-slate-500">|</span>
 
-          {/* C. Territory Dropdown (Parent 1) */}
+          {/* D. Territory Dropdown (Parent 1) */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
               Territory:
