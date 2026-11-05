@@ -177,8 +177,69 @@ export default function ExecutiveDashboard({
 }: DashboardProps) {
   const isDark = theme === "dark";
 
-  // Base summary template rows from JSON (hierarchy structure)
-  const summaryRowsTemplate = summaryDataRaw as SummaryRow[];
+  // MariaDB eramsale_vahan Live Masters & Benchmarks
+  const [dbBenchmarks, setDbBenchmarks] = useState<any[]>([]);
+  const [internalRtoDt, setInternalRtoDt] = useState<RTORecord[]>([]);
+  const [internalOemDb, setInternalOemDb] = useState<OEMRecord[]>([]);
+
+  // Automatically fetch benchmarks and master tables from MariaDB eramsale_vahan on mount
+  useEffect(() => {
+    async function fetchDbMasters() {
+      try {
+        const [benchRes, rtoRes, oemRes] = await Promise.all([
+          fetch("/api/db?type=benchmarks"),
+          fetch("/api/db?type=rto"),
+          fetch("/api/db?type=oem"),
+        ]);
+        const benchJson = await benchRes.json();
+        const rtoJson = await rtoRes.json();
+        const oemJson = await oemRes.json();
+
+        if (benchJson.success && Array.isArray(benchJson.data)) {
+          setDbBenchmarks(benchJson.data);
+        }
+        if (rtoJson.success && Array.isArray(rtoJson.data)) {
+          setInternalRtoDt(rtoJson.data);
+        }
+        if (oemJson.success && Array.isArray(oemJson.data)) {
+          setInternalOemDb(oemJson.data);
+        }
+      } catch (err) {
+        console.warn("MariaDB masters load warning in ExecutiveDashboard:", err);
+      }
+    }
+    fetchDbMasters();
+  }, []);
+
+  const effectiveRtoDt = useMemo(() => {
+    return rtoDt && rtoDt.length > 0 ? rtoDt : internalRtoDt;
+  }, [rtoDt, internalRtoDt]);
+
+  const effectiveOemDb = useMemo(() => {
+    return oemDb && oemDb.length > 0 ? oemDb : internalOemDb;
+  }, [oemDb, internalOemDb]);
+
+  // Base summary template rows dynamically constructed from MariaDB eramsale_vahan table 'rto_summary_benchmarks'
+  const summaryRowsTemplate = useMemo(() => {
+    if (dbBenchmarks.length > 0) {
+      const uniqueMap = new Map<string, SummaryRow>();
+      dbBenchmarks.forEach((b) => {
+        const key = `${b.territory}|${b.district}|${b.label}|${b.type}`;
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, {
+            territory: b.territory,
+            district: b.district,
+            rtoName: b.rtoName || (b.type === "rto" ? b.label : ""),
+            label: b.label,
+            type: b.type,
+            years: {},
+          });
+        }
+      });
+      return Array.from(uniqueMap.values());
+    }
+    return summaryDataRaw as SummaryRow[];
+  }, [dbBenchmarks]);
 
   // 1. DEPENDENT FILTER STATES
   const [selectedYear, setSelectedYear] = useState<string>("2026");
@@ -299,31 +360,48 @@ export default function ExecutiveDashboard({
     });
   }, [allDatasetRows, selectedSegment]);
 
-  // Build RTO Name Lookup Table from rtoDt
-  const rtoDtLookup = useMemo(() => {
-    const map = new Map<string, string>();
-    rtoDt.forEach((d) => {
-      if (d.srtOffice) map.set(cleanRtoName(d.srtOffice), d.finalRtoName);
-      if (d.finalRtoName) map.set(cleanRtoName(d.finalRtoName), d.finalRtoName);
+  // Build RTO Name and Code Lookup Tables from effectiveRtoDt (loaded from MariaDB eramsale_vahan)
+  const { rtoDtLookup, rtoCodeLookup } = useMemo(() => {
+    const nameMap = new Map<string, string>();
+    const codeMap = new Map<string, string>();
+
+    effectiveRtoDt.forEach((d: any) => {
+      const finalName = d.finalRtoName || d.srtOffice;
+      if (d.rtoCode) codeMap.set(String(d.rtoCode).toUpperCase().trim(), finalName);
+      if (d.rto_code) codeMap.set(String(d.rto_code).toUpperCase().trim(), finalName);
+      if (d.srtOffice) nameMap.set(cleanRtoName(d.srtOffice), finalName);
+      if (d.finalRtoName) nameMap.set(cleanRtoName(d.finalRtoName), finalName);
     });
-    return map;
-  }, [rtoDt]);
+
+    // Special hardcoded code mappings
+    codeMap.set("KL42", "North Paravur");
+    codeMap.set("KL15", "Thiruvananthapuram");
+    codeMap.set("KL99", "Thiruvananthapuram");
+
+    return { rtoDtLookup: nameMap, rtoCodeLookup: codeMap };
+  }, [effectiveRtoDt]);
 
   // Helper to resolve row to Final RTO Name
   const resolveRowToFinalRto = (row: any): string => {
     const code = (row.RTO_Code || row["RTO Code"] || row.Code || row.rto_code || "").toUpperCase().trim();
+    if (rtoCodeLookup.has(code)) {
+      return rtoCodeLookup.get(code)!;
+    }
     if (SPECIAL_CODE_TO_FINAL_RTO[code]) {
       return SPECIAL_CODE_TO_FINAL_RTO[code];
     }
     const directFinal = row["Final RTO Name"] || row.finalRtoName || row.final_rto_name;
-    if (directFinal) return String(directFinal).trim();
-
     const rawName = String(row.RTO_Name || row["RTO Name"] || row.rto_name || row.srtOffice || row.RTO || "").trim();
+
+    if (directFinal && cleanRtoName(directFinal) !== cleanRtoName(rawName)) {
+      return String(directFinal).trim();
+    }
+
     const c = cleanRtoName(rawName);
     if (rtoDtLookup.has(c)) {
       return rtoDtLookup.get(c)!;
     }
-    return rawName;
+    return directFinal || rawName;
   };
 
   // Helper to identify OEM Grouping and Mahindra flag
@@ -336,7 +414,7 @@ export default function ExecutiveDashboard({
 
     const rawMaker = String(row.Maker || row["OEM Name"] || row.OEM || row["Maker Name"] || row.maker || "").trim().toUpperCase();
 
-    const matched = oemDb.find(
+    const matched = effectiveOemDb.find(
       (o) => o.oemName.toUpperCase() === rawMaker || o.oemFinal.toUpperCase() === rawMaker
     );
     if (matched) {
@@ -476,7 +554,7 @@ export default function ExecutiveDashboard({
         color: OEM_COLORS[group] || "#64748b",
       }))
       .sort((a, b) => b.count - a.count);
-  }, [selectedYear, selectedMonth, selectedTerritory, selectedDistrict, selectedRto, activeDatasetRows, oemDb, rtoDtLookup]);
+  }, [selectedYear, selectedMonth, selectedTerritory, selectedDistrict, selectedRto, activeDatasetRows, effectiveOemDb, rtoDtLookup, rtoCodeLookup]);
 
   // DYNAMIC SUMMARY ROWS ENGINE (Month & Cascading Filters Applied)
   const computedSummaryRows = useMemo(() => {
@@ -551,7 +629,13 @@ export default function ExecutiveDashboard({
         });
       } else if (templateRow.type === "district_total") {
         const distKey = templateRow.label.replace(/\s+Total$/i, "").trim();
-        const distStats = districtAccumulator[distKey] || districtAccumulator[templateRow.district] || { total: 0, mm: 0, monthly: {} };
+        const distKeyClean = cleanRtoName(distKey);
+        let distStats = districtAccumulator[distKey] || districtAccumulator[templateRow.district];
+        if (!distStats) {
+          const matchKey = Object.keys(districtAccumulator).find((k) => cleanRtoName(k) === distKeyClean);
+          distStats = matchKey ? districtAccumulator[matchKey] : { total: 0, mm: 0, monthly: {} };
+        }
+
         const finalTotal = distStats.total;
         const finalMm = distStats.mm;
         const finalMs = finalTotal > 0 ? (finalMm / finalTotal) * 100 : 0;
@@ -604,7 +688,7 @@ export default function ExecutiveDashboard({
     });
 
     return newRows;
-  }, [selectedYear, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, oemDb, fyMonths]);
+  }, [selectedYear, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, rtoCodeLookup, effectiveOemDb, fyMonths]);
 
   // Compute Grand Totals & KPI Cards from live scraper data
   const kpiData = useMemo(() => {
@@ -701,14 +785,18 @@ export default function ExecutiveDashboard({
       } else if (row.type === "district_total") {
         const distName = row.label.replace(/\s+Total$/i, "").trim();
         const terr = row.territory === "South Kerala" ? "South Kerala" : "North Kerala";
-        if (!terrMap[terr].districts[distName]) {
-          terrMap[terr].districts[distName] = {
+        const matchKey = Object.keys(terrMap[terr].districts).find(
+          (k) => cleanRtoName(k) === cleanRtoName(distName)
+        );
+        const targetKey = matchKey || distName;
+        if (!terrMap[terr].districts[targetKey]) {
+          terrMap[terr].districts[targetKey] = {
             districtName: distName,
             territoryName: terr,
             rtos: [],
           };
         }
-        terrMap[terr].districts[distName].totalRow = row;
+        terrMap[terr].districts[targetKey].totalRow = row;
       } else if (row.type === "territory_total") {
         const terrName = row.label.replace(/\s+Total$/i, "").trim();
         if (terrMap[terrName]) {
@@ -1556,7 +1644,21 @@ export default function ExecutiveDashboard({
                       {tgDistricts.map((dg, distIdx) => {
                         const isExpanded = isDistrictExpanded(dg.districtName);
                         const distRowCount = getDistrictRowCount(dg);
-                        const distTotalMetrics = dg.totalRow?.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                        const baseDistMetrics = dg.totalRow?.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+
+                        let distTotal = baseDistMetrics.total;
+                        let distMm = baseDistMetrics.mm;
+                        if (distTotal === 0 && dg.rtos.length > 0) {
+                          dg.rtos.forEach((r) => {
+                            const y = r.years[selectedYear];
+                            if (y) {
+                              distTotal += y.total || 0;
+                              distMm += y.mm || 0;
+                            }
+                          });
+                        }
+                        const distMs = distTotal > 0 ? (distMm / distTotal) * 100 : 0;
+                        const distTotalMetrics = { total: distTotal, mm: distMm, ms: distMs };
 
                         return (
                           <React.Fragment key={dg.districtName}>
@@ -1660,7 +1762,10 @@ export default function ExecutiveDashboard({
                               {/* Monthly columns for District Total (if monthly mode) */}
                               {tableMode === "monthly" &&
                                 fyMonths.map((m) => {
-                                  const mVal = dg.totalRow?.monthly?.[m.mmmYy] || 0;
+                                  let mVal = dg.totalRow?.monthly?.[m.mmmYy] || 0;
+                                  if (mVal === 0 && dg.rtos.length > 0) {
+                                    mVal = dg.rtos.reduce((s, r) => s + (r.monthly?.[m.mmmYy] || 0), 0);
+                                  }
                                   return (
                                     <td key={m.mmmYy} className="p-2.5 text-right font-mono text-sm font-bold">
                                       {mVal > 0 ? (
@@ -1797,7 +1902,23 @@ export default function ExecutiveDashboard({
 
                       {/* Territory Total Row */}
                       {tg.totalRow && showTerrTotal && (() => {
-                        const terrMetrics = tg.totalRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                        const baseTerrMetrics = tg.totalRow.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+                        let terrTotal = baseTerrMetrics.total;
+                        let terrMm = baseTerrMetrics.mm;
+                        if (terrTotal === 0 && tg.districts.length > 0) {
+                          tg.districts.forEach((d) => {
+                            d.rtos.forEach((r) => {
+                              const y = r.years[selectedYear];
+                              if (y) {
+                                terrTotal += y.total || 0;
+                                terrMm += y.mm || 0;
+                              }
+                            });
+                          });
+                        }
+                        const terrMs = terrTotal > 0 ? (terrMm / terrTotal) * 100 : 0;
+                        const terrMetrics = { total: terrTotal, mm: terrMm, ms: terrMs };
+
                         return (
                           <tr
                             className={`border-t-2 font-black transition ${
@@ -1827,7 +1948,13 @@ export default function ExecutiveDashboard({
                             {/* Monthly columns */}
                             {tableMode === "monthly" &&
                               fyMonths.map((m) => {
-                                const mVal = tg.totalRow?.monthly?.[m.mmmYy] || 0;
+                                let mVal = tg.totalRow?.monthly?.[m.mmmYy] || 0;
+                                if (mVal === 0) {
+                                  mVal = tg.districts.reduce(
+                                    (s, d) => s + d.rtos.reduce((rs, r) => rs + (r.monthly?.[m.mmmYy] || 0), 0),
+                                    0
+                                  );
+                                }
                                 return (
                                   <td key={m.mmmYy} className="p-2.5 text-right font-mono text-sm font-black">
                                     {mVal > 0 ? mVal.toLocaleString() : "-"}

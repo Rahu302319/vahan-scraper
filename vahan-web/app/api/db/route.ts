@@ -221,12 +221,46 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Pre-fetch rto_master and oem_master for automatic enrichment
+        const [rtoMasterRows] = await conn.query(
+          "SELECT rto_code, srt_office, final_rto_name, district, territory FROM rto_master"
+        );
+        const [oemMasterRows] = await conn.query(
+          "SELECT oem_name, oem_final, oem_group, oem_grouping FROM oem_master"
+        );
+
+        const cleanStr = (s: string) =>
+          (s || "")
+            .toLowerCase()
+            .replace(/[\s\-_]+(?:srto|rto|rt\s*office|sub\s*rt\s*office|mvi\s*office)\b/gi, "")
+            .replace(/[^a-z0-9]/g, "");
+
+        const rtoCodeMap = new Map<string, any>();
+        const rtoNameMap = new Map<string, any>();
+        (rtoMasterRows as any[]).forEach((m) => {
+          if (m.rto_code) rtoCodeMap.set(String(m.rto_code).toUpperCase().trim(), m);
+          if (m.srt_office) rtoNameMap.set(cleanStr(m.srt_office), m);
+          if (m.final_rto_name) rtoNameMap.set(cleanStr(m.final_rto_name), m);
+        });
+
+        // Safety override for KL42
+        rtoCodeMap.set("KL42", { final_rto_name: "North Paravur", district: "Ernakulam", territory: "South Kerala" });
+
+        const oemNameMap = new Map<string, any>();
+        (oemMasterRows as any[]).forEach((o) => {
+          if (o.oem_name) oemNameMap.set(String(o.oem_name).toUpperCase().trim(), o);
+          if (o.oem_final) oemNameMap.set(String(o.oem_final).toUpperCase().trim(), o);
+        });
+
         const stmt = `
           INSERT INTO vahan_registrations
             (state, rto_code, rto_name, final_rto_name, district, territory, year, segment, maker,
              oem_final, oem_group, oem_grouping, jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec_val, total)
           VALUES ?
           ON DUPLICATE KEY UPDATE
+            final_rto_name = VALUES(final_rto_name),
+            district = VALUES(district),
+            territory = VALUES(territory),
             jan = VALUES(jan), feb = VALUES(feb), mar = VALUES(mar), apr = VALUES(apr),
             may = VALUES(may), jun = VALUES(jun), jul = VALUES(jul), aug = VALUES(aug),
             sep = VALUES(sep), oct = VALUES(oct), nov = VALUES(nov), dec_val = VALUES(dec_val),
@@ -234,33 +268,70 @@ export async function POST(req: NextRequest) {
             oem_grouping = VALUES(oem_grouping)
         `;
 
-        const values = data.map((r: any) => [
-          r.State || "KL",
-          r.RTO_Code || "",
-          r.RTO_Name || "",
-          r.finalRtoName || r.RTO_Name || "",
-          r.district || "",
-          r.territory || "",
-          Number(r.Year || r.year || 2026),
-          String(r.segment || r.Segment || "PV").toUpperCase().trim(),
-          r.Maker || r.maker || "",
-          r.oemFinal || r.Maker || r.maker || "",
-          r.oemGroup || "Other OEM",
-          r.oemGrouping || "Others",
-          Number(r.JAN || 0),
-          Number(r.FEB || 0),
-          Number(r.MAR || 0),
-          Number(r.APR || 0),
-          Number(r.MAY || 0),
-          Number(r.JUN || 0),
-          Number(r.JUL || 0),
-          Number(r.AUG || 0),
-          Number(r.SEP || 0),
-          Number(r.OCT || 0),
-          Number(r.NOV || 0),
-          Number(r.DEC || 0),
-          Number(r.TOTAL || 0),
-        ]);
+        const values = data.map((r: any) => {
+          const code = String(r.RTO_Code || r.rto_code || "").toUpperCase().trim();
+          const rawName = String(r.RTO_Name || r.rto_name || "");
+          const rtoMatch = rtoCodeMap.get(code) || rtoNameMap.get(cleanStr(rawName));
+
+          const finalRto = r.finalRtoName || (rtoMatch ? rtoMatch.final_rto_name : rawName);
+          const dist = r.district || (rtoMatch ? rtoMatch.district : "");
+          const terr = r.territory || (rtoMatch ? rtoMatch.territory : "");
+
+          const makerStr = String(r.Maker || r.maker || "").trim();
+          const oemMatch = oemNameMap.get(makerStr.toUpperCase());
+          let oemFinal = r.oemFinal || (oemMatch ? oemMatch.oem_final : makerStr);
+          let oemGroup = r.oemGroup || (oemMatch ? oemMatch.oem_group : "Other OEM");
+          let oemGrouping = r.oemGrouping || (oemMatch ? oemMatch.oem_grouping : "Others");
+
+          if (!oemMatch) {
+            const u = makerStr.toUpperCase();
+            if (u.includes("MAHINDRA")) {
+              oemFinal = "Mahindra";
+              oemGroup = "M&M";
+              oemGrouping = "Mahindra";
+            } else if (u.includes("MARUTI")) {
+              oemFinal = "Maruti Suzuki";
+              oemGroup = "MSIL";
+              oemGrouping = "Maruti";
+            } else if (u.includes("TATA")) {
+              oemFinal = "Tata Motors";
+              oemGroup = "Tata";
+              oemGrouping = "Tata";
+            } else if (u.includes("HYUNDAI")) {
+              oemFinal = "Hyundai";
+              oemGroup = "Hyundai";
+              oemGrouping = "Hyundai";
+            }
+          }
+
+          return [
+            r.State || "KL",
+            code,
+            rawName,
+            finalRto,
+            dist,
+            terr,
+            Number(r.Year || r.year || 2026),
+            String(r.segment || r.Segment || "PV").toUpperCase().trim(),
+            makerStr,
+            oemFinal,
+            oemGroup,
+            oemGrouping,
+            Number(r.JAN || 0),
+            Number(r.FEB || 0),
+            Number(r.MAR || 0),
+            Number(r.APR || 0),
+            Number(r.MAY || 0),
+            Number(r.JUN || 0),
+            Number(r.JUL || 0),
+            Number(r.AUG || 0),
+            Number(r.SEP || 0),
+            Number(r.OCT || 0),
+            Number(r.NOV || 0),
+            Number(r.DEC || 0),
+            Number(r.TOTAL || 0),
+          ];
+        });
 
         const chunkSize = 500;
         for (let i = 0; i < values.length; i += chunkSize) {

@@ -44,9 +44,32 @@ export default function VahanDashboardPage() {
   // Global Theme: "dark" | "light"
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  // Shared OEM and RTO database state
+  // Shared OEM and RTO database state (Direct live link to MariaDB eramsale_vahan)
   const [oemDb, setOemDb] = useState<OEMRecord[]>([]);
   const [rtoDt, setRtoDt] = useState<RTORecord[]>([]);
+
+  // Automatically load OEM and RTO master tables on initial mount
+  useEffect(() => {
+    async function loadMasterTables() {
+      try {
+        const [oemRes, rtoRes] = await Promise.all([
+          fetch("/api/db?type=oem"),
+          fetch("/api/db?type=rto"),
+        ]);
+        const oemJson = await oemRes.json();
+        const rtoJson = await rtoRes.json();
+        if (oemJson.success && Array.isArray(oemJson.data)) {
+          setOemDb(oemJson.data);
+        }
+        if (rtoJson.success && Array.isArray(rtoJson.data)) {
+          setRtoDt(rtoJson.data);
+        }
+      } catch (err) {
+        console.warn("MariaDB master tables initial fetch notice:", err);
+      }
+    }
+    loadMasterTables();
+  }, []);
 
   // Theme persistence & document class sync
   useEffect(() => {
@@ -503,7 +526,11 @@ export default function VahanDashboardPage() {
             const json = await resp.json();
             if (json.success && json.rows) {
               success = true;
-              resultData = json.rows;
+              resultData = json.rows.map((row: any) => ({
+                ...row,
+                segment,
+                Segment: segment,
+              }));
               totalV = json.totalVehicles || 0;
               accumulatedRows.push(...resultData);
 
