@@ -41,25 +41,59 @@ interface SummaryRow {
   label: string;
   type: "rto" | "district_total" | "territory_total" | "grand_total";
   years: Record<string, { total: number; mm: number; ms: number }>;
+  monthly?: Record<string, number>;
 }
 
-const AVAILABLE_YEARS = ["2026", "2025", "2024", "2023", "2022", "2021"];
+export interface FYOption {
+  value: string; // e.g. "2026"
+  label: string; // "FY 2025-26 (FY26)"
+  startYear: number; // 2025
+  endYear: number; // 2026
+  prevYY: string; // "25"
+  currYY: string; // "26"
+}
 
-const MONTHS_LIST = [
-  { value: "ALL", label: "All Months (Full Year / Cumulative)" },
-  { value: "JAN", label: "01 • January (JAN)" },
-  { value: "FEB", label: "02 • February (FEB)" },
-  { value: "MAR", label: "03 • March (MAR)" },
-  { value: "APR", label: "04 • April (APR)" },
-  { value: "MAY", label: "05 • May (MAY)" },
-  { value: "JUN", label: "06 • June (JUN)" },
-  { value: "JUL", label: "07 • July (JUL)" },
-  { value: "AUG", label: "08 • August (AUG)" },
-  { value: "SEP", label: "09 • September (SEP)" },
-  { value: "OCT", label: "10 • October (OCT)" },
-  { value: "NOV", label: "11 • November (NOV)" },
-  { value: "DEC", label: "12 • December (DEC)" },
+export const AVAILABLE_FY_LIST: FYOption[] = [
+  { value: "2027", label: "FY 2026-27 (FY27)", startYear: 2026, endYear: 2027, prevYY: "26", currYY: "27" },
+  { value: "2026", label: "FY 2025-26 (FY26)", startYear: 2025, endYear: 2026, prevYY: "25", currYY: "26" },
+  { value: "2025", label: "FY 2024-25 (FY25)", startYear: 2024, endYear: 2025, prevYY: "24", currYY: "25" },
+  { value: "2024", label: "FY 2023-24 (FY24)", startYear: 2023, endYear: 2024, prevYY: "23", currYY: "24" },
+  { value: "2023", label: "FY 2022-23 (FY23)", startYear: 2022, endYear: 2023, prevYY: "22", currYY: "23" },
+  { value: "2022", label: "FY 2021-22 (FY22)", startYear: 2021, endYear: 2022, prevYY: "21", currYY: "22" },
+  { value: "2021", label: "FY 2020-21 (FY21)", startYear: 2020, endYear: 2021, prevYY: "20", currYY: "21" },
 ];
+
+export interface FYMonthItem {
+  code: string;       // "APR", "MAY", ... "MAR"
+  name: string;       // "Apr", "May", ... "Mar"
+  mmmYy: string;      // "Apr-25", "May-25", ... "Jan-26", "Mar-26"
+  calYear: number;    // 2025 for Apr-Dec, 2026 for Jan-Mar
+  quarter: string;    // "Q1", "Q2", "Q3", "Q4"
+  order: number;      // 1 to 12
+}
+
+export function getFyMonthSequence(selectedYear: string): FYMonthItem[] {
+  const numYr = parseInt(selectedYear, 10) || 2026;
+  const startYr = numYr - 1;
+  const endYr = numYr;
+  const prevYY = String(startYr).slice(-2);
+  const currYY = String(endYr).slice(-2);
+
+  return [
+    { code: "APR", name: "Apr", mmmYy: `Apr-${prevYY}`, calYear: startYr, quarter: "Q1", order: 1 },
+    { code: "MAY", name: "May", mmmYy: `May-${prevYY}`, calYear: startYr, quarter: "Q1", order: 2 },
+    { code: "JUN", name: "Jun", mmmYy: `Jun-${prevYY}`, calYear: startYr, quarter: "Q1", order: 3 },
+    { code: "JUL", name: "Jul", mmmYy: `Jul-${prevYY}`, calYear: startYr, quarter: "Q2", order: 4 },
+    { code: "AUG", name: "Aug", mmmYy: `Aug-${prevYY}`, calYear: startYr, quarter: "Q2", order: 5 },
+    { code: "SEP", name: "Sep", mmmYy: `Sep-${prevYY}`, calYear: startYr, quarter: "Q2", order: 6 },
+    { code: "OCT", name: "Oct", mmmYy: `Oct-${prevYY}`, calYear: startYr, quarter: "Q3", order: 7 },
+    { code: "NOV", name: "Nov", mmmYy: `Nov-${prevYY}`, calYear: startYr, quarter: "Q3", order: 8 },
+    { code: "DEC", name: "Dec", mmmYy: `Dec-${prevYY}`, calYear: startYr, quarter: "Q3", order: 9 },
+    { code: "JAN", name: "Jan", mmmYy: `Jan-${currYY}`, calYear: endYr,   quarter: "Q4", order: 10 },
+    { code: "FEB", name: "Feb", mmmYy: `Feb-${currYY}`, calYear: endYr,   quarter: "Q4", order: 11 },
+    { code: "MAR", name: "Mar", mmmYy: `Mar-${currYY}`, calYear: endYr,   quarter: "Q4", order: 12 },
+  ];
+}
 
 export const KERALA_TERRITORIES: Record<string, string[]> = {
   "North Kerala": [
@@ -108,33 +142,77 @@ function cleanRtoName(s: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
-function getRowVolume(row: any, selectedMonth: string = "ALL"): number {
+function getRowVolume(row: any, selectedMonth: string = "ALL", selectedFyYear: string = "2026"): number {
+  const fyMonths = getFyMonthSequence(selectedFyYear);
+  const numYr = parseInt(selectedFyYear, 10) || 2026;
+  const startYr = numYr - 1;
+  const endYr = numYr;
+
   if (selectedMonth && selectedMonth !== "ALL") {
-    const colName = selectedMonth.toUpperCase();
-    if (colName === "DEC") {
-      const v = row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0;
-      return Number(v) || 0;
+    // 1. Match month item from FY sequence
+    const target = fyMonths.find(
+      (m) => m.mmmYy.toUpperCase() === selectedMonth.toUpperCase() ||
+             m.code.toUpperCase() === selectedMonth.toUpperCase() ||
+             m.name.toUpperCase() === selectedMonth.toUpperCase()
+    );
+
+    if (target) {
+      const rowYr = Number(row.Year || row.year || row.FY);
+      // If dataset contains multi-year rows, ensure year matches the target FY calendar year
+      if (rowYr && (rowYr === startYr || rowYr === endYr) && rowYr !== target.calYear) {
+        return 0;
+      }
+      const col = target.code;
+      if (col === "DEC") {
+        return Number(row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0) || 0;
+      }
+      return Number(row[col] ?? row[col.toLowerCase()] ?? row[target.mmmYy] ?? 0) || 0;
     }
-    const v = row[colName] ?? row[selectedMonth.toLowerCase()] ?? 0;
-    return Number(v) || 0;
+
+    // Direct month abbreviation fallback (e.g. "APR")
+    const colName = selectedMonth.slice(0, 3).toUpperCase();
+    if (colName === "DEC") {
+      return Number(row["DEC"] ?? row["dec_val"] ?? row["dec"] ?? 0) || 0;
+    }
+    return Number(row[colName] ?? row[colName.toLowerCase()] ?? 0) || 0;
   }
 
-  // Full Year Cumulative Total
+  // 2. Full Financial Year Cumulative (Apr to Mar):
+  const rowYr = Number(row.Year || row.year || row.FY);
+  if (rowYr === startYr) {
+    // Months April - December of startYear
+    const aprDec = ["APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "dec_val"];
+    let s = 0;
+    for (const m of aprDec) {
+      const v = row[m] ?? row[m.toLowerCase()];
+      if (v !== undefined && !isNaN(Number(v))) s += Number(v);
+    }
+    return s;
+  } else if (rowYr === endYr) {
+    // Months January - March of endYear
+    const janMar = ["JAN", "FEB", "MAR"];
+    let s = 0;
+    for (const m of janMar) {
+      const v = row[m] ?? row[m.toLowerCase()];
+      if (v !== undefined && !isNaN(Number(v))) s += Number(v);
+    }
+    return s;
+  }
+
+  // If single-year dataset or row without Year: take TOTAL or sum all 12 FY months
   if (row.TOTAL !== undefined && row.TOTAL !== null && !isNaN(Number(row.TOTAL))) {
     return Number(row.TOTAL);
   }
   if (row.total !== undefined && row.total !== null && !isNaN(Number(row.total))) {
     return Number(row.total);
   }
-  if (row.Value !== undefined && row.Value !== null && !isNaN(Number(row.Value))) {
-    return Number(row.Value);
-  }
-  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "dec_val"];
+  const allMonths = ["APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "dec_val", "JAN", "FEB", "MAR"];
   let sum = 0;
   let found = false;
-  for (const m of months) {
-    if (row[m] !== undefined && !isNaN(Number(row[m]))) {
-      sum += Number(row[m]);
+  for (const m of allMonths) {
+    const v = row[m] ?? row[m.toLowerCase()];
+    if (v !== undefined && !isNaN(Number(v))) {
+      sum += Number(v);
       found = true;
     }
   }
@@ -160,6 +238,14 @@ export default function ExecutiveDashboard({
   const [selectedRto, setSelectedRto] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("ALL");
   const [hideZeroRtos, setHideZeroRtos] = useState<boolean>(false);
+  const [tableMode, setTableMode] = useState<"summary" | "monthly">("summary");
+
+  // FY Definition & 12 Month Financial Year Sequence (Apr to Mar)
+  const fyOption = useMemo(
+    () => AVAILABLE_FY_LIST.find((f) => f.value === selectedYear) || AVAILABLE_FY_LIST[1],
+    [selectedYear]
+  );
+  const fyMonths = useMemo(() => getFyMonthSequence(selectedYear), [selectedYear]);
 
   // Cached scraped rows from localStorage & database
   const [cachedScrapedRows, setCachedScrapedRows] = useState<any[]>([]);
@@ -179,11 +265,13 @@ export default function ExecutiveDashboard({
     } catch {}
   }, []);
 
-  // Fetch live registrations from Hostinger database if no live scrape in memory
+  // Fetch live registrations from Hostinger database (fetches both FY calendar years)
   const fetchDbRegistrations = async () => {
     setIsLoadingDb(true);
     try {
-      const res = await fetch(`/api/db?type=registrations&year=${selectedYear}`);
+      const numYr = parseInt(selectedYear, 10) || 2026;
+      const yearsNeeded = `${numYr - 1},${numYr}`;
+      const res = await fetch(`/api/db?type=registrations&year=${yearsNeeded}`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data) && json.data.length > 0) {
         setDbScrapedRows(json.data);
@@ -196,16 +284,18 @@ export default function ExecutiveDashboard({
   };
 
   useEffect(() => {
-    if ((!liveScrapedRows || liveScrapedRows.length === 0) && cachedScrapedRows.length === 0) {
-      fetchDbRegistrations();
-    }
-  }, [selectedYear, liveScrapedRows.length, cachedScrapedRows.length]);
+    fetchDbRegistrations();
+  }, [selectedYear]);
 
   // Pure Live Scraper Data: live session > localStorage cache > database registrations
   const activeDatasetRows = useMemo(() => {
     if (liveScrapedRows && liveScrapedRows.length > 0) return liveScrapedRows;
     if (cachedScrapedRows && cachedScrapedRows.length > 0) {
-      const filtered = cachedScrapedRows.filter((r) => !r.Year || String(r.Year) === selectedYear);
+      const numYr = parseInt(selectedYear, 10) || 2026;
+      const filtered = cachedScrapedRows.filter((r) => {
+        const yr = Number(r.Year || r.year || r.FY);
+        return !yr || yr === numYr || yr === numYr - 1;
+      });
       if (filtered.length > 0) return filtered;
       return cachedScrapedRows;
     }
@@ -353,11 +443,7 @@ export default function ExecutiveDashboard({
     let totalVal = 0;
 
     activeDatasetRows.forEach((r) => {
-      // 1. Year filter
-      const rowYr = String(r.Year || r.FY || r.year || "").trim();
-      if (rowYr && rowYr !== selectedYear) return;
-
-      // 2. Territory & District filter on row
+      // 1. Territory & District filter on row
       const finalName = resolveRowToFinalRto(r);
       const cleanKey = cleanRtoName(finalName);
 
@@ -379,7 +465,8 @@ export default function ExecutiveDashboard({
       }
 
       const { grouping } = resolveRowOem(r);
-      const vol = getRowVolume(r, selectedMonth);
+      const vol = getRowVolume(r, selectedMonth, selectedYear);
+      if (vol === 0) return;
       groupMap[grouping] = (groupMap[grouping] || 0) + vol;
       totalVal += vol;
     });
@@ -396,30 +483,34 @@ export default function ExecutiveDashboard({
 
   // DYNAMIC SUMMARY ROWS ENGINE (Month & Cascading Filters Applied)
   const computedSummaryRows = useMemo(() => {
-    // 1. Build volume map for each RTO from activeDatasetRows for selectedMonth
-    const rtoMap = new Map<string, { total: number; mm: number }>();
+    // 1. Build volume map for each RTO from activeDatasetRows for selectedMonth & individual FY months
+    const rtoMap = new Map<string, { total: number; mm: number; monthly: Record<string, number> }>();
 
     activeDatasetRows.forEach((row) => {
-      const rowYr = String(row.Year || row.FY || row.year || "").trim();
-      if (rowYr && rowYr !== selectedYear) return;
-
       const finalName = resolveRowToFinalRto(row);
       const key = cleanRtoName(finalName);
-      const vol = getRowVolume(row, selectedMonth);
+      const vol = getRowVolume(row, selectedMonth, selectedYear);
       const { isMahindra } = resolveRowOem(row);
 
-      const curr = rtoMap.get(key) || { total: 0, mm: 0 };
+      const curr = rtoMap.get(key) || { total: 0, mm: 0, monthly: {} };
       curr.total += vol;
       if (isMahindra) curr.mm += vol;
+
+      // Accumulate monthly volumes for 12 FY months (Apr to Mar in mmm-yy format)
+      fyMonths.forEach((m) => {
+        const mVol = getRowVolume(row, m.mmmYy, selectedYear);
+        curr.monthly[m.mmmYy] = (curr.monthly[m.mmmYy] || 0) + mVol;
+      });
+
       rtoMap.set(key, curr);
     });
 
     // 2. Clone hierarchy template and calculate sub-totals
     const newRows: SummaryRow[] = [];
-    const districtAccumulator: Record<string, { total: number; mm: number }> = {};
-    const territoryAccumulator: Record<string, { total: number; mm: number }> = {
-      "North Kerala": { total: 0, mm: 0 },
-      "South Kerala": { total: 0, mm: 0 },
+    const districtAccumulator: Record<string, { total: number; mm: number; monthly: Record<string, number> }> = {};
+    const territoryAccumulator: Record<string, { total: number; mm: number; monthly: Record<string, number> }> = {
+      "North Kerala": { total: 0, mm: 0, monthly: {} },
+      "South Kerala": { total: 0, mm: 0, monthly: {} },
     };
 
     summaryRowsTemplate.forEach((templateRow) => {
@@ -427,19 +518,27 @@ export default function ExecutiveDashboard({
 
       if (templateRow.type === "rto") {
         const key = cleanRtoName(templateRow.rtoName);
-        const stats = rtoMap.get(key) || { total: 0, mm: 0 };
+        const stats = rtoMap.get(key) || { total: 0, mm: 0, monthly: {} };
         const ms = stats.total > 0 ? (stats.mm / stats.total) * 100 : 0;
 
         // Accumulate into District & Territory
         if (!districtAccumulator[templateRow.district]) {
-          districtAccumulator[templateRow.district] = { total: 0, mm: 0 };
+          districtAccumulator[templateRow.district] = { total: 0, mm: 0, monthly: {} };
         }
         districtAccumulator[templateRow.district].total += stats.total;
         districtAccumulator[templateRow.district].mm += stats.mm;
+        fyMonths.forEach((m) => {
+          districtAccumulator[templateRow.district].monthly[m.mmmYy] =
+            (districtAccumulator[templateRow.district].monthly[m.mmmYy] || 0) + (stats.monthly[m.mmmYy] || 0);
+        });
 
         if (territoryAccumulator[templateRow.territory]) {
           territoryAccumulator[templateRow.territory].total += stats.total;
           territoryAccumulator[templateRow.territory].mm += stats.mm;
+          fyMonths.forEach((m) => {
+            territoryAccumulator[templateRow.territory].monthly[m.mmmYy] =
+              (territoryAccumulator[templateRow.territory].monthly[m.mmmYy] || 0) + (stats.monthly[m.mmmYy] || 0);
+          });
         }
 
         newRows.push({
@@ -447,9 +546,10 @@ export default function ExecutiveDashboard({
           years: {
             [selectedYear]: { total: stats.total, mm: stats.mm, ms },
           },
+          monthly: stats.monthly,
         });
       } else if (templateRow.type === "district_total") {
-        const distStats = districtAccumulator[templateRow.district] || { total: 0, mm: 0 };
+        const distStats = districtAccumulator[templateRow.district] || { total: 0, mm: 0, monthly: {} };
         const ms = distStats.total > 0 ? (distStats.mm / distStats.total) * 100 : 0;
 
         newRows.push({
@@ -457,10 +557,11 @@ export default function ExecutiveDashboard({
           years: {
             [selectedYear]: { total: distStats.total, mm: distStats.mm, ms },
           },
+          monthly: distStats.monthly,
         });
       } else if (templateRow.type === "territory_total") {
         const terrName = templateRow.label.replace(" Total", "").trim();
-        const terrStats = territoryAccumulator[terrName] || { total: 0, mm: 0 };
+        const terrStats = territoryAccumulator[terrName] || { total: 0, mm: 0, monthly: {} };
         const ms = terrStats.total > 0 ? (terrStats.mm / terrStats.total) * 100 : 0;
 
         newRows.push({
@@ -468,6 +569,7 @@ export default function ExecutiveDashboard({
           years: {
             [selectedYear]: { total: terrStats.total, mm: terrStats.mm, ms },
           },
+          monthly: terrStats.monthly,
         });
       } else if (templateRow.type === "grand_total") {
         const grandTotal =
@@ -478,17 +580,25 @@ export default function ExecutiveDashboard({
           (territoryAccumulator["South Kerala"]?.mm || 0);
         const ms = grandTotal > 0 ? (grandMm / grandTotal) * 100 : 0;
 
+        const grandMonthly: Record<string, number> = {};
+        fyMonths.forEach((m) => {
+          grandMonthly[m.mmmYy] =
+            (territoryAccumulator["North Kerala"]?.monthly[m.mmmYy] || 0) +
+            (territoryAccumulator["South Kerala"]?.monthly[m.mmmYy] || 0);
+        });
+
         newRows.push({
           ...templateRow,
           years: {
             [selectedYear]: { total: grandTotal, mm: grandMm, ms },
           },
+          monthly: grandMonthly,
         });
       }
     });
 
     return newRows;
-  }, [selectedYear, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, oemDb]);
+  }, [selectedYear, selectedMonth, activeDatasetRows, summaryRowsTemplate, rtoDtLookup, oemDb, fyMonths]);
 
   // Compute Grand Totals & KPI Cards from live scraper data
   const kpiData = useMemo(() => {
@@ -555,63 +665,112 @@ export default function ExecutiveDashboard({
     });
   }, [computedSummaryRows, selectedTerritory, selectedDistrict, selectedRto, searchQuery, hideZeroRtos, selectedYear]);
 
-  // Active Timeframe Label for headers and exports
-  const timeframeLabel = selectedMonth === "ALL" ? `FY ${selectedYear}` : `${selectedMonth} ${selectedYear}`;
+  // Active Timeframe Label: formatted strictly as mmm-yy when month is selected, or Full FY
+  const activeMonthItem = useMemo(() => {
+    if (selectedMonth === "ALL") return null;
+    return fyMonths.find(
+      (m) => m.mmmYy.toUpperCase() === selectedMonth.toUpperCase() ||
+             m.code.toUpperCase() === selectedMonth.toUpperCase() ||
+             m.name.toUpperCase() === selectedMonth.toUpperCase()
+    );
+  }, [selectedMonth, fyMonths]);
+
+  const timeframeLabel = activeMonthItem
+    ? activeMonthItem.mmmYy
+    : `${fyOption.label} (Apr-${fyOption.prevYY} to Mar-${fyOption.currYY})`;
 
   // Export Summary Table as formatted Excel
   const handleExportSummaryExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
       workbook.creator = "Vahan Kerala Live Intelligence Dashboard";
-      const sheet = workbook.addWorksheet(`Summary_${timeframeLabel.replace(/\s+/g, "_")}`);
+      const sheet = workbook.addWorksheet(`Summary_${timeframeLabel.replace(/[\s():/]+/g, "_")}`);
 
-      sheet.addRow([
-        "Territory",
-        "District",
-        "Final RTO Name",
-        `Total Registration (${timeframeLabel})`,
-        `M&M Nos (${timeframeLabel})`,
-        `M&M MS % (${timeframeLabel})`,
-      ]);
+      if (tableMode === "monthly") {
+        // Export 12-Month Financial Year Grid (Apr to Mar in mmm-yy format)
+        const headers = [
+          "Territory",
+          "District",
+          "Final RTO Name",
+          ...fyMonths.map((m) => m.mmmYy),
+          "FY Total",
+          "M&M Nos",
+          "M&M MS %",
+        ];
+        sheet.addRow(headers);
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        headerRow.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF0F172A" },
+        };
 
-      const headerRow = sheet.getRow(1);
-      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      headerRow.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF0F172A" },
-      };
-
-      filteredSummaryRows.forEach((r) => {
-        const metrics = r.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
-        const isTotal = r.type !== "rto";
-        const row = sheet.addRow([
-          r.type === "rto" ? r.territory : "",
-          r.type === "rto" ? r.district : r.type === "district_total" ? r.label : "",
-          r.type === "rto" ? r.rtoName : r.type !== "district_total" ? r.label : "",
-          metrics.total,
-          metrics.mm,
-          `${metrics.ms.toFixed(2)}%`,
+        filteredSummaryRows.forEach((r) => {
+          const metrics = r.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+          const isTotal = r.type !== "rto";
+          const rowVals = [
+            r.type === "rto" ? r.territory : "",
+            r.type === "rto" ? r.district : r.type === "district_total" ? r.label : "",
+            r.type === "rto" ? r.rtoName : r.type !== "district_total" ? r.label : "",
+            ...fyMonths.map((m) => r.monthly?.[m.mmmYy] || 0),
+            metrics.total,
+            metrics.mm,
+            `${metrics.ms.toFixed(2)}%`,
+          ];
+          const row = sheet.addRow(rowVals);
+          if (isTotal) {
+            row.font = { bold: true };
+            row.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: r.type === "grand_total" ? "FFFEF3C7" : "FFF1F5F9" },
+            };
+          }
+        });
+      } else {
+        // Export Focused Summary Table
+        sheet.addRow([
+          "Territory",
+          "District",
+          "Final RTO Name",
+          `Total Registration (${timeframeLabel})`,
+          `M&M Nos (${timeframeLabel})`,
+          `M&M MS % (${timeframeLabel})`,
         ]);
 
-        if (isTotal) {
-          row.font = { bold: true };
-          row.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: r.type === "grand_total" ? "FFFEF3C7" : "FFF1F5F9" },
-          };
-        }
-      });
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        headerRow.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF0F172A" },
+        };
 
-      sheet.columns = [
-        { width: 18 },
-        { width: 22 },
-        { width: 22 },
-        { width: 24 },
-        { width: 18 },
-        { width: 18 },
-      ];
+        filteredSummaryRows.forEach((r) => {
+          const metrics = r.years[selectedYear] || { total: 0, mm: 0, ms: 0 };
+          const isTotal = r.type !== "rto";
+          const row = sheet.addRow([
+            r.type === "rto" ? r.territory : "",
+            r.type === "rto" ? r.district : r.type === "district_total" ? r.label : "",
+            r.type === "rto" ? r.rtoName : r.type !== "district_total" ? r.label : "",
+            metrics.total,
+            metrics.mm,
+            `${metrics.ms.toFixed(2)}%`,
+          ]);
+
+          if (isTotal) {
+            row.font = { bold: true };
+            row.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: r.type === "grand_total" ? "FFFEF3C7" : "FFF1F5F9" },
+            };
+          }
+        });
+      }
+
+      sheet.columns = sheet.columns.map(() => ({ width: 18 }));
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
@@ -620,7 +779,7 @@ export default function ExecutiveDashboard({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Vahan_Kerala_Live_${timeframeLabel.replace(/\s+/g, "_")}.xlsx`;
+      a.download = `Vahan_Kerala_Live_${timeframeLabel.replace(/[\s():/]+/g, "_")}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -703,25 +862,28 @@ export default function ExecutiveDashboard({
             </span>
             <select
               value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setSelectedMonth("ALL");
+              }}
               className={`px-2.5 py-1.5 rounded text-xs font-bold border focus:outline-none ${
                 isDark
                   ? "bg-[#060c18] border-[#1f2f4c] text-[#38bdf8] focus:border-[#38bdf8]"
                   : "bg-slate-100 border-slate-300 text-slate-900 focus:border-sky-500"
               }`}
             >
-              {AVAILABLE_YEARS.map((y) => (
-                <option key={y} value={y}>
-                  FY {y}
+              {AVAILABLE_FY_LIST.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* B. Month Dropdown (NEW!) */}
+          {/* B. Month Dropdown (Strictly Financial Year Apr to Mar in mmm-yy format) */}
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-amber-400" : "text-amber-700"}`}>
-              Month:
+              Month (Apr-Mar):
             </span>
             <select
               value={selectedMonth}
@@ -732,9 +894,12 @@ export default function ExecutiveDashboard({
                   : "bg-amber-50 border-amber-300 text-amber-900 focus:border-amber-500"
               }`}
             >
-              {MONTHS_LIST.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
+              <option value="ALL">
+                All Months (Apr-{fyOption.prevYY} to Mar-{fyOption.currYY} • Full FY)
+              </option>
+              {fyMonths.map((m) => (
+                <option key={m.mmmYy} value={m.mmmYy}>
+                  {String(m.order).padStart(2, "0")} • {m.mmmYy} ({m.name})
                 </option>
               ))}
             </select>
@@ -1014,6 +1179,32 @@ export default function ExecutiveDashboard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* View Mode Switcher */}
+            <div className={`flex items-center p-0.5 rounded border ${isDark ? "bg-[#060c18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"}`}>
+              <button
+                type="button"
+                onClick={() => setTableMode("summary")}
+                className={`px-2.5 py-1 rounded text-xs font-bold transition ${
+                  tableMode === "summary"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Focused Summary
+              </button>
+              <button
+                type="button"
+                onClick={() => setTableMode("monthly")}
+                className={`px-2.5 py-1 rounded text-xs font-bold transition ${
+                  tableMode === "monthly"
+                    ? "bg-[#0284c7] text-white shadow-sm"
+                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                12-M Trend (Apr-Mar)
+              </button>
+            </div>
+
             {/* Toggle Zero RTOs */}
             <button
               type="button"
@@ -1029,7 +1220,7 @@ export default function ExecutiveDashboard({
               }`}
             >
               {hideZeroRtos ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              {hideZeroRtos ? "Showing Active RTOs Only" : "Show All 87 RTOs"}
+              {hideZeroRtos ? "Active RTOs Only" : "All 87 RTOs"}
             </button>
 
             {/* Search within table */}
@@ -1040,7 +1231,7 @@ export default function ExecutiveDashboard({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Quick filter RTO or District..."
-                className={`pl-8 pr-3 py-1 rounded text-xs border focus:outline-none w-48 sm:w-56 ${
+                className={`pl-8 pr-3 py-1 rounded text-xs border focus:outline-none w-44 sm:w-52 ${
                   isDark
                     ? "bg-[#060c18] border-[#1f2f4c] text-white focus:border-[#38bdf8]"
                     : "bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500"
@@ -1058,14 +1249,30 @@ export default function ExecutiveDashboard({
             <thead className={`sticky top-0 z-10 font-bold border-b text-[11px] ${
               isDark ? "bg-[#0d1627] text-[#38bdf8] border-[#1f2f4c]" : "bg-slate-100 text-slate-700 border-slate-300"
             }`}>
-              <tr>
-                <th className="p-2 w-36">Territory</th>
-                <th className="p-2 w-44">District</th>
-                <th className="p-2">Final RTO Name</th>
-                <th className="p-2 text-right w-36">Total Registration ({timeframeLabel})</th>
-                <th className="p-2 text-right w-28 text-red-400">M&M Nos</th>
-                <th className="p-2 text-right w-28 text-[#34d399]">M&M MS %</th>
-              </tr>
+              {tableMode === "monthly" ? (
+                <tr>
+                  <th className="p-2 w-28">Territory</th>
+                  <th className="p-2 w-32">District</th>
+                  <th className="p-2 min-w-[140px]">Final RTO Name</th>
+                  {fyMonths.map((m) => (
+                    <th key={m.mmmYy} className="p-2 text-right w-16 font-mono text-[10px] text-amber-400">
+                      {m.mmmYy}
+                    </th>
+                  ))}
+                  <th className="p-2 text-right w-24 text-[#38bdf8]">FY Total</th>
+                  <th className="p-2 text-right w-20 text-red-400">M&M Nos</th>
+                  <th className="p-2 text-right w-20 text-[#34d399]">M&M MS %</th>
+                </tr>
+              ) : (
+                <tr>
+                  <th className="p-2 w-36">Territory</th>
+                  <th className="p-2 w-44">District</th>
+                  <th className="p-2">Final RTO Name</th>
+                  <th className="p-2 text-right w-44">Total Registration ({timeframeLabel})</th>
+                  <th className="p-2 text-right w-32 text-red-400">M&M Nos</th>
+                  <th className="p-2 text-right w-28 text-[#34d399]">M&M MS %</th>
+                </tr>
+              )}
             </thead>
             <tbody className={`divide-y ${isDark ? "divide-[#131f33]" : "divide-slate-200"}`}>
               {filteredSummaryRows.map((row, idx) => {
@@ -1129,6 +1336,21 @@ export default function ExecutiveDashboard({
                         ""
                       )}
                     </td>
+
+                    {/* Monthly Columns (If in 12-Month Financial Year Trend Mode) */}
+                    {tableMode === "monthly" &&
+                      fyMonths.map((m) => {
+                        const mVal = row.monthly?.[m.mmmYy] || 0;
+                        return (
+                          <td key={m.mmmYy} className="p-2 text-right font-mono text-[11px]">
+                            {mVal > 0 ? (
+                              mVal.toLocaleString()
+                            ) : (
+                              <span className={isDark ? "text-slate-600" : "text-slate-300"}>-</span>
+                            )}
+                          </td>
+                        );
+                      })}
 
                     {/* Total Registration */}
                     <td className="p-2 text-right font-mono font-bold">

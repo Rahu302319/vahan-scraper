@@ -54,9 +54,15 @@ export async function GET(req: NextRequest) {
           FROM vahan_registrations
         `;
         const params: any[] = [];
-        if (year) {
-          sql += " WHERE year = ?";
-          params.push(Number(year));
+        if (year && year !== "ALL") {
+          const yearList = year.split(",").map((y) => Number(y.trim())).filter((n) => !isNaN(n));
+          if (yearList.length === 1) {
+            sql += " WHERE year = ?";
+            params.push(yearList[0]);
+          } else if (yearList.length > 1) {
+            sql += ` WHERE year IN (${yearList.map(() => "?").join(",")})`;
+            params.push(...yearList);
+          }
         }
         sql += " ORDER BY rto_code, maker";
 

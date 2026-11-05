@@ -1460,13 +1460,24 @@ export default function VahanDashboardPage() {
                       <tr>
                         <th className="p-1.5 text-center w-10">#</th>
                         <th className="p-1.5">{yaxis}</th>
-                        {["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].map(
-                          (m) => (
-                            <th key={m} className="p-1.5 text-right w-11">
-                              {m}
-                            </th>
-                          )
-                        )}
+                        {[
+                          { code: "APR", label: `Apr-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "MAY", label: `May-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "JUN", label: `Jun-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "JUL", label: `Jul-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "AUG", label: `Aug-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "SEP", label: `Sep-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "OCT", label: `Oct-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "NOV", label: `Nov-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "DEC", label: `Dec-${String(Number(year) - 1).slice(-2)}` },
+                          { code: "JAN", label: `Jan-${String(year).slice(-2)}` },
+                          { code: "FEB", label: `Feb-${String(year).slice(-2)}` },
+                          { code: "MAR", label: `Mar-${String(year).slice(-2)}` },
+                        ].map((m) => (
+                          <th key={m.code} className="p-1.5 text-right w-14 font-mono text-[10px] text-amber-400">
+                            {m.label}
+                          </th>
+                        ))}
                         <th className={`p-1.5 text-right font-extrabold w-14 ${
                           isDark ? "text-[#38bdf8]" : "text-sky-700"
                         }`}>
@@ -1490,9 +1501,6 @@ export default function VahanDashboardPage() {
                           }`}>
                             {row[yaxis] || row.Maker}
                           </td>
-                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.JAN || 0}</td>
-                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.FEB || 0}</td>
-                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.MAR || 0}</td>
                           <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.APR || 0}</td>
                           <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.MAY || 0}</td>
                           <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.JUN || 0}</td>
@@ -1501,7 +1509,10 @@ export default function VahanDashboardPage() {
                           <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.SEP || 0}</td>
                           <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.OCT || 0}</td>
                           <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.NOV || 0}</td>
-                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.DEC || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.DEC || row.dec_val || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.JAN || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.FEB || 0}</td>
+                          <td className={`p-1.5 text-right font-mono text-[11px] ${isDark ? "text-[#cbd5e1]" : "text-slate-700"}`}>{row.MAR || 0}</td>
                           <td className={`p-1.5 text-right font-mono font-bold text-[11px] ${
                             isDark ? "text-[#38bdf8]" : "text-sky-700"
                           }`}>
