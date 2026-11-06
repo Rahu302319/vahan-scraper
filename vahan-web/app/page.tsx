@@ -38,8 +38,8 @@ export default function VahanDashboardPage() {
   const [activePreviewRTO, setActivePreviewRTO] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "summary" | "logs">("preview");
 
-  // Main Tab Navigation: "scraper" | "dashboard" | "database" (Default: "dashboard")
-  const [mainTab, setMainTab] = useState<"scraper" | "dashboard" | "database">("dashboard");
+  // Main Tab Navigation: "scraper" | "dashboard" | "database"
+  const [mainTab, setMainTab] = useState<"scraper" | "dashboard" | "database">("scraper");
 
   // Global Theme: "dark" | "light"
   const [theme, setTheme] = useState<"dark" | "light">("dark");
