@@ -39,7 +39,7 @@ import {
   Copy
 } from "lucide-react";
 import ExcelJS from "exceljs";
-import summaryDataRaw from "@/lib/summary-data.json";
+
 import { OEMRecord, RTORecord } from "./DatabaseManager";
 
 export interface DashboardProps {
@@ -704,7 +704,7 @@ export default function ExecutiveDashboard({
 
       return rows;
     }
-    return summaryDataRaw as SummaryRow[];
+    return [];
   }, [effectiveRtoDt]);
 
   // 1. DEPENDENT FILTER STATES (Supports Multi-Selection)
@@ -2023,6 +2023,30 @@ export default function ExecutiveDashboard({
             return total;
           };
 
+          // Define months for FY 23 (Apr 2022 to Mar 2023)
+          const fy23_months = [
+            { col: "apr", year: 2022 }, { col: "may", year: 2022 }, { col: "jun", year: 2022 },
+            { col: "jul", year: 2022 }, { col: "aug", year: 2022 }, { col: "sep", year: 2022 },
+            { col: "oct", year: 2022 }, { col: "nov", year: 2022 }, { col: "dec", year: 2022 },
+            { col: "jan", year: 2023 }, { col: "feb", year: 2023 }, { col: "mar", year: 2023 }
+          ];
+
+          // Define months for FY 24 (Apr 2023 to Mar 2024)
+          const fy24_months = [
+            { col: "apr", year: 2023 }, { col: "may", year: 2023 }, { col: "jun", year: 2023 },
+            { col: "jul", year: 2023 }, { col: "aug", year: 2023 }, { col: "sep", year: 2023 },
+            { col: "oct", year: 2023 }, { col: "nov", year: 2023 }, { col: "dec", year: 2023 },
+            { col: "jan", year: 2024 }, { col: "feb", year: 2024 }, { col: "mar", year: 2024 }
+          ];
+
+          // Define months for FY 25 (Apr 2024 to Mar 2025)
+          const fy25_months = [
+            { col: "apr", year: 2024 }, { col: "may", year: 2024 }, { col: "jun", year: 2024 },
+            { col: "jul", year: 2024 }, { col: "aug", year: 2024 }, { col: "sep", year: 2024 },
+            { col: "oct", year: 2024 }, { col: "nov", year: 2024 }, { col: "dec", year: 2024 },
+            { col: "jan", year: 2025 }, { col: "feb", year: 2025 }, { col: "mar", year: 2025 }
+          ];
+
           // Define months for FY 26 (Apr 2025 to Mar 2026)
           const fy26_months = [
             { col: "apr", year: 2025 }, { col: "may", year: 2025 }, { col: "jun", year: 2025 },
@@ -2031,7 +2055,7 @@ export default function ExecutiveDashboard({
             { col: "jan", year: 2026 }, { col: "feb", year: 2026 }, { col: "mar", year: 2026 }
           ];
 
-          // Define months for Calendar Year 2025
+          // Fallback single-year full calendar year months if scraped by calendar year
           const cy25_months = [
             { col: "jan", year: 2025 }, { col: "feb", year: 2025 }, { col: "mar", year: 2025 },
             { col: "apr", year: 2025 }, { col: "may", year: 2025 }, { col: "jun", year: 2025 },
@@ -2040,6 +2064,8 @@ export default function ExecutiveDashboard({
           ];
 
           const getMetrics = (territoryName: "North Kerala" | "South Kerala" | "Total") => {
+            let tiv23 = 0, mm23 = 0;
+            let tiv24 = 0, mm24 = 0;
             let tiv25 = 0, mm25 = 0;
             let tiv26 = 0, mm26 = 0;
 
@@ -2051,32 +2077,33 @@ export default function ExecutiveDashboard({
               }
               const { isMahindra } = resolveRowOem(r);
 
-              const v25 = getRowMonthsVolume(r, cy25_months);
+              // 1. Pure Live DB Query for FY 23
+              const v23 = getRowMonthsVolume(r, fy23_months);
+              tiv23 += v23;
+              if (isMahindra) mm23 += v23;
+
+              // 2. Pure Live DB Query for FY 24
+              const v24 = getRowMonthsVolume(r, fy24_months);
+              tiv24 += v24;
+              if (isMahindra) mm24 += v24;
+
+              // 3. Pure Live DB Query for FY 25 (checks FY 25, or CY 25 if prior year not in DB)
+              const v25_fy = getRowMonthsVolume(r, fy25_months);
+              const v25 = v25_fy > 0 ? v25_fy : getRowMonthsVolume(r, cy25_months);
               tiv25 += v25;
               if (isMahindra) mm25 += v25;
 
+              // 4. Pure Live DB Query for FY 26
               const v26 = getRowMonthsVolume(r, fy26_months);
               tiv26 += v26;
               if (isMahindra) mm26 += v26;
             });
 
-            // Live metrics calculated directly from database records
-            const y23 = {
-              total: territoryName === "North Kerala" ? 97063 : territoryName === "South Kerala" ? 116142 : 213205,
-              mm: territoryName === "North Kerala" ? 3290 : territoryName === "South Kerala" ? 4538 : 7828
-            };
-            const y24 = {
-              total: territoryName === "North Kerala" ? 92423 : territoryName === "South Kerala" ? 108625 : 201048,
-              mm: territoryName === "North Kerala" ? 3288 : territoryName === "South Kerala" ? 4481 : 7769
-            };
-            const y25 = {
-              total: tiv25 > 0 ? tiv25 : (territoryName === "North Kerala" ? 101645 : territoryName === "South Kerala" ? 116859 : 218504),
-              mm: mm25 > 0 ? mm25 : (territoryName === "North Kerala" ? 5184 : territoryName === "South Kerala" ? 6443 : 11627)
-            };
-            const y26 = {
-              total: tiv26 > 0 ? tiv26 : (territoryName === "North Kerala" ? 118264 : territoryName === "South Kerala" ? 129269 : 247533),
-              mm: mm26 > 0 ? mm26 : (territoryName === "North Kerala" ? 8864 : territoryName === "South Kerala" ? 9361 : 18225)
-            };
+            // 100% Pure live metrics calculated directly from database records (Zero JSON, Zero Hardcoding)
+            const y23 = { total: tiv23, mm: mm23 };
+            const y24 = { total: tiv24, mm: mm24 };
+            const y25 = { total: tiv25, mm: mm25 };
+            const y26 = { total: tiv26, mm: mm26 };
 
             const goly24_tiv = y23.total > 0 ? ((y24.total - y23.total) / y23.total) * 100 : 0;
             const goly24_mm  = y23.mm > 0 ? ((y24.mm - y23.mm) / y23.mm) * 100 : 0;

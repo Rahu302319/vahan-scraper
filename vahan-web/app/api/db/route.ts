@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import defaultOemDb from "@/lib/oem-db.json";
-import defaultRtoDt from "@/lib/rto-dt.json";
 
 export const dynamic = "force-dynamic";
 
@@ -12,34 +10,30 @@ export async function GET(req: NextRequest) {
     const year = searchParams.get("year");
     const segment = searchParams.get("segment");
 
-    // 1. Fetch OEMs from MariaDB table 'oem_master'
+    // 1. Fetch OEMs directly from MariaDB table 'oem_master'
     if (type === "oem") {
       try {
         const [rows] = await pool.query(
           "SELECT oem_name as oemName, oem_final as oemFinal, oem_group as oemGroup, oem_grouping as oemGrouping FROM oem_master ORDER BY oem_grouping, oem_name"
         );
-        if (Array.isArray(rows) && rows.length > 0) {
-          return NextResponse.json({ success: true, source: "mariadb", data: rows });
-        }
+        return NextResponse.json({ success: true, source: "mariadb", data: rows || [] });
       } catch (dbErr) {
         console.warn("MariaDB oem_master query warning:", dbErr);
+        return NextResponse.json({ success: false, source: "mariadb", data: [] });
       }
-      return NextResponse.json({ success: true, source: "bundled", data: defaultOemDb });
     }
 
-    // 2. Fetch RTOs from MariaDB table 'rto_master'
+    // 2. Fetch RTOs directly from MariaDB table 'rto_master'
     if (type === "rto") {
       try {
         const [rows] = await pool.query(
           "SELECT srt_office as srtOffice, final_rto_name as finalRtoName, district, territory FROM rto_master ORDER BY territory, district, final_rto_name"
         );
-        if (Array.isArray(rows) && rows.length > 0) {
-          return NextResponse.json({ success: true, source: "mariadb", data: rows });
-        }
+        return NextResponse.json({ success: true, source: "mariadb", data: rows || [] });
       } catch (dbErr) {
         console.warn("MariaDB rto_master query warning:", dbErr);
+        return NextResponse.json({ success: false, source: "mariadb", data: [] });
       }
-      return NextResponse.json({ success: true, source: "bundled", data: defaultRtoDt });
     }
 
     // 3. Fetch Vehicle Registrations directly from MariaDB table 'vahan_registrations'
