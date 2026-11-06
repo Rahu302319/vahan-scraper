@@ -1875,10 +1875,10 @@ export default function ExecutiveDashboard({
           }>();
 
           rows.forEach((r) => {
-            const key = r.district;
+            const key = isNorth ? formatDistrictDisplayName(r.district) : r.district;
             if (!map.has(key)) {
               map.set(key, {
-                district: r.district,
+                district: key,
                 territory: r.territory,
                 rtos: [],
                 total: 0,
@@ -1929,22 +1929,8 @@ export default function ExecutiveDashboard({
           // Sort district groups
           groups.sort((a, b) => {
             if (isNorth) {
-              if (tableSortField === "district") {
-                const rankA = getNorthDistrictRank(a.district);
-                const rankB = getNorthDistrictRank(b.district);
-                return tableSortAsc ? rankA - rankB : rankB - rankA;
-              }
-              if (tableSortField === "total") {
-                return tableSortAsc ? a.districtTotal.total - b.districtTotal.total : b.districtTotal.total - a.districtTotal.total;
-              }
-              if (tableSortField === "mm") {
-                return tableSortAsc ? a.districtTotal.mm - b.districtTotal.mm : b.districtTotal.mm - a.districtTotal.mm;
-              }
-              if (tableSortField === "ms") {
-                return tableSortAsc ? a.districtTotal.ms - b.districtTotal.ms : b.districtTotal.ms - a.districtTotal.ms;
-              }
-              // Default for North Kerala: strict sequence requested by user:
-              // Ksaragode, Kannur, Calicut, Wayanad, Malappuram, Palakkad, Thrissur
+              // North Kerala districts MUST ALWAYS strictly follow the user's requested geographic corridor:
+              // 1. Ksaragode -> 2. Kannur -> 3. Calicut -> 4. Wayanad -> 5. Malappuram -> 6. Palakkad -> 7. Thrissur
               return getNorthDistrictRank(a.district) - getNorthDistrictRank(b.district);
             }
 
