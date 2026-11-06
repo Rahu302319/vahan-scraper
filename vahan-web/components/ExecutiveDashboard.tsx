@@ -82,7 +82,7 @@ export function buildFyOption(endYear: number): PeriodOption {
   const prevYY = String(startYear).slice(-2);
   const currYY = String(endYear).slice(-2);
   const id = `FY${currYY}`;
-  const label = `FY ${startYear}-${currYY} (${id})`;
+  const label = `FY-${currYY}`;
   const subLabel = `Apr-${prevYY} to Mar-${currYY}`;
 
   const months: PeriodMonth[] = [
@@ -115,7 +115,7 @@ export function buildFyOption(endYear: number): PeriodOption {
 export function buildCyOption(year: number): PeriodOption {
   const yy = String(year).slice(-2);
   const id = `CY${yy}`;
-  const label = `CY ${year}`;
+  const label = `CY-${yy}`;
   const subLabel = `Jan-${yy} to Dec-${yy}`;
 
   const months: PeriodMonth[] = [
@@ -1347,7 +1347,7 @@ export default function ExecutiveDashboard({
     if (selectedMonths.length > 1) {
       return `${selectedMonths.length} Months (${selectedMonths.join(", ")})`;
     }
-    return `${currentPeriod.label} (${currentPeriod.subLabel})`;
+    return currentPeriod.label;
   }, [selectedMonths, currentPeriod]);
 
   // Export Summary Table as formatted Excel
@@ -1598,7 +1598,7 @@ export default function ExecutiveDashboard({
                 </button>
               </div>
 
-              {/* Period Dropdown - Vibrant Sky with Radius 2 */}
+              {/* Period Dropdown - Compact Vibrant Sky with Radius 2 */}
               {periodType === "FY" ? (
                 <select
                   value={selectedFyId}
@@ -1606,7 +1606,7 @@ export default function ExecutiveDashboard({
                     setSelectedFyId(e.target.value);
                     setSelectedMonths([]);
                   }}
-                  className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
+                  className={`h-7.5 w-[85px] px-2 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
                     isDark
                       ? "bg-sky-500/15 border-sky-500/80 text-sky-300 focus:border-sky-400"
                       : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
@@ -1614,7 +1614,7 @@ export default function ExecutiveDashboard({
                 >
                   {ALL_FY_OPTIONS.map((f) => (
                     <option key={f.id} value={f.id}>
-                      {f.label} ({f.subLabel})
+                      {f.label}
                     </option>
                   ))}
                 </select>
@@ -1625,7 +1625,7 @@ export default function ExecutiveDashboard({
                     setSelectedCyId(e.target.value);
                     setSelectedMonths([]);
                   }}
-                  className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
+                  className={`h-7.5 w-[85px] px-2 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
                     isDark
                       ? "bg-sky-500/15 border-sky-500/80 text-sky-300 focus:border-sky-400"
                       : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
@@ -1633,7 +1633,7 @@ export default function ExecutiveDashboard({
                 >
                   {ALL_CY_OPTIONS.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.label} ({c.subLabel})
+                      {c.label}
                     </option>
                   ))}
                 </select>
