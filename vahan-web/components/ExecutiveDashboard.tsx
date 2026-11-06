@@ -170,7 +170,7 @@ export const AVAILABLE_FY_LIST = ALL_FY_OPTIONS;
 
 export const KERALA_TERRITORIES: Record<string, string[]> = {
   "North Kerala": [
-    "Ksaragode",
+    "Kasargode",
     "Kannur",
     "Calicut",
     "Wayanad",
@@ -214,7 +214,7 @@ export const getNorthDistrictRank = (district: string): number => {
 export const formatDistrictDisplayName = (district: string): string => {
   const d = (district || "").toLowerCase().trim();
   if (d.includes("calicut") || d.includes("kozhikode")) return "Calicut";
-  if (d.includes("ksar") || d.includes("kasar")) return "Ksaragode";
+  if (d.includes("ksar") || d.includes("kasar")) return "Kasargode";
   return district;
 };
 
@@ -2242,7 +2242,7 @@ export default function ExecutiveDashboard({
                                   : rtoIdx % 2 === 0 ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/70"
                               }`}
                             >
-                              {/* 1. Merged District Cell (rowSpan across all RTOs in this district) */}
+                              {/* 1. Merged District Cell with Collapse (-) Button on same line */}
                               {rtoIdx === 0 && (
                                 <td
                                   rowSpan={group.rtos.length}
@@ -2250,24 +2250,27 @@ export default function ExecutiveDashboard({
                                     isFocused ? "py-3 px-4 text-base sm:text-lg" : "py-2 px-3 text-sm"
                                   } ${isDark ? "bg-[#152238]/70 text-slate-100" : "bg-slate-50/95 text-slate-900"}`}
                                 >
-                                  <div className="flex flex-col items-center justify-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleDistrict(group.district)}
-                                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] border transition-all text-[10px] font-semibold ${
-                                        isDark
-                                          ? "bg-slate-800 border-slate-700 text-amber-400 hover:border-amber-400 hover:bg-slate-700"
-                                          : "bg-white border-slate-300 text-amber-700 hover:border-amber-500 hover:bg-amber-50 shadow-2xs"
-                                      }`}
-                                      title={`Collapse ${displayDist}`}
-                                    >
-                                      <Minus className="w-2.5 h-2.5 stroke-[2.5]" />
-                                      <span>Collapse</span>
-                                    </button>
-                                    <span className={`flex items-center gap-1.5 font-bold ${isDark ? accentDark : accentLight}`}>
-                                      <span className={`rounded-full ${dotColor} ${isFocused ? "w-3 h-3" : "w-2 h-2"}`} />
-                                      <span>{displayDist}</span>
-                                    </span>
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleDistrict(group.district)}
+                                        className={`flex items-center justify-center rounded-[2px] border transition-all ${
+                                          isFocused ? "w-5 h-5" : "w-4 h-4"
+                                        } ${
+                                          isDark
+                                            ? "bg-slate-800 border-slate-600 text-amber-400 hover:border-amber-400 hover:bg-slate-700"
+                                            : "bg-white border-slate-300 text-amber-700 hover:border-amber-500 hover:bg-amber-50 shadow-2xs"
+                                        }`}
+                                        title={`Collapse ${displayDist}`}
+                                      >
+                                        <Minus className={isFocused ? "w-3 h-3 stroke-[2.5]" : "w-2.5 h-2.5 stroke-[2.5]"} />
+                                      </button>
+                                      <span className={`rounded-full ${dotColor} ${isFocused ? "w-2.5 h-2.5" : "w-2 h-2"}`} />
+                                      <span className={`font-bold ${isDark ? accentDark : accentLight}`}>
+                                        {displayDist}
+                                      </span>
+                                    </div>
                                     <span className={`text-slate-400 font-normal ${isFocused ? "text-xs" : "text-[10px]"}`}>
                                       ({group.rtos.length} RTOs)
                                     </span>
@@ -2333,15 +2336,16 @@ export default function ExecutiveDashboard({
                                 <button
                                   type="button"
                                   onClick={() => toggleDistrict(group.district)}
-                                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded-[2px] border ${
+                                  className={`flex items-center justify-center rounded-[2px] border transition-all ${
+                                    isFocused ? "w-5 h-5" : "w-4 h-4"
+                                  } ${
                                     isDark
-                                      ? "bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700"
-                                      : "bg-white border-slate-300 text-slate-600 hover:bg-slate-50"
+                                      ? "bg-slate-800 border-slate-600 text-amber-400 hover:border-amber-400 hover:bg-slate-700"
+                                      : "bg-white border-slate-300 text-amber-700 hover:border-amber-500 hover:bg-amber-50 shadow-2xs"
                                   }`}
                                   title={`Collapse ${displayDist}`}
                                 >
-                                  <Minus className="w-2 h-2 stroke-[2.5]" />
-                                  <span>Collapse</span>
+                                  <Minus className={isFocused ? "w-3 h-3 stroke-[2.5]" : "w-2.5 h-2.5 stroke-[2.5]"} />
                                 </button>
                               </div>
                             </td>
