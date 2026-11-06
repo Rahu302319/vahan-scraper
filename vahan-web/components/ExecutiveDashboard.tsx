@@ -782,18 +782,18 @@ export default function ExecutiveDashboard({
 
   // Fetch all live registrations directly from MariaDB table 'vahan_registrations'
   const fetchDbRegistrations = async () => {
-    setIsLoadingDb(true);
+    // If already loaded into memory, don't re-trigger full screen lock
+    if (dbScrapedRows.length === 0) {
+      setIsLoadingDb(true);
+    }
     try {
       const res = await fetch(`/api/db?type=registrations`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setDbScrapedRows(json.data);
-      } else {
-        setDbScrapedRows([]);
       }
     } catch (err) {
       console.warn("DB registrations fetch note:", err);
-      setDbScrapedRows([]);
     } finally {
       setIsLoadingDb(false);
     }
@@ -801,7 +801,7 @@ export default function ExecutiveDashboard({
 
   useEffect(() => {
     fetchDbRegistrations();
-  }, [currentPeriod.id]);
+  }, []);
 
   // Combined dataset from database and current live scraper session (Zero stale cache)
   const allDatasetRows = useMemo(() => {
@@ -2100,49 +2100,107 @@ export default function ExecutiveDashboard({
 
         // MONTH-ON-MONTH (MoM) PERFORMANCE SUMMARY DATA (Computed dynamically from MariaDB vahan_registrations)
         const momData = useMemo(() => {
-          const resolveRowOem = (row: any) => {
-            const rawOem = String(row.oemFinal || row.Maker || row.maker || "").trim().toUpperCase();
-            const isMahindra = rawOem.includes("MAHINDRA") && !rawOem.includes("CHETAK");
-            return { isMahindra };
-          };
-
           const periodMonths = currentPeriod.months.map((m) => {
             const col = m.code.toUpperCase();
             const yr = m.calYear;
             return { id: m.code, label: m.mmmYy, col, yr };
           });
 
-          const terrs: Array<"North Kerala" | "South Kerala" | "Total"> = ["North Kerala", "South Kerala", "Total"];
+          // Single-pass Pre-indexing: Filter by segment and index into nested maps
+          // rtoLookup: RTO_Code -> year -> col -> { tiv, mm }
+          // distLookup: district (lower) -> year -> col -> { tiv, mm }
+          // terrLookup: territory -> year -> col -> { tiv, mm }
+          // totalLookup: year -> col -> { tiv, mm }
+          const rtoLookup = new Map<string, Map<string, { tiv: number; mm: number }>>();
+          const distLookup = new Map<string, Map<string, { tiv: number; mm: number }>>();
+          const terrLookup = new Map<string, Map<string, { tiv: number; mm: number }>>();
+          const totalLookup = new Map<string, { tiv: number; mm: number }>();
 
-          const results = terrs.map((terr) => {
+          const rtoCodeByDist = new Map<string, Set<string>>();
+          const rtoNameMap = new Map<string, string>();
+
+          allDatasetRows.forEach((r) => {
+            if (selectedSegment !== "ALL") {
+              const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+              if (s !== selectedSegment) return;
+            }
+
+            const rowYr = Number(r.Year || r.year || r.FY || 0);
+            const rawOem = String(r.oemFinal || r.Maker || r.maker || "").trim().toUpperCase();
+            const isMahindra = rawOem.includes("MAHINDRA") && !rawOem.includes("CHETAK");
+
+            const code = String(r.RTO_Code || r.rto_code || "").trim();
+            const dist = String(r.district || "").trim().toLowerCase();
+            const terr = String(r.territory || "").trim();
+
+            if (code && dist) {
+              if (!rtoCodeByDist.has(dist)) rtoCodeByDist.set(dist, new Set());
+              rtoCodeByDist.get(dist)!.add(code);
+              if (!rtoNameMap.has(code)) {
+                rtoNameMap.set(code, String(r.final_rto_name || r.finalRtoName || r.RTO_Name || code).trim());
+              }
+            }
+
+            periodMonths.forEach((m) => {
+              if (rowYr !== m.yr) return;
+              const colName = m.col;
+              const v = colName === "DEC"
+                ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
+                : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
+              const num = Number(v) || 0;
+              if (num <= 0) return;
+
+              const mmNum = isMahindra ? num : 0;
+              const yColKey = `${m.yr}_${m.col}`;
+
+              // Total
+              if (!totalLookup.has(yColKey)) totalLookup.set(yColKey, { tiv: 0, mm: 0 });
+              const tot = totalLookup.get(yColKey)!;
+              tot.tiv += num;
+              tot.mm += mmNum;
+
+              // Territory
+              if (terr) {
+                if (!terrLookup.has(terr)) terrLookup.set(terr, new Map());
+                const tMap = terrLookup.get(terr)!;
+                if (!tMap.has(yColKey)) tMap.set(yColKey, { tiv: 0, mm: 0 });
+                const tVal = tMap.get(yColKey)!;
+                tVal.tiv += num;
+                tVal.mm += mmNum;
+              }
+
+              // District
+              if (dist) {
+                if (!distLookup.has(dist)) distLookup.set(dist, new Map());
+                const dMap = distLookup.get(dist)!;
+                if (!dMap.has(yColKey)) dMap.set(yColKey, { tiv: 0, mm: 0 });
+                const dVal = dMap.get(yColKey)!;
+                dVal.tiv += num;
+                dVal.mm += mmNum;
+              }
+
+              // RTO
+              if (code) {
+                if (!rtoLookup.has(code)) rtoLookup.set(code, new Map());
+                const rMap = rtoLookup.get(code)!;
+                if (!rMap.has(yColKey)) rMap.set(yColKey, { tiv: 0, mm: 0 });
+                const rVal = rMap.get(yColKey)!;
+                rVal.tiv += num;
+                rVal.mm += mmNum;
+              }
+            });
+          });
+
+          // Helper to map 12 months from a map
+          const buildMetricMonths = (valMap: Map<string, { tiv: number; mm: number }> | undefined) => {
             let prevTiv: number | null = null;
             let prevMm: number | null = null;
 
-            const months = periodMonths.map((m) => {
-              let tiv = 0;
-              let mm = 0;
-
-              allDatasetRows.forEach((r) => {
-                if (terr !== "Total" && r.territory !== terr) return;
-                if (selectedSegment !== "ALL") {
-                  const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-                  if (s !== selectedSegment) return;
-                }
-                const rowYr = Number(r.Year || r.year || r.FY || 0);
-                if (rowYr !== m.yr) return;
-
-                const colName = m.col;
-                const v = colName === "DEC"
-                  ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
-                  : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
-                const num = Number(v) || 0;
-                if (num > 0) {
-                  tiv += num;
-                  const { isMahindra } = resolveRowOem(r);
-                  if (isMahindra) mm += num;
-                }
-              });
-
+            return periodMonths.map((m) => {
+              const yColKey = `${m.yr}_${m.col}`;
+              const data = valMap?.get(yColKey) || { tiv: 0, mm: 0 };
+              const tiv = data.tiv;
+              const mm = data.mm;
               const ms = tiv > 0 ? (mm / tiv) * 100 : 0;
               const momTiv = prevTiv !== null && prevTiv > 0 ? ((tiv - prevTiv) / prevTiv) * 100 : null;
               const momMm = prevMm !== null && prevMm > 0 ? ((mm - prevMm) / prevMm) * 100 : null;
@@ -2159,11 +2217,24 @@ export default function ExecutiveDashboard({
                 momMm,
               };
             });
+          };
 
-            return {
-              name: terr,
-              months,
-            };
+          const northMonths = buildMetricMonths(terrLookup.get("North Kerala"));
+          const southMonths = buildMetricMonths(terrLookup.get("South Kerala"));
+
+          let prevTotTiv: number | null = null;
+          let prevTotMm: number | null = null;
+          const totalMonths = periodMonths.map((m) => {
+            const yColKey = `${m.yr}_${m.col}`;
+            const data = totalLookup.get(yColKey) || { tiv: 0, mm: 0 };
+            const tiv = data.tiv;
+            const mm = data.mm;
+            const ms = tiv > 0 ? (mm / tiv) * 100 : 0;
+            const momTiv = prevTotTiv !== null && prevTotTiv > 0 ? ((tiv - prevTotTiv) / prevTotTiv) * 100 : null;
+            const momMm = prevTotMm !== null && prevTotMm > 0 ? ((mm - prevTotMm) / prevTotMm) * 100 : null;
+            prevTotTiv = tiv;
+            prevTotMm = mm;
+            return { label: m.label, tiv, mm, ms, momTiv, momMm };
           });
 
           // Compute District-Wise MoM
@@ -2187,133 +2258,21 @@ export default function ExecutiveDashboard({
           ];
 
           const districtResults = allDistricts.map((d) => {
-            let prevTiv: number | null = null;
-            let prevMm: number | null = null;
+            const distKey = d.name.toLowerCase();
+            const months = buildMetricMonths(distLookup.get(distKey));
 
-            const months = periodMonths.map((m) => {
-              let tiv = 0;
-              let mm = 0;
-
-              allDatasetRows.forEach((r) => {
-                const rDist = String(r.district || "").trim().toLowerCase();
-                if (rDist !== d.name.toLowerCase()) return;
-                if (selectedSegment !== "ALL") {
-                  const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-                  if (s !== selectedSegment) return;
-                }
-                const rowYr = Number(r.Year || r.year || r.FY || 0);
-                if (rowYr !== m.yr) return;
-
-                const colName = m.col;
-                const v = colName === "DEC"
-                  ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
-                  : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
-                const num = Number(v) || 0;
-                if (num > 0) {
-                  tiv += num;
-                  const { isMahindra } = resolveRowOem(r);
-                  if (isMahindra) mm += num;
-                }
-              });
-
-              const ms = tiv > 0 ? (mm / tiv) * 100 : 0;
-              const momTiv = prevTiv !== null && prevTiv > 0 ? ((tiv - prevTiv) / prevTiv) * 100 : null;
-              const momMm = prevMm !== null && prevMm > 0 ? ((mm - prevMm) / prevMm) * 100 : null;
-
-              prevTiv = tiv;
-              prevMm = mm;
-
-              return {
-                label: m.label,
-                tiv,
-                mm,
-                ms,
-                momTiv,
-                momMm,
-              };
-            });
-
-            // Compute child RTOs for this district
-            const districtRtos: Array<{
-              code: string;
-              name: string;
-              months: typeof months;
-            }> = [];
-
-            // Find all distinct RTOs belonging to this district
-            const rtoCodeSet = new Set<string>();
-            const rtoNameMap: Record<string, string> = {};
-            allDatasetRows.forEach((r) => {
-              const rDist = String(r.district || "").trim().toLowerCase();
-              if (rDist !== d.name.toLowerCase()) return;
-              const code = String(r.RTO_Code || r.rto_code || "").trim();
-              if (code) {
-                rtoCodeSet.add(code);
-                if (!rtoNameMap[code]) {
-                  rtoNameMap[code] = String(r.final_rto_name || r.finalRtoName || r.RTO_Name || code).trim();
-                }
-              }
-            });
-
-            const sortedRtoCodes = Array.from(rtoCodeSet).sort((a, b) => {
+            // Compute child RTOs for this district from preindexed maps (Instant 0ms lookup)
+            const rtoCodes = Array.from(rtoCodeByDist.get(distKey) || []).sort((a, b) => {
               const numA = parseInt(a.replace(/\D/g, ""), 10) || 0;
               const numB = parseInt(b.replace(/\D/g, ""), 10) || 0;
               return numA - numB;
             });
 
-            sortedRtoCodes.forEach((code) => {
-              let rtoPrevTiv: number | null = null;
-              let rtoPrevMm: number | null = null;
-
-              const rtoMonths = periodMonths.map((m) => {
-                let tiv = 0;
-                let mm = 0;
-
-                allDatasetRows.forEach((r) => {
-                  const rCode = String(r.RTO_Code || r.rto_code || "").trim();
-                  if (rCode !== code) return;
-                  if (selectedSegment !== "ALL") {
-                    const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-                    if (s !== selectedSegment) return;
-                  }
-                  const rowYr = Number(r.Year || r.year || r.FY || 0);
-                  if (rowYr !== m.yr) return;
-
-                  const colName = m.col;
-                  const v = colName === "DEC"
-                    ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
-                    : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
-                  const num = Number(v) || 0;
-                  if (num > 0) {
-                    tiv += num;
-                    const { isMahindra } = resolveRowOem(r);
-                    if (isMahindra) mm += num;
-                  }
-                });
-
-                const ms = tiv > 0 ? (mm / tiv) * 100 : 0;
-                const momTiv = rtoPrevTiv !== null && rtoPrevTiv > 0 ? ((tiv - rtoPrevTiv) / rtoPrevTiv) * 100 : null;
-                const momMm = rtoPrevMm !== null && rtoPrevMm > 0 ? ((mm - rtoPrevMm) / rtoPrevMm) * 100 : null;
-
-                rtoPrevTiv = tiv;
-                rtoPrevMm = mm;
-
-                return {
-                  label: m.label,
-                  tiv,
-                  mm,
-                  ms,
-                  momTiv,
-                  momMm,
-                };
-              });
-
-              districtRtos.push({
-                code,
-                name: rtoNameMap[code] || code,
-                months: rtoMonths,
-              });
-            });
+            const districtRtos = rtoCodes.map((code) => ({
+              code,
+              name: rtoNameMap.get(code) || code,
+              months: buildMetricMonths(rtoLookup.get(code)),
+            }));
 
             return {
               name: d.name,
@@ -2326,9 +2285,9 @@ export default function ExecutiveDashboard({
           return {
             periodLabel: currentPeriod.label,
             monthsList: periodMonths.map((m) => m.label),
-            north: results[0],
-            south: results[1],
-            total: results[2],
+            north: { name: "North Kerala", months: northMonths },
+            south: { name: "South Kerala", months: southMonths },
+            total: { name: "Total", months: totalMonths },
             districts: districtResults,
           };
         }, [allDatasetRows, selectedSegment, currentPeriod]);
