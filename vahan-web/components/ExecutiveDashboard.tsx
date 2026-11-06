@@ -1671,6 +1671,33 @@ export default function ExecutiveDashboard({
 
   return (
     <>
+      {/* Small, Cute & Colorful Loading Spinner Overlay while Database is Loading */}
+      {isLoadingDb && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-[2px] transition-all">
+          <div className={`flex flex-col items-center gap-3 p-5 rounded-2xl shadow-2xl border backdrop-blur-md ${
+            isDark ? "bg-[#0f172a]/95 border-slate-700 text-white shadow-cyan-950/40" : "bg-white/95 border-slate-200 text-slate-800 shadow-sky-100"
+          }`}>
+            <div className="relative w-11 h-11 flex items-center justify-center">
+              {/* Outer Colorful Spinning Rainbow Ring */}
+              <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-cyan-400 border-r-fuchsia-500 border-b-amber-400 border-l-emerald-400 animate-spin" />
+              {/* Inner Reverse Glow Ring */}
+              <div className="absolute w-7 h-7 rounded-full border-[2.5px] border-transparent border-t-blue-500 border-b-rose-500 animate-[spin_1.5s_linear_infinite_reverse]" />
+              {/* Cute Center Pulsing Dot */}
+              <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-cyan-400 via-sky-500 to-indigo-500 animate-pulse shadow-sm shadow-cyan-400" />
+            </div>
+
+            <div className="flex flex-col items-center gap-0.5 text-center">
+              <span className="text-xs font-black tracking-wide bg-gradient-to-r from-sky-400 via-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Loading Live Vahan Intelligence...
+              </span>
+              <span className={`text-[10px] font-semibold ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                Aggregating MariaDB live data
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`rounded-2xl border transition-all duration-300 shadow-md ${
         isDark
           ? "bg-[#1e293b] border-slate-700/80 text-slate-100 shadow-md"
