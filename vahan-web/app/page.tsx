@@ -876,9 +876,6 @@ export default function VahanDashboardPage() {
             <Car className={`w-4 h-4 ${isDark ? "text-[#38bdf8]" : "text-sky-600"}`} />
             VAHAN DASHBOARD
           </h1>
-          <span className={`hidden xl:inline-block text-xs ${isDark ? "text-[#64748b]" : "text-slate-500"}`}>
-            | 87 RTO Engine • Executive Dashboard • OEM Database
-          </span>
         </div>
 
         {/* 2. Top-Level Main Navigation Pills */}
