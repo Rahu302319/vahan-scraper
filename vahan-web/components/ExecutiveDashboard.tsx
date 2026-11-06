@@ -731,6 +731,9 @@ export default function ExecutiveDashboard({
   // Month-on-Month Table View Mode: "territory" | "district"
   const [momViewMode, setMomViewMode] = useState<"territory" | "district">("district");
 
+  // Expanded districts in MoM table (district name -> boolean)
+  const [expandedMomDistricts, setExpandedMomDistricts] = useState<Record<string, boolean>>({});
+
   // OEM Share % Table View Mode: "percentage" (MS %) vs "volume" (Units)
   const [oemShareMetric, setOemShareMetric] = useState<"percentage" | "volume">("percentage");
 
@@ -2274,10 +2277,93 @@ export default function ExecutiveDashboard({
               };
             });
 
+            // Compute child RTOs for this district
+            const districtRtos: Array<{
+              code: string;
+              name: string;
+              months: typeof months;
+            }> = [];
+
+            // Find all distinct RTOs belonging to this district
+            const rtoCodeSet = new Set<string>();
+            const rtoNameMap: Record<string, string> = {};
+            allDatasetRows.forEach((r) => {
+              const rDist = String(r.district || "").trim().toLowerCase();
+              if (rDist !== d.name.toLowerCase()) return;
+              const code = String(r.RTO_Code || r.rto_code || "").trim();
+              if (code) {
+                rtoCodeSet.add(code);
+                if (!rtoNameMap[code]) {
+                  rtoNameMap[code] = String(r.final_rto_name || r.finalRtoName || r.RTO_Name || code).trim();
+                }
+              }
+            });
+
+            const sortedRtoCodes = Array.from(rtoCodeSet).sort((a, b) => {
+              const numA = parseInt(a.replace(/\D/g, ""), 10) || 0;
+              const numB = parseInt(b.replace(/\D/g, ""), 10) || 0;
+              return numA - numB;
+            });
+
+            sortedRtoCodes.forEach((code) => {
+              let rtoPrevTiv: number | null = null;
+              let rtoPrevMm: number | null = null;
+
+              const rtoMonths = periodMonths.map((m) => {
+                let tiv = 0;
+                let mm = 0;
+
+                allDatasetRows.forEach((r) => {
+                  const rCode = String(r.RTO_Code || r.rto_code || "").trim();
+                  if (rCode !== code) return;
+                  if (selectedSegment !== "ALL") {
+                    const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+                    if (s !== selectedSegment) return;
+                  }
+                  const rowYr = Number(r.Year || r.year || r.FY || 0);
+                  if (rowYr !== m.yr) return;
+
+                  const colName = m.col;
+                  const v = colName === "DEC"
+                    ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
+                    : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
+                  const num = Number(v) || 0;
+                  if (num > 0) {
+                    tiv += num;
+                    const { isMahindra } = resolveRowOem(r);
+                    if (isMahindra) mm += num;
+                  }
+                });
+
+                const ms = tiv > 0 ? (mm / tiv) * 100 : 0;
+                const momTiv = rtoPrevTiv !== null && rtoPrevTiv > 0 ? ((tiv - rtoPrevTiv) / rtoPrevTiv) * 100 : null;
+                const momMm = rtoPrevMm !== null && rtoPrevMm > 0 ? ((mm - rtoPrevMm) / rtoPrevMm) * 100 : null;
+
+                rtoPrevTiv = tiv;
+                rtoPrevMm = mm;
+
+                return {
+                  label: m.label,
+                  tiv,
+                  mm,
+                  ms,
+                  momTiv,
+                  momMm,
+                };
+              });
+
+              districtRtos.push({
+                code,
+                name: rtoNameMap[code] || code,
+                months: rtoMonths,
+              });
+            });
+
             return {
               name: d.name,
               territory: d.territory,
               months,
+              rtos: districtRtos,
             };
           });
 
@@ -4335,30 +4421,36 @@ export default function ExecutiveDashboard({
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 font-semibold">
                       {(() => {
                         const renderRow = (
-                          rowItem: { name: string; months: typeof momData.north.months; territory?: string },
-                          rowType: "total" | "territory" | "district"
+                          rowItem: { name: string; months: typeof momData.north.months; territory?: string; code?: string },
+                          rowType: "total" | "territory" | "district" | "rto",
+                          parentDistrict?: string
                         ) => {
                           const isTotal = rowType === "total";
                           const isTerritory = rowType === "territory";
                           const isDistrict = rowType === "district";
+                          const isRto = rowType === "rto";
 
                           const gridBrd = isTotal
                             ? "border-[#005a9e]"
                             : isTerritory
                             ? isDark ? "border-slate-600" : "border-slate-300"
-                            : isDark ? "border-slate-700/60" : "border-slate-200";
+                            : isDistrict
+                            ? isDark ? "border-slate-700/80" : "border-slate-200"
+                            : isDark ? "border-slate-800" : "border-slate-100";
+
+                          const isExpanded = isDistrict && !!expandedMomDistricts[rowItem.name];
 
                           return (
                             <tr
-                              key={`${rowType}-${rowItem.name}`}
+                              key={`${rowType}-${rowItem.name}-${rowItem.code || ""}`}
                               className={`transition-colors ${
                                 isTotal
                                   ? "bg-[#0070c0] text-white font-extrabold shadow-inner"
                                   : isTerritory
                                   ? isDark ? "bg-[#152238] font-bold text-sky-200" : "bg-sky-50 font-bold text-sky-950"
-                                  : isDark
-                                  ? "bg-[#1e293b] hover:bg-[#27354f] text-slate-100"
-                                  : "bg-white hover:bg-slate-50/80 text-slate-800"
+                                  : isDistrict
+                                  ? isDark ? "bg-[#1e293b] hover:bg-[#27354f] text-slate-100" : "bg-white hover:bg-slate-50/80 text-slate-800"
+                                  : isDark ? "bg-[#111a2e] hover:bg-[#18263e] text-slate-300" : "bg-slate-50/90 hover:bg-slate-100/90 text-slate-700"
                               }`}
                             >
                               {/* Label Column */}
@@ -4367,26 +4459,61 @@ export default function ExecutiveDashboard({
                                   ? "bg-[#0070c0] text-white font-black"
                                   : isTerritory
                                   ? isDark ? "bg-[#152238] font-black" : "bg-sky-100/70 font-black"
-                                  : isDark ? "bg-slate-900/30 font-semibold" : "bg-slate-50/50 font-semibold"
+                                  : isDistrict
+                                  ? isDark ? "bg-slate-900/40 font-bold" : "bg-slate-50/70 font-bold"
+                                  : isDark ? "bg-slate-950/40 font-medium" : "bg-slate-100/50 font-medium"
                               }`}>
-                                <div className={`flex items-center gap-2 ${isDistrict ? "pl-3.5" : ""}`}>
+                                <div className={`flex items-center gap-1.5 ${isDistrict ? "pl-2" : isRto ? "pl-8" : ""}`}>
                                   {isTotal ? (
                                     <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                                   ) : isTerritory ? (
                                     <span className={`w-2.5 h-2.5 rounded-full shrink-0 ring-2 ${
                                       rowItem.name === "North Kerala" ? "bg-teal-400 ring-teal-400/30" : "bg-indigo-400 ring-indigo-400/30"
                                     }`} />
+                                  ) : isDistrict ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setExpandedMomDistricts((prev) => ({
+                                          ...prev,
+                                          [rowItem.name]: !prev[rowItem.name],
+                                        }));
+                                      }}
+                                      className={`w-4 h-4 rounded-[2px] border flex items-center justify-center shrink-0 transition ${
+                                        isDark
+                                          ? "bg-slate-800 hover:bg-slate-700 border-slate-600 text-sky-400 hover:text-white"
+                                          : "bg-white hover:bg-sky-50 border-slate-300 text-sky-600 shadow-2xs"
+                                      }`}
+                                      title={isExpanded ? `Collapse ${rowItem.name} RTOs` : `Expand ${rowItem.name} RTOs`}
+                                    >
+                                      {isExpanded ? (
+                                        <Minus className="w-2.5 h-2.5 stroke-[2.5]" />
+                                      ) : (
+                                        <Plus className="w-2.5 h-2.5 stroke-[2.5]" />
+                                      )}
+                                    </button>
                                   ) : (
                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
                                   )}
+
                                   <span className={
                                     isTotal
                                       ? "font-black tracking-wide text-white uppercase text-xs"
                                       : isTerritory
                                       ? "font-extrabold uppercase tracking-wide text-xs"
-                                      : "font-semibold text-xs text-slate-700 dark:text-slate-200"
-                                  }>
-                                    {rowItem.name} {isTerritory && "Total"}
+                                      : isDistrict
+                                      ? "font-bold text-xs text-slate-800 dark:text-slate-100 cursor-pointer select-none"
+                                      : "font-normal text-[11px] text-slate-600 dark:text-slate-300 font-mono"
+                                  }
+                                  onClick={isDistrict ? () => {
+                                    setExpandedMomDistricts((prev) => ({
+                                      ...prev,
+                                      [rowItem.name]: !prev[rowItem.name],
+                                    }));
+                                  } : undefined}
+                                  >
+                                    {isRto && rowItem.code ? `${rowItem.code} - ${rowItem.name}` : rowItem.name}
+                                    {isTerritory && " Total"}
                                   </span>
                                 </div>
                               </td>
@@ -4417,22 +4544,26 @@ export default function ExecutiveDashboard({
                                 return (
                                   <React.Fragment key={m.label}>
                                     {/* TIV */}
-                                    <td className={`border px-1.5 py-1 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                                    <td className={`border px-1.5 py-1 text-center font-bold tabular-nums ${gridBrd} ${
                                       isTotal
-                                        ? "text-white"
+                                        ? "text-white text-xs"
                                         : isTerritory
-                                        ? "text-sky-600 dark:text-sky-300"
-                                        : "text-sky-500 dark:text-sky-400"
+                                        ? "text-sky-600 dark:text-sky-300 text-xs"
+                                        : isDistrict
+                                        ? "text-sky-500 dark:text-sky-400 text-xs"
+                                        : "text-sky-600/90 dark:text-sky-400/90 text-[11px]"
                                     }`}>
                                       {m.tiv.toLocaleString()}
                                     </td>
                                     {/* M&M */}
-                                    <td className={`border px-1.5 py-1 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                                    <td className={`border px-1.5 py-1 text-center font-bold tabular-nums ${gridBrd} ${
                                       isTotal
-                                        ? "text-white"
+                                        ? "text-white text-xs"
                                         : isTerritory
-                                        ? "text-rose-600 dark:text-rose-300"
-                                        : "text-rose-500 dark:text-rose-400"
+                                        ? "text-rose-600 dark:text-rose-300 text-xs"
+                                        : isDistrict
+                                        ? "text-rose-500 dark:text-rose-400 text-xs"
+                                        : "text-rose-600/90 dark:text-rose-400/90 text-[11px]"
                                     }`}>
                                       {m.mm.toLocaleString()}
                                     </td>
@@ -4443,7 +4574,7 @@ export default function ExecutiveDashboard({
                                           {m.ms.toFixed(1)}%
                                         </span>
                                       ) : (
-                                        <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10.5px] tabular-nums ${
+                                        <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10px] tabular-nums ${
                                           m.ms >= 7
                                             ? isDark ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50" : "bg-emerald-50 text-emerald-800 border border-emerald-300"
                                             : m.ms >= 4
@@ -4479,7 +4610,7 @@ export default function ExecutiveDashboard({
                           );
                         }
 
-                        // District-Wise View: Grouped with North Kerala and South Kerala
+                        // District-Wise View: Grouped with North Kerala and South Kerala + expandable RTOs
                         const northDistricts = momData.districts.filter((d) => d.territory === "North Kerala");
                         const southDistricts = momData.districts.filter((d) => d.territory === "South Kerala");
 
@@ -4491,7 +4622,14 @@ export default function ExecutiveDashboard({
                                 North Kerala Region (7 Districts)
                               </td>
                             </tr>
-                            {northDistricts.map((d) => renderRow(d, "district"))}
+                            {northDistricts.map((d) => (
+                              <React.Fragment key={`north-${d.name}`}>
+                                {renderRow(d, "district")}
+                                {expandedMomDistricts[d.name] && d.rtos && d.rtos.map((rto) => (
+                                  renderRow(rto, "rto", d.name)
+                                ))}
+                              </React.Fragment>
+                            ))}
                             {renderRow(momData.north, "territory")}
 
                             {/* South Kerala Section */}
@@ -4500,7 +4638,14 @@ export default function ExecutiveDashboard({
                                 South Kerala Region (7 Districts)
                               </td>
                             </tr>
-                            {southDistricts.map((d) => renderRow(d, "district"))}
+                            {southDistricts.map((d) => (
+                              <React.Fragment key={`south-${d.name}`}>
+                                {renderRow(d, "district")}
+                                {expandedMomDistricts[d.name] && d.rtos && d.rtos.map((rto) => (
+                                  renderRow(rto, "rto", d.name)
+                                ))}
+                              </React.Fragment>
+                            ))}
                             {renderRow(momData.south, "territory")}
 
                             {/* Grand Total */}
