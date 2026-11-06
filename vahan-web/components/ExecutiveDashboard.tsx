@@ -1737,56 +1737,6 @@ export default function ExecutiveDashboard({
                 listMaxHeight="max-h-28"
               />
 
-              {/* Segment Selector Colorful Pills - Radius 2 */}
-              <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
-                isDark ? "bg-slate-900/80 border-slate-700" : "bg-slate-100 border-slate-200"
-              }`}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSegment("PV")}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                    selectedSegment === "PV"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : isDark ? "text-blue-400 hover:text-blue-200" : "text-blue-700 hover:bg-blue-50"
-                  }`}
-                >
-                  🚗 PV <span className="opacity-80 text-[11px] font-normal">{segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSegment("CV")}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                    selectedSegment === "CV"
-                      ? "bg-amber-600 text-white shadow-sm"
-                      : isDark ? "text-amber-400 hover:text-amber-200" : "text-amber-700 hover:bg-amber-50"
-                  }`}
-                >
-                  🚚 CV <span className="opacity-80 text-[11px] font-normal">{segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSegment("BEV")}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                    selectedSegment === "BEV"
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm shadow-cyan-500/30"
-                      : isDark ? "text-cyan-400 hover:text-cyan-200" : "text-sky-700 hover:bg-sky-50"
-                  }`}
-                >
-                  ⚡ BEV <span className="opacity-80 text-[11px] font-normal">{segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedSegment("ALL")}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                    selectedSegment === "ALL"
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : isDark ? "text-purple-400 hover:text-purple-200" : "text-purple-700 hover:bg-purple-50"
-                  }`}
-                >
-                  🌐 All <span className="opacity-80 text-[11px] font-normal">{segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}</span>
-                </button>
-              </div>
-
               {/* Territory Dropdown - Same Line */}
               <div className="flex items-center gap-1.5">
                 <span className={`text-[11px] font-semibold ${isDark ? "text-teal-400" : "text-teal-700"}`}>
@@ -1847,6 +1797,56 @@ export default function ExecutiveDashboard({
                   buttonClassName="max-w-[150px]"
                   maxTriggerWidth="max-w-[105px]"
                 />
+              </div>
+
+              {/* Segment Selector Colorful Pills - Radius 2 */}
+              <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
+                isDark ? "bg-slate-900/80 border-slate-700" : "bg-slate-100 border-slate-200"
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("PV")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "PV"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : isDark ? "text-blue-400 hover:text-blue-200" : "text-blue-700 hover:bg-blue-50"
+                  }`}
+                >
+                  🚗 PV <span className="opacity-80 text-[11px] font-normal">{segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("CV")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "CV"
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : isDark ? "text-amber-400 hover:text-amber-200" : "text-amber-700 hover:bg-amber-50"
+                  }`}
+                >
+                  🚚 CV <span className="opacity-80 text-[11px] font-normal">{segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("BEV")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "BEV"
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm shadow-cyan-500/30"
+                      : isDark ? "text-cyan-400 hover:text-cyan-200" : "text-sky-700 hover:bg-sky-50"
+                  }`}
+                >
+                  ⚡ BEV <span className="opacity-80 text-[11px] font-normal">{segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("ALL")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "ALL"
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : isDark ? "text-purple-400 hover:text-purple-200" : "text-purple-700 hover:bg-purple-50"
+                  }`}
+                >
+                  🌐 All <span className="opacity-80 text-[11px] font-normal">{segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}</span>
+                </button>
               </div>
 
               {/* Reset Filters Shortcut - Same Line */}
