@@ -1835,31 +1835,7 @@ export default function ExecutiveDashboard({
               )}
             </div>
 
-            {/* Right Side: Scope Badge + Export Button */}
-            <div className="flex items-center gap-2 ml-auto shrink-0">
-              <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border shadow-2xs ${
-                isDark ? "bg-indigo-500/15 border-indigo-500/80 text-indigo-300" : "bg-sky-50/80 border-sky-200 text-sky-800"
-              }`}>
-                📍 Scope: <span className="font-semibold text-sky-600 dark:text-sky-300">
-                  {selectedRtos.length > 0
-                    ? `${selectedRtos.length} RTOs (${selectedRtos.slice(0, 2).join(", ")}${selectedRtos.length > 2 ? "..." : ""})`
-                    : selectedDistricts.length > 0
-                    ? `${selectedDistricts.length} Districts (${selectedDistricts.slice(0, 2).join(", ")}${selectedDistricts.length > 2 ? "..." : ""})`
-                    : selectedTerritory !== "ALL"
-                    ? selectedTerritory
-                    : "All Kerala"}
-                </span>
-              </span>
 
-              {/* Export Button - Vibrant Emerald Gradient with Radius 2 */}
-              <button
-                onClick={handleExportSummaryExcel}
-                className="h-7.5 flex items-center gap-1.5 px-3.5 py-1 rounded-[2px] text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-500/30 transition-all duration-150 hover:-translate-y-0.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Export Excel
-              </button>
-            </div>
           </div>
         </div>
       </div>
