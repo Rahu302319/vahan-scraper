@@ -1,7 +1,5 @@
 "use client";
 
-import { createPortal } from "react-dom";
-
 import React, { useState, useMemo, useEffect } from "react";
 import {
   TrendingUp,
@@ -621,14 +619,6 @@ export default function ExecutiveDashboard({
     }
     return summaryDataRaw as SummaryRow[];
   }, [dbBenchmarks]);
-
-  // Header Slot for Status Badges (placed on same line as Download Master Excel)
-  const [headerSlotEl, setHeaderSlotEl] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const el = document.getElementById("dashboard-header-status-slot");
-    if (el) setHeaderSlotEl(el);
-  }, []);
 
   // 1. DEPENDENT FILTER STATES (Supports Multi-Selection)
   const [periodType, setPeriodType] = useState<PeriodType>("FY");
@@ -1558,67 +1548,13 @@ export default function ExecutiveDashboard({
     );
   };
 
-  const statusBadgesContent = (
-    <div className="flex flex-wrap items-center gap-1.5 ml-1">
-      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-emerald-500/15 border-emerald-500/80 text-emerald-300" : "bg-emerald-50 border-emerald-200 text-emerald-700"
-      }`}>
-        🟢 {activeDatasetRows.length.toLocaleString()} Records
-      </span>
-      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-sky-500/15 border-sky-500/80 text-sky-300" : "bg-sky-50 border-sky-200 text-sky-700"
-      }`}>
-        ⚡ {selectedSegment === "ALL" ? "All Segments" : `${selectedSegment} Segment`}
-      </span>
-      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-purple-500/15 border-purple-500/80 text-purple-300" : "bg-purple-50 border-purple-200 text-purple-700"
-      }`}>
-        📍 {activeDatasetRtoCount} RTOs
-      </span>
-      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-amber-500/15 border-amber-500/80 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-800"
-      }`}>
-        📅 {timeframeLabel}
-      </span>
-      <button
-        type="button"
-        onClick={fetchDbRegistrations}
-        title="Refresh latest data from database"
-        className={`p-1.5 rounded-[2px] border transition-all duration-150 shadow-xs ${
-          isDark
-            ? "bg-slate-800 border-slate-600 text-sky-400 hover:text-white hover:bg-slate-700"
-            : "bg-white border-slate-200 text-sky-600 hover:text-sky-800 hover:bg-sky-50"
-        }`}
-      >
-        <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDb ? "animate-spin text-sky-500" : ""}`} />
-      </button>
-    </div>
-  );
-
   return (
     <>
-      {/* Teleport Status Badges to same line as Download Master Excel button */}
-      {headerSlotEl && createPortal(statusBadgesContent, headerSlotEl)}
-
       <div className={`rounded-2xl border transition-all duration-300 shadow-md ${
         isDark
           ? "bg-[#1e293b] border-slate-700/80 text-slate-100 shadow-md"
           : "bg-white border-slate-200/90 text-slate-800 shadow-slate-200/40"
       }`}>
-        {/* If slot is not available yet, show status badges here as fallback */}
-        {!headerSlotEl && (
-          <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-b ${
-            isDark ? "border-[#16233b] bg-gradient-to-r from-[#0d1628] to-[#0a1120]" : "border-slate-100 bg-slate-50"
-          }`}>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold bg-gradient-to-r from-sky-500 to-blue-600 text-white">
-                KL • Kerala
-              </span>
-            </div>
-            {statusBadgesContent}
-          </div>
-        )}
-
         {/* COLORFUL COMPACT CONTROLS SURFACE (Radius: 2px, Semibold, Multi-Selection) */}
         <div className="p-3 sm:p-3.5 flex flex-col gap-2.5">
           {/* ROW 1: Timeframe, Segment Pills, and Export Button */}
@@ -1879,10 +1815,61 @@ export default function ExecutiveDashboard({
           </div>
         </div>
       </div>
-      {/* NORTH & SOUTH KERALA SPLIT TABLES */}
+      {/* NORTH & SOUTH KERALA DISTRICT-WISE TABLES */}
       {(() => {
         const northRows = combatTableRows.filter(r => r.territory === "North Kerala");
         const southRows = combatTableRows.filter(r => r.territory === "South Kerala");
+
+        const aggregateDistrictRows = (rows: typeof combatTableRows) => {
+          const map = new Map<string, {
+            district: string;
+            territory: string;
+            total: number;
+            mm: number;
+            ms: number;
+            rtoCount: number;
+          }>();
+
+          rows.forEach((r) => {
+            const key = r.district;
+            if (!map.has(key)) {
+              map.set(key, {
+                district: r.district,
+                territory: r.territory,
+                total: 0,
+                mm: 0,
+                ms: 0,
+                rtoCount: 0,
+              });
+            }
+            const item = map.get(key)!;
+            item.total += r.total;
+            item.mm += r.mm;
+            item.rtoCount += 1;
+          });
+
+          const list = Array.from(map.values()).map((item) => ({
+            ...item,
+            ms: item.total > 0 ? (item.mm / item.total) * 100 : 0,
+          }));
+
+          // Sort by active sort field
+          list.sort((a, b) => {
+            let valA: any = a[tableSortField as keyof typeof a];
+            let valB: any = b[tableSortField as keyof typeof b];
+            if (valA === undefined) valA = a.total;
+            if (valB === undefined) valB = b.total;
+
+            if (typeof valA === "string") {
+              const comp = valA.localeCompare(valB);
+              return tableSortAsc ? comp : -comp;
+            }
+            return tableSortAsc ? valA - valB : valB - valA;
+          });
+
+          return list;
+        };
+
         const calcTotals = (rows: typeof combatTableRows) => ({
           count: rows.length,
           total: rows.reduce((s, r) => s + r.total, 0),
@@ -1891,6 +1878,7 @@ export default function ExecutiveDashboard({
             ? (rows.reduce((s, r) => s + r.mm, 0) / rows.reduce((s, r) => s + r.total, 0)) * 100
             : 0,
         });
+
         const northTotals = calcTotals(northRows);
         const southTotals = calcTotals(southRows);
 
@@ -1913,11 +1901,14 @@ export default function ExecutiveDashboard({
             ? "bg-teal-50 border-teal-300 text-teal-800"
             : "bg-indigo-50 border-indigo-300 text-indigo-800";
 
+          const districtRows = aggregateDistrictRows(rows);
+          const gridBorder = isDark ? "border-slate-700/80" : "border-slate-200";
+
           return (
-            <div className={`rounded-[2px] border transition-all duration-300 shadow-md overflow-hidden flex-1 min-w-[420px] ${
+            <div className={`rounded-[2px] border transition-all duration-300 shadow-md overflow-hidden flex-1 min-w-[360px] ${
               isDark ? "bg-[#1e293b] border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-800"
             }`}>
-              {/* Table Header */}
+              {/* Table Header HUD */}
               <div className={`flex items-center justify-between gap-2 px-3 py-2 border-b ${
                 isDark ? "border-slate-700/80 bg-slate-900/60" : "border-slate-100 bg-slate-50"
               }`}>
@@ -1929,7 +1920,7 @@ export default function ExecutiveDashboard({
                   <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
                     isDark ? badgeDark : badgeLight
                   }`}>
-                    {totals.count} RTOs
+                    {districtRows.length} Districts ({totals.count} RTOs)
                   </span>
                   <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
                     isDark ? "bg-sky-500/15 border-sky-500/60 text-sky-300" : "bg-sky-50 border-sky-200 text-sky-800"
@@ -1939,55 +1930,83 @@ export default function ExecutiveDashboard({
                 </div>
               </div>
 
-              {/* Table Body */}
+              {/* Table Body with Complete Gridlines (Vertical & Horizontal) */}
               <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead className={`sticky top-0 z-10 text-[10px] font-semibold uppercase tracking-wider border-b shadow-xs ${
                     isDark ? "bg-[#182338] text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
                   }`}>
                     <tr>
-                      <th onClick={() => handleTableSort("district")} className="py-1.5 px-2 cursor-pointer select-none hover:text-sky-400 transition">
-                        <div className="flex items-center gap-1"><span>District</span>{renderSortIcon("district")}</div>
+                      <th
+                        onClick={() => handleTableSort("district")}
+                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder}`}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>District</span>
+                          {renderSortIcon("district")}
+                        </div>
                       </th>
-                      <th onClick={() => handleTableSort("rtoName")} className="py-1.5 px-2 cursor-pointer select-none hover:text-sky-400 transition">
-                        <div className="flex items-center gap-1"><span>RTO Name</span>{renderSortIcon("rtoName")}</div>
+                      <th
+                        onClick={() => handleTableSort("total")}
+                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder}`}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>Total Reg.</span>
+                          {renderSortIcon("total")}
+                        </div>
                       </th>
-                      <th onClick={() => handleTableSort("total")} className="py-1.5 px-2 text-right cursor-pointer select-none hover:text-sky-400 transition">
-                        <div className="flex items-center justify-end gap-1"><span>Total Reg.</span>{renderSortIcon("total")}</div>
+                      <th
+                        onClick={() => handleTableSort("mm")}
+                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder}`}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>M&M Nos</span>
+                          {renderSortIcon("mm")}
+                        </div>
                       </th>
-                      <th onClick={() => handleTableSort("mm")} className="py-1.5 px-2 text-right cursor-pointer select-none hover:text-sky-400 transition">
-                        <div className="flex items-center justify-end gap-1"><span>M&M Nos</span>{renderSortIcon("mm")}</div>
-                      </th>
-                      <th onClick={() => handleTableSort("ms")} className="py-1.5 px-2 text-right cursor-pointer select-none hover:text-sky-400 transition">
-                        <div className="flex items-center justify-end gap-1"><span>M&M MS</span>{renderSortIcon("ms")}</div>
+                      <th
+                        onClick={() => handleTableSort("ms")}
+                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder}`}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>M&M MS</span>
+                          {renderSortIcon("ms")}
+                        </div>
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30 font-semibold">
-                    {rows.map((row, idx) => (
+                    {districtRows.map((row, idx) => (
                       <tr
-                        key={`${row.district}-${row.rtoName}-${idx}`}
+                        key={`${row.district}-${idx}`}
                         className={`transition-colors ${
                           isDark
                             ? idx % 2 === 0 ? "bg-[#1e293b]/60 hover:bg-slate-700/50" : "bg-slate-900/30 hover:bg-slate-700/50"
                             : idx % 2 === 0 ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/70"
                         }`}
                       >
-                        <td className={`py-1 px-2 whitespace-nowrap text-sm ${isDark ? accentDark : accentLight}`}>
-                          <span className="flex items-center gap-1">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
-                            {row.district}
+                        {/* 1. District Name */}
+                        <td className={`py-1.5 px-3 whitespace-nowrap text-sm border ${gridBorder}`}>
+                          <span className="flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
+                            <span className={isDark ? accentDark : accentLight}>{row.district}</span>
+                            <span className="text-[10px] text-slate-400 font-normal">({row.rtoCount} RTOs)</span>
                           </span>
                         </td>
-                        <td className="py-1 px-2 font-semibold whitespace-nowrap text-sm">{row.rtoName}</td>
-                        <td className="py-1 px-2 text-right font-semibold text-sky-400 whitespace-nowrap tabular-nums text-sm">
+
+                        {/* 2. Total Registration - Centered under heading */}
+                        <td className={`py-1.5 px-3 text-center font-semibold text-sky-400 dark:text-sky-300 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
                           {row.total.toLocaleString()}
                         </td>
-                        <td className="py-1 px-2 text-right font-semibold text-rose-400 whitespace-nowrap tabular-nums text-sm">
+
+                        {/* 3. M&M Nos - Centered under heading */}
+                        <td className={`py-1.5 px-3 text-center font-semibold text-rose-500 dark:text-rose-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
                           {row.mm.toLocaleString()}
                         </td>
-                        <td className="py-1 px-2 text-right whitespace-nowrap tabular-nums">
-                          <span className={`inline-block px-1.5 py-0 rounded-[2px] text-xs font-semibold border ${
+
+                        {/* 4. M&M MS % - Centered under heading */}
+                        <td className={`py-1.5 px-3 text-center whitespace-nowrap tabular-nums border ${gridBorder}`}>
+                          <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-semibold border ${
                             row.ms >= 15
                               ? isDark ? "bg-emerald-500/15 border-emerald-500/60 text-emerald-300" : "bg-emerald-50 border-emerald-400 text-emerald-800"
                               : row.ms >= 10
@@ -1999,29 +2018,31 @@ export default function ExecutiveDashboard({
                         </td>
                       </tr>
                     ))}
-                    {rows.length === 0 && (
+                    {districtRows.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="py-6 text-center text-slate-400 font-semibold text-xs">
+                        <td colSpan={4} className={`py-6 text-center text-slate-400 font-semibold text-xs border ${gridBorder}`}>
                           No data for {territory}.
                         </td>
                       </tr>
                     )}
                   </tbody>
+
+                  {/* Sticky Territory Total Footer */}
                   <tfoot className={`sticky bottom-0 z-10 font-bold border-t text-xs ${
                     isDark ? "bg-[#141f33] border-slate-700 text-slate-100" : "bg-slate-100 border-slate-300 text-slate-900"
                   }`}>
                     <tr>
-                      <td className="py-1.5 px-2 uppercase tracking-wider text-[10px] text-slate-400" colSpan={2}>
+                      <td className={`py-2 px-3 uppercase tracking-wider text-[10px] text-slate-400 border ${gridBorder}`}>
                         {territory} Total
                       </td>
-                      <td className="py-1.5 px-2 text-right tabular-nums font-bold text-sky-400">
+                      <td className={`py-2 px-3 text-center tabular-nums font-bold text-sky-400 whitespace-nowrap text-sm border ${gridBorder}`}>
                         {totals.total.toLocaleString()}
                       </td>
-                      <td className="py-1.5 px-2 text-right tabular-nums font-bold text-rose-400">
+                      <td className={`py-2 px-3 text-center tabular-nums font-bold text-rose-400 whitespace-nowrap text-sm border ${gridBorder}`}>
                         {totals.mm.toLocaleString()}
                       </td>
-                      <td className="py-1.5 px-2 text-right tabular-nums font-bold">
-                        <span className={`inline-block px-1.5 py-0 rounded-[2px] text-xs font-bold border ${
+                      <td className={`py-2 px-3 text-center tabular-nums font-bold border ${gridBorder}`}>
+                        <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-bold border ${
                           isDark ? "bg-emerald-500/20 border-emerald-500 text-emerald-300" : "bg-emerald-100 border-emerald-500 text-emerald-900"
                         }`}>
                           {totals.ms.toFixed(2)}%
