@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <g filter="url(#shadow)">
+    <!-- Automobile styling -->
+    <path d="M112 304 h288 M112 304 l40 -112 h208 l40 112 M176 368 a32 32 0 1 0 0 -64 32 32 0 0 0 0 64 zm160 0 a32 32 0 1 0 0 -64 32 32 0 0 0 0 64 z" stroke="#38bdf8" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="256" cy="144" r="28" fill="#38bdf8"/>
+    <!-- Analytics pulses -->
+    <path d="M160 260 h40 l24 -40 l32 80 l32 -60 l24 20 h40" stroke="#f59e0b" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <text x="256" y="440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="4">VAHAN 4</text>
+</svg>
+

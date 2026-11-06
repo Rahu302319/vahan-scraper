@@ -1,0 +1,19 @@
+{
+  "name": "Vahan 4 Dashboard — Kerala RTO Intelligence",
+  "short_name": "Vahan 4",
+  "description": "Executive Vehicle Intelligence and Registration Analytics across all 87 Kerala RTO Transport Offices",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080d1a",
+  "theme_color": "#080d1a",
+  "icons": [
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
