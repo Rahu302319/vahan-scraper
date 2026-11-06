@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+
 import React, { useState, useMemo, useEffect } from "react";
 import {
   TrendingUp,
@@ -615,6 +617,14 @@ export default function ExecutiveDashboard({
     }
     return summaryDataRaw as SummaryRow[];
   }, [dbBenchmarks]);
+
+  // Header Slot for Status Badges (placed on same line as Download Master Excel)
+  const [headerSlotEl, setHeaderSlotEl] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const el = document.getElementById("dashboard-header-status-slot");
+    if (el) setHeaderSlotEl(el);
+  }, []);
 
   // 1. DEPENDENT FILTER STATES (Supports Multi-Selection)
   const [periodType, setPeriodType] = useState<PeriodType>("FY");
@@ -1454,333 +1464,327 @@ export default function ExecutiveDashboard({
     }
   };
 
-  return (
-    <div className={`rounded-2xl border transition-all duration-300 shadow-md ${
-      isDark
-        ? "bg-[#0a101d] border-[#1d2d4d] text-slate-200 shadow-black/40"
-        : "bg-white border-slate-200/90 text-slate-800 shadow-slate-200/40"
-    }`}>
-      {/* 1. COLORFUL HD STATUS HEADER */}
-      <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b transition-colors ${
-        isDark ? "border-[#16233b] bg-gradient-to-r from-[#0d1628] to-[#0a1120]" : "border-slate-100 bg-gradient-to-r from-slate-50 via-sky-50/20 to-indigo-50/20"
+  const statusBadgesContent = (
+    <div className="flex flex-wrap items-center gap-1.5 ml-1">
+      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
+        isDark ? "bg-emerald-950/30 border-emerald-800 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700"
       }`}>
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
-          </div>
-          <div className="p-1.5 rounded-[2px] bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-sm">
-            <Zap className="w-3.5 h-3.5 fill-white" />
-          </div>
-          <div className="flex items-center gap-2">
-            <h2 className={`text-xs font-semibold tracking-wide ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-              Executive Analytics Console
-            </h2>
-            <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-xs tracking-wider uppercase">
-              KL • Kerala
-            </span>
-          </div>
-        </div>
-
-        {/* Live Scraper Status Metadata & Refresh */}
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1.5">
-            <span className={`px-2.5 py-0.5 rounded-[2px] text-xs font-semibold border ${
-              isDark ? "bg-emerald-950/30 border-emerald-800 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700"
-            }`}>
-              🟢 {activeDatasetRows.length.toLocaleString()} Records
-            </span>
-            <span className={`px-2.5 py-0.5 rounded-[2px] text-xs font-semibold border ${
-              isDark ? "bg-sky-950/30 border-sky-800 text-sky-400" : "bg-sky-50 border-sky-200 text-sky-700"
-            }`}>
-              ⚡ {selectedSegment === "ALL" ? "All Segments" : `${selectedSegment} Segment`}
-            </span>
-            <span className={`px-2.5 py-0.5 rounded-[2px] text-xs font-semibold border ${
-              isDark ? "bg-purple-950/30 border-purple-800 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-700"
-            }`}>
-              📍 {activeDatasetRtoCount} RTOs
-            </span>
-            <span className={`px-2.5 py-0.5 rounded-[2px] text-xs font-semibold border ${
-              isDark ? "bg-amber-950/30 border-amber-800 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-800"
-            }`}>
-              📅 {timeframeLabel}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={fetchDbRegistrations}
-            title="Refresh latest data from database"
-            className={`p-1.5 rounded-[2px] border transition-all duration-150 shadow-xs ${
-              isDark
-                ? "bg-[#0e172a] border-[#243555] text-sky-400 hover:text-white hover:bg-[#16233b]"
-                : "bg-white border-slate-200 text-sky-600 hover:text-sky-800 hover:bg-sky-50"
-            }`}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDb ? "animate-spin text-sky-500" : ""}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* 2. COLORFUL CONTROLS SURFACE (Radius: 2px, Semibold, Multi-Selection) */}
-      <div className="p-3 sm:p-3.5 flex flex-col gap-2.5">
-        {/* ROW 1: Timeframe, Segment Pills, and Export Button */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* FY / CY Mode Switch - Radius 2 */}
-            <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
-              isDark ? "bg-[#070d18] border-[#1d2d4d]" : "bg-slate-100 border-slate-200"
-            }`}>
-              <button
-                type="button"
-                onClick={() => {
-                  setPeriodType("FY");
-                  setSelectedMonths([]);
-                }}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                  periodType === "FY"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Financial Year (Apr to Mar)"
-              >
-                <Calendar className="w-3 h-3" />
-                FY
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPeriodType("CY");
-                  setSelectedMonths([]);
-                }}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                  periodType === "CY"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Calendar Year (Jan to Dec)"
-              >
-                <Calendar className="w-3 h-3" />
-                CY
-              </button>
-            </div>
-
-            {/* Period Dropdown - Vibrant Sky with Radius 2 */}
-            {periodType === "FY" ? (
-              <select
-                value={selectedFyId}
-                onChange={(e) => {
-                  setSelectedFyId(e.target.value);
-                  setSelectedMonths([]);
-                }}
-                className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
-                  isDark
-                    ? "bg-sky-950/40 border-sky-500/80 text-sky-300 focus:border-sky-400"
-                    : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
-                }`}
-              >
-                {ALL_FY_OPTIONS.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.label} ({f.subLabel})
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <select
-                value={selectedCyId}
-                onChange={(e) => {
-                  setSelectedCyId(e.target.value);
-                  setSelectedMonths([]);
-                }}
-                className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
-                  isDark
-                    ? "bg-sky-950/40 border-sky-500/80 text-sky-300 focus:border-sky-400"
-                    : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
-                }`}
-              >
-                {ALL_CY_OPTIONS.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label} ({c.subLabel})
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {/* Month MultiSelect Dropdown - Vibrant Amber with Radius 2 */}
-            <MultiSelectDropdown
-              placeholder="Months"
-              options={currentPeriod.months.map((m) => ({
-                label: `${m.mmmYy} (${m.name})`,
-                value: m.mmmYy,
-                subLabel: m.code,
-              }))}
-              selectedValues={selectedMonths}
-              onChange={setSelectedMonths}
-              colorScheme="amber"
-              isDark={isDark}
-              allLabel={`All Months (${currentPeriod.type === "FY" ? "Apr-Mar" : "Jan-Dec"})`}
-            />
-
-            {/* Segment Selector Colorful Pills - Radius 2 */}
-            <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
-              isDark ? "bg-[#070d18] border-[#1d2d4d]" : "bg-slate-100 border-slate-200"
-            }`}>
-              <button
-                type="button"
-                onClick={() => setSelectedSegment("PV")}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                  selectedSegment === "PV"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : isDark ? "text-blue-400 hover:text-blue-200" : "text-blue-700 hover:bg-blue-50"
-                }`}
-              >
-                🚗 PV <span className="opacity-80 text-[11px] font-normal">{segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedSegment("CV")}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                  selectedSegment === "CV"
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : isDark ? "text-amber-400 hover:text-amber-200" : "text-amber-700 hover:bg-amber-50"
-                }`}
-              >
-                🚚 CV <span className="opacity-80 text-[11px] font-normal">{segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedSegment("BEV")}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                  selectedSegment === "BEV"
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm shadow-cyan-500/30"
-                    : isDark ? "text-cyan-400 hover:text-cyan-200" : "text-sky-700 hover:bg-sky-50"
-                }`}
-              >
-                ⚡ BEV <span className="opacity-80 text-[11px] font-normal">{segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedSegment("ALL")}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
-                  selectedSegment === "ALL"
-                    ? "bg-purple-600 text-white shadow-sm"
-                    : isDark ? "text-purple-400 hover:text-purple-200" : "text-purple-700 hover:bg-purple-50"
-                }`}
-              >
-                🌐 All <span className="opacity-80 text-[11px] font-normal">{segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Export Button - Vibrant Emerald Gradient with Radius 2 */}
-          <button
-            onClick={handleExportSummaryExcel}
-            className="h-7.5 flex items-center gap-1.5 px-3.5 py-1 rounded-[2px] text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-500/30 transition-all duration-150 hover:-translate-y-0.5 ml-auto shrink-0"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export Excel
-          </button>
-        </div>
-
-        {/* ROW 2: Geographic Drill-Down + Scope (All Radius 2 & Semibold) */}
-        <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${
-          isDark ? "border-[#16233b]" : "border-slate-100"
-        }`}>
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Territory Dropdown - Vibrant Teal with Radius 2 */}
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[11px] font-semibold ${isDark ? "text-teal-400" : "text-teal-700"}`}>
-                Territory:
-              </span>
-              <select
-                value={selectedTerritory}
-                onChange={(e) => handleTerritoryChange(e.target.value)}
-                className={`h-7.5 px-2.5 py-1 text-xs font-semibold rounded-[2px] border focus:outline-none transition-all shadow-xs ${
-                  isDark
-                    ? "bg-teal-950/40 border-teal-500/80 text-teal-300 focus:border-teal-400"
-                    : "bg-teal-50/80 border-teal-400 text-teal-900 focus:border-teal-600"
-                }`}
-              >
-                <option value="ALL">All Kerala</option>
-                <option value="North Kerala">North Kerala</option>
-                <option value="South Kerala">South Kerala</option>
-              </select>
-            </div>
-
-            {/* District MultiSelect Dropdown - Vibrant Indigo with Radius 2 */}
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[11px] font-semibold ${isDark ? "text-indigo-400" : "text-indigo-700"}`}>
-                District:
-              </span>
-              <MultiSelectDropdown
-                placeholder="Districts"
-                options={availableDistricts.map((d) => ({ label: d, value: d }))}
-                selectedValues={selectedDistricts}
-                onChange={setSelectedDistricts}
-                colorScheme="indigo"
-                isDark={isDark}
-                allLabel={selectedTerritory === "ALL" ? "All 14 Districts" : `All ${selectedTerritory} Districts`}
-              />
-            </div>
-
-            {/* RTO MultiSelect Dropdown - Vibrant Rose with Radius 2 */}
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[11px] font-semibold ${isDark ? "text-rose-400" : "text-rose-700"}`}>
-                RTO:
-              </span>
-              <MultiSelectDropdown
-                placeholder="RTOs"
-                options={availableRtos.map((r) => ({ label: r, value: r }))}
-                selectedValues={selectedRtos}
-                onChange={setSelectedRtos}
-                colorScheme="rose"
-                isDark={isDark}
-                allLabel={
-                  selectedDistricts.length > 0
-                    ? `All in ${selectedDistricts.length} Districts (${availableRtos.length})`
-                    : selectedTerritory === "ALL"
-                    ? `All 87 RTOs`
-                    : `All ${selectedTerritory} RTOs (${availableRtos.length})`
-                }
-              />
-            </div>
-
-            {/* Reset Filters Shortcut - Radius 2 */}
-            {(selectedMonths.length > 0 || selectedTerritory !== "ALL" || selectedDistricts.length > 0 || selectedRtos.length > 0) && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                title="Reset all filters back to default"
-                className={`h-7.5 flex items-center gap-1 px-2.5 py-0.5 rounded-[2px] text-[11px] font-semibold border transition-all ${
-                  isDark
-                    ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
-                    : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
-                }`}
-              >
-                <RotateCcw className="w-3 h-3 text-sky-500" />
-                Reset
-              </button>
-            )}
-          </div>
-
-          {/* Right Status Badge in Row 2 - Radius 2 */}
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border shadow-2xs ${
-              isDark ? "bg-indigo-950/40 border-indigo-700 text-indigo-300" : "bg-sky-50/80 border-sky-200 text-sky-800"
-            }`}>
-              📍 Scope: <span className="font-semibold text-sky-600 dark:text-sky-300">
-                {selectedRtos.length > 0
-                  ? `${selectedRtos.length} RTOs (${selectedRtos.slice(0, 2).join(", ")}${selectedRtos.length > 2 ? "..." : ""})`
-                  : selectedDistricts.length > 0
-                  ? `${selectedDistricts.length} Districts (${selectedDistricts.slice(0, 2).join(", ")}${selectedDistricts.length > 2 ? "..." : ""})`
-                  : selectedTerritory !== "ALL"
-                  ? selectedTerritory
-                  : "All Kerala"}
-              </span>
-            </span>
-          </div>
-        </div>
-      </div>
+        🟢 {activeDatasetRows.length.toLocaleString()} Records
+      </span>
+      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
+        isDark ? "bg-sky-950/30 border-sky-800 text-sky-400" : "bg-sky-50 border-sky-200 text-sky-700"
+      }`}>
+        ⚡ {selectedSegment === "ALL" ? "All Segments" : `${selectedSegment} Segment`}
+      </span>
+      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
+        isDark ? "bg-purple-950/30 border-purple-800 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-700"
+      }`}>
+        📍 {activeDatasetRtoCount} RTOs
+      </span>
+      <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
+        isDark ? "bg-amber-950/30 border-amber-800 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-800"
+      }`}>
+        📅 {timeframeLabel}
+      </span>
+      <button
+        type="button"
+        onClick={fetchDbRegistrations}
+        title="Refresh latest data from database"
+        className={`p-1.5 rounded-[2px] border transition-all duration-150 shadow-xs ${
+          isDark
+            ? "bg-[#0e172a] border-[#243555] text-sky-400 hover:text-white hover:bg-[#16233b]"
+            : "bg-white border-slate-200 text-sky-600 hover:text-sky-800 hover:bg-sky-50"
+        }`}
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDb ? "animate-spin text-sky-500" : ""}`} />
+      </button>
     </div>
+  );
+
+  return (
+    <>
+      {/* Teleport Status Badges to same line as Download Master Excel button */}
+      {headerSlotEl && createPortal(statusBadgesContent, headerSlotEl)}
+
+      <div className={`rounded-2xl border transition-all duration-300 shadow-md ${
+        isDark
+          ? "bg-[#0a101d] border-[#1d2d4d] text-slate-200 shadow-black/40"
+          : "bg-white border-slate-200/90 text-slate-800 shadow-slate-200/40"
+      }`}>
+        {/* If slot is not available yet, show status badges here as fallback */}
+        {!headerSlotEl && (
+          <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-b ${
+            isDark ? "border-[#16233b] bg-gradient-to-r from-[#0d1628] to-[#0a1120]" : "border-slate-100 bg-slate-50"
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold bg-gradient-to-r from-sky-500 to-blue-600 text-white">
+                KL • Kerala
+              </span>
+            </div>
+            {statusBadgesContent}
+          </div>
+        )}
+
+        {/* COLORFUL COMPACT CONTROLS SURFACE (Radius: 2px, Semibold, Multi-Selection) */}
+        <div className="p-3 sm:p-3.5 flex flex-col gap-2.5">
+          {/* ROW 1: Timeframe, Segment Pills, and Export Button */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* FY / CY Mode Switch - Radius 2 */}
+              <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
+                isDark ? "bg-[#070d18] border-[#1d2d4d]" : "bg-slate-100 border-slate-200"
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeriodType("FY");
+                    setSelectedMonths([]);
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    periodType === "FY"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm"
+                      : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                  title="Financial Year (Apr to Mar)"
+                >
+                  <Calendar className="w-3 h-3" />
+                  FY
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeriodType("CY");
+                    setSelectedMonths([]);
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    periodType === "CY"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm"
+                      : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                  title="Calendar Year (Jan to Dec)"
+                >
+                  <Calendar className="w-3 h-3" />
+                  CY
+                </button>
+              </div>
+
+              {/* Period Dropdown - Vibrant Sky with Radius 2 */}
+              {periodType === "FY" ? (
+                <select
+                  value={selectedFyId}
+                  onChange={(e) => {
+                    setSelectedFyId(e.target.value);
+                    setSelectedMonths([]);
+                  }}
+                  className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
+                    isDark
+                      ? "bg-sky-950/40 border-sky-500/80 text-sky-300 focus:border-sky-400"
+                      : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
+                  }`}
+                >
+                  {ALL_FY_OPTIONS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label} ({f.subLabel})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={selectedCyId}
+                  onChange={(e) => {
+                    setSelectedCyId(e.target.value);
+                    setSelectedMonths([]);
+                  }}
+                  className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
+                    isDark
+                      ? "bg-sky-950/40 border-sky-500/80 text-sky-300 focus:border-sky-400"
+                      : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
+                  }`}
+                >
+                  {ALL_CY_OPTIONS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label} ({c.subLabel})
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* Month MultiSelect Dropdown - Vibrant Amber with Radius 2 */}
+              <MultiSelectDropdown
+                placeholder="Months"
+                options={currentPeriod.months.map((m) => ({
+                  label: `${m.mmmYy} (${m.name})`,
+                  value: m.mmmYy,
+                  subLabel: m.code,
+                }))}
+                selectedValues={selectedMonths}
+                onChange={setSelectedMonths}
+                colorScheme="amber"
+                isDark={isDark}
+                allLabel={`All Months (${currentPeriod.type === "FY" ? "Apr-Mar" : "Jan-Dec"})`}
+              />
+
+              {/* Segment Selector Colorful Pills - Radius 2 */}
+              <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
+                isDark ? "bg-[#070d18] border-[#1d2d4d]" : "bg-slate-100 border-slate-200"
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("PV")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "PV"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : isDark ? "text-blue-400 hover:text-blue-200" : "text-blue-700 hover:bg-blue-50"
+                  }`}
+                >
+                  🚗 PV <span className="opacity-80 text-[11px] font-normal">{segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("CV")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "CV"
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : isDark ? "text-amber-400 hover:text-amber-200" : "text-amber-700 hover:bg-amber-50"
+                  }`}
+                >
+                  🚚 CV <span className="opacity-80 text-[11px] font-normal">{segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("BEV")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "BEV"
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm shadow-cyan-500/30"
+                      : isDark ? "text-cyan-400 hover:text-cyan-200" : "text-sky-700 hover:bg-sky-50"
+                  }`}
+                >
+                  ⚡ BEV <span className="opacity-80 text-[11px] font-normal">{segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegment("ALL")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "ALL"
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : isDark ? "text-purple-400 hover:text-purple-200" : "text-purple-700 hover:bg-purple-50"
+                  }`}
+                >
+                  🌐 All <span className="opacity-80 text-[11px] font-normal">{segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Export Button - Vibrant Emerald Gradient with Radius 2 */}
+            <button
+              onClick={handleExportSummaryExcel}
+              className="h-7.5 flex items-center gap-1.5 px-3.5 py-1 rounded-[2px] text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-500/30 transition-all duration-150 hover:-translate-y-0.5 ml-auto shrink-0"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export Excel
+            </button>
+          </div>
+
+          {/* ROW 2: Geographic Drill-Down + Scope */}
+          <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${
+            isDark ? "border-[#16233b]" : "border-slate-100"
+          }`}>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Territory Dropdown - Vibrant Teal with Radius 2 */}
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[11px] font-semibold ${isDark ? "text-teal-400" : "text-teal-700"}`}>
+                  Territory:
+                </span>
+                <select
+                  value={selectedTerritory}
+                  onChange={(e) => handleTerritoryChange(e.target.value)}
+                  className={`h-7.5 px-2.5 py-1 text-xs font-semibold rounded-[2px] border focus:outline-none transition-all shadow-xs ${
+                    isDark
+                      ? "bg-teal-950/40 border-teal-500/80 text-teal-300 focus:border-teal-400"
+                      : "bg-teal-50/80 border-teal-400 text-teal-900 focus:border-teal-600"
+                  }`}
+                >
+                  <option value="ALL">All Kerala</option>
+                  <option value="North Kerala">North Kerala</option>
+                  <option value="South Kerala">South Kerala</option>
+                </select>
+              </div>
+
+              {/* District MultiSelect Dropdown - Vibrant Indigo with Radius 2 */}
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[11px] font-semibold ${isDark ? "text-indigo-400" : "text-indigo-700"}`}>
+                  District:
+                </span>
+                <MultiSelectDropdown
+                  placeholder="Districts"
+                  options={availableDistricts.map((d) => ({ label: d, value: d }))}
+                  selectedValues={selectedDistricts}
+                  onChange={setSelectedDistricts}
+                  colorScheme="indigo"
+                  isDark={isDark}
+                  allLabel={selectedTerritory === "ALL" ? "All 14 Districts" : `All ${selectedTerritory} Districts`}
+                />
+              </div>
+
+              {/* RTO MultiSelect Dropdown - Vibrant Rose with Radius 2 */}
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[11px] font-semibold ${isDark ? "text-rose-400" : "text-rose-700"}`}>
+                  RTO:
+                </span>
+                <MultiSelectDropdown
+                  placeholder="RTOs"
+                  options={availableRtos.map((r) => ({ label: r, value: r }))}
+                  selectedValues={selectedRtos}
+                  onChange={setSelectedRtos}
+                  colorScheme="rose"
+                  isDark={isDark}
+                  allLabel={
+                    selectedDistricts.length > 0
+                      ? `All in ${selectedDistricts.length} Districts (${availableRtos.length})`
+                      : selectedTerritory === "ALL"
+                      ? `All 87 RTOs`
+                      : `All ${selectedTerritory} RTOs (${availableRtos.length})`
+                  }
+                />
+              </div>
+
+              {/* Reset Filters Shortcut - Radius 2 */}
+              {(selectedMonths.length > 0 || selectedTerritory !== "ALL" || selectedDistricts.length > 0 || selectedRtos.length > 0) && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  title="Reset all filters back to default"
+                  className={`h-7.5 flex items-center gap-1 px-2.5 py-0.5 rounded-[2px] text-[11px] font-semibold border transition-all ${
+                    isDark
+                      ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                      : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                  }`}
+                >
+                  <RotateCcw className="w-3 h-3 text-sky-500" />
+                  Reset
+                </button>
+              )}
+            </div>
+
+            {/* Right Status Badge in Row 2 - Radius 2 */}
+            <div className="flex items-center gap-1.5 ml-auto">
+              <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border shadow-2xs ${
+                isDark ? "bg-indigo-950/40 border-indigo-700 text-indigo-300" : "bg-sky-50/80 border-sky-200 text-sky-800"
+              }`}>
+                📍 Scope: <span className="font-semibold text-sky-600 dark:text-sky-300">
+                  {selectedRtos.length > 0
+                    ? `${selectedRtos.length} RTOs (${selectedRtos.slice(0, 2).join(", ")}${selectedRtos.length > 2 ? "..." : ""})`
+                    : selectedDistricts.length > 0
+                    ? `${selectedDistricts.length} Districts (${selectedDistricts.slice(0, 2).join(", ")}${selectedDistricts.length > 2 ? "..." : ""})`
+                    : selectedTerritory !== "ALL"
+                    ? selectedTerritory
+                    : "All Kerala"}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

@@ -978,6 +978,9 @@ export default function VahanDashboardPage() {
             <Download className="w-3.5 h-3.5" />
             Download Master Excel
           </button>
+
+          {/* Slot for Executive Dashboard Live Status Badges & Refresh */}
+          <div id="dashboard-header-status-slot" className="flex flex-wrap items-center gap-1.5" />
         </div>
       </header>
 
