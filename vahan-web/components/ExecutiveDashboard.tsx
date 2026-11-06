@@ -1876,6 +1876,101 @@ export default function ExecutiveDashboard({
               )}
             </div>
 
+            {/* COMBAT TELEMETRY KPI CARDS (Vibrant, Sleek & High-Density) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-800/80">
+              {/* Card 1: Total Industry Volume */}
+              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
+                isDark ? "bg-gradient-to-br from-slate-900/90 to-sky-950/40 border-sky-800/40" : "bg-gradient-to-br from-white to-sky-50/60 border-sky-200/80"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-sky-300" : "text-sky-700"}`}>
+                    State Total (TIV)
+                  </span>
+                  <div className="p-1 rounded bg-sky-500/20 text-sky-400">
+                    <Car className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-sky-500 dark:text-sky-400">
+                    {combatTableTotals.total.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {timeframeLabel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 2: Mahindra & Mahindra Volume */}
+              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
+                isDark ? "bg-gradient-to-br from-slate-900/90 to-rose-950/40 border-rose-800/40" : "bg-gradient-to-br from-white to-rose-50/60 border-rose-200/80"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-rose-300" : "text-rose-700"}`}>
+                    Mahindra Volume
+                  </span>
+                  <div className="p-1 rounded bg-rose-500/20 text-rose-400">
+                    <Award className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-rose-500 dark:text-rose-400">
+                    {combatTableTotals.mm.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-bold text-rose-400/90">
+                    {selectedSegment} Units
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 3: Mahindra Market Share */}
+              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
+                isDark ? "bg-gradient-to-br from-slate-900/90 to-emerald-950/40 border-emerald-800/40" : "bg-gradient-to-br from-white to-emerald-50/60 border-emerald-200/80"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-emerald-300" : "text-emerald-700"}`}>
+                    Mahindra Share (MS%)
+                  </span>
+                  <div className="p-1 rounded bg-emerald-500/20 text-emerald-400">
+                    <Zap className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-emerald-500 dark:text-emerald-400">
+                    {combatTableTotals.ms.toFixed(1)}%
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-extrabold border ${
+                    combatTableTotals.ms >= 10
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                      : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                  }`}>
+                    {combatTableTotals.ms >= 10 ? "High Impact" : "Steady"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 4: Active RTO Coverage */}
+              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
+                isDark ? "bg-gradient-to-br from-slate-900/90 to-purple-950/40 border-purple-800/40" : "bg-gradient-to-br from-white to-purple-50/60 border-purple-200/80"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-purple-300" : "text-purple-700"}`}>
+                    Active Coverage
+                  </span>
+                  <div className="p-1 rounded bg-purple-500/20 text-purple-400">
+                    <Building2 className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-purple-500 dark:text-purple-400">
+                    {combatTableTotals.count} RTOs
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    14 Districts
+                  </span>
+                </div>
+              </div>
+            </div>
+
 
           </div>
         </div>
