@@ -1310,6 +1310,16 @@ export default function ExecutiveDashboard({
     setExpandedDistricts({});
   };
 
+  const toggleAllDistrictsInTerritory = (districts: string[], shouldExpand: boolean) => {
+    setExpandedDistricts((prev) => {
+      const next = { ...prev };
+      districts.forEach((d) => {
+        next[d] = shouldExpand;
+      });
+      return next;
+    });
+  };
+
   const isDistrictExpanded = (districtName: string): boolean => {
     if (selectedRto !== "ALL") return true;
     if (searchQuery.trim()) return true;
@@ -1990,6 +2000,7 @@ export default function ExecutiveDashboard({
 
           const districtGroups = groupRowsByDistrict(rows, isNorth);
           const gridBorder = isDark ? "border-slate-700/80" : "border-slate-200";
+          const allExpanded = districtGroups.length > 0 && districtGroups.every((g) => !!expandedDistricts[g.district]);
 
           return (
             <div className={`rounded-[2px] border transition-all duration-300 shadow-md flex flex-col overflow-hidden ${
@@ -2026,8 +2037,33 @@ export default function ExecutiveDashboard({
                   </span>
                 </div>
 
-                {/* Focus Mode Toggle Button */}
+                {/* Table Actions: Expand/Collapse All + Focus Mode */}
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleAllDistrictsInTerritory(districtGroups.map((g) => g.district), !allExpanded)}
+                    title={allExpanded ? "Collapse All Districts in table" : "Expand All Districts in table"}
+                    className={`flex items-center gap-1 rounded-[2px] font-semibold border transition-all shadow-xs ${
+                      isFocused ? "px-3 py-1 text-xs" : "px-2.5 py-0.5 text-[11px]"
+                    } ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700"
+                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {allExpanded ? (
+                      <>
+                        <Minus className="w-2.5 h-2.5 text-amber-400 stroke-[2.5]" />
+                        <span>Collapse All</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-2.5 h-2.5 text-sky-400 stroke-[2.5]" />
+                        <span>Expand All</span>
+                      </>
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setFocusedTable(isFocused ? null : territory)}
@@ -2122,6 +2158,79 @@ export default function ExecutiveDashboard({
                   <tbody className="divide-y divide-slate-700/30 font-semibold">
                     {districtGroups.map((group) => {
                       const displayDist = isNorth ? formatDistrictDisplayName(group.district) : group.district;
+                      const isExpanded = tableSearch.trim().length > 0 || !!expandedDistricts[group.district];
+
+                      if (!isExpanded) {
+                        return (
+                          <tr
+                            key={`collapsed-${group.district}`}
+                            className={`cursor-pointer transition-colors ${
+                              isDark ? "bg-[#18263e]/70 hover:bg-[#1f3150]" : "bg-slate-50/90 hover:bg-slate-100"
+                            }`}
+                            onClick={() => toggleDistrict(group.district)}
+                          >
+                            {/* District Cell with small + icon (colSpan 2) */}
+                            <td
+                              colSpan={2}
+                              className={`text-left font-bold border ${gridBorder} ${
+                                isFocused ? "py-3 px-4 text-sm sm:text-base" : "py-2 px-3 text-xs"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`flex items-center justify-center rounded-[2px] border transition-all ${
+                                    isFocused ? "w-5 h-5" : "w-4 h-4"
+                                  } ${
+                                    isDark
+                                      ? "bg-slate-800 border-slate-600 text-sky-400 hover:border-sky-400"
+                                      : "bg-white border-slate-300 text-sky-600 hover:border-sky-500 shadow-2xs"
+                                  }`}
+                                  title={`Click to expand ${displayDist}`}
+                                >
+                                  <Plus className={isFocused ? "w-3 h-3 stroke-[2.5]" : "w-2.5 h-2.5 stroke-[2.5]"} />
+                                </span>
+                                <span className={`rounded-full ${dotColor} ${isFocused ? "w-2.5 h-2.5" : "w-2 h-2"}`} />
+                                <span className={`font-bold ${isDark ? accentDark : accentLight}`}>
+                                  {displayDist}
+                                </span>
+                                <span className={`font-normal text-slate-400 ${isFocused ? "text-xs" : "text-[10px]"}`}>
+                                  ({group.rtos.length} RTOs)
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Total Registration - Centered */}
+                            <td className={`text-center font-bold text-sky-400 whitespace-nowrap tabular-nums border ${gridBorder} ${
+                              isFocused ? "py-3 px-4 text-base sm:text-lg font-extrabold" : "py-2 px-3 text-sm"
+                            }`}>
+                              {group.districtTotal.total.toLocaleString()}
+                            </td>
+
+                            {/* M&M Nos - Centered */}
+                            <td className={`text-center font-bold text-rose-400 whitespace-nowrap tabular-nums border ${gridBorder} ${
+                              isFocused ? "py-3 px-4 text-base sm:text-lg font-extrabold" : "py-2 px-3 text-sm"
+                            }`}>
+                              {group.districtTotal.mm.toLocaleString()}
+                            </td>
+
+                            {/* M&M MS % - Centered */}
+                            <td className={`text-center whitespace-nowrap tabular-nums border ${gridBorder} ${
+                              isFocused ? "py-3 px-4" : "py-2 px-3"
+                            }`}>
+                              <span className={`inline-block rounded-[2px] font-bold border ${
+                                isFocused ? "px-3 py-1 text-sm sm:text-base font-extrabold" : "px-2 py-0.5 text-xs"
+                              } ${
+                                group.districtTotal.ms >= 15
+                                  ? isDark ? "bg-emerald-500/20 border-emerald-500 text-emerald-300" : "bg-emerald-100 border-emerald-500 text-emerald-900"
+                                  : isDark ? "bg-cyan-500/20 border-cyan-500 text-cyan-300" : "bg-cyan-100 border-cyan-500 text-cyan-900"
+                              }`}>
+                                {group.districtTotal.ms.toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      }
+
                       return (
                         <React.Fragment key={group.district}>
                           {group.rtos.map((rto, rtoIdx) => (
@@ -2141,7 +2250,20 @@ export default function ExecutiveDashboard({
                                     isFocused ? "py-3 px-4 text-base sm:text-lg" : "py-2 px-3 text-sm"
                                   } ${isDark ? "bg-[#152238]/70 text-slate-100" : "bg-slate-50/95 text-slate-900"}`}
                                 >
-                                  <div className="flex flex-col items-center justify-center gap-1">
+                                  <div className="flex flex-col items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleDistrict(group.district)}
+                                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] border transition-all text-[10px] font-semibold ${
+                                        isDark
+                                          ? "bg-slate-800 border-slate-700 text-amber-400 hover:border-amber-400 hover:bg-slate-700"
+                                          : "bg-white border-slate-300 text-amber-700 hover:border-amber-500 hover:bg-amber-50 shadow-2xs"
+                                      }`}
+                                      title={`Collapse ${displayDist}`}
+                                    >
+                                      <Minus className="w-2.5 h-2.5 stroke-[2.5]" />
+                                      <span>Collapse</span>
+                                    </button>
                                     <span className={`flex items-center gap-1.5 font-bold ${isDark ? accentDark : accentLight}`}>
                                       <span className={`rounded-full ${dotColor} ${isFocused ? "w-3 h-3" : "w-2 h-2"}`} />
                                       <span>{displayDist}</span>
@@ -2203,10 +2325,25 @@ export default function ExecutiveDashboard({
                                 isFocused ? "py-3 px-4 text-sm sm:text-base font-extrabold" : "py-1.5 px-3 text-xs"
                               }`}
                             >
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-slate-400 font-bold">∑</span>
-                                <span>{displayDist} Total</span>
-                              </span>
+                              <div className="flex items-center justify-between pr-2">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="text-slate-400 font-bold">∑</span>
+                                  <span>{displayDist} Total</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleDistrict(group.district)}
+                                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded-[2px] border ${
+                                    isDark
+                                      ? "bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700"
+                                      : "bg-white border-slate-300 text-slate-600 hover:bg-slate-50"
+                                  }`}
+                                  title={`Collapse ${displayDist}`}
+                                >
+                                  <Minus className="w-2 h-2 stroke-[2.5]" />
+                                  <span>Collapse</span>
+                                </button>
+                              </div>
                             </td>
                             <td className={`text-center font-bold text-sky-400 whitespace-nowrap tabular-nums border ${gridBorder} ${
                               isFocused ? "py-3 px-4 text-base sm:text-lg font-extrabold" : "py-1.5 px-3 text-sm"
