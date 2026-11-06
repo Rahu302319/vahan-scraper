@@ -34,7 +34,9 @@ import {
   Flame,
   Maximize2,
   Minimize2,
-  X
+  X,
+  Camera,
+  Copy
 } from "lucide-react";
 import ExcelJS from "exceljs";
 import summaryDataRaw from "@/lib/summary-data.json";
@@ -676,6 +678,9 @@ export default function ExecutiveDashboard({
 
   // Focus Mode State for Tables: "North Kerala" | "South Kerala" | null
   const [focusedTable, setFocusedTable] = useState<"North Kerala" | "South Kerala" | null>(null);
+
+  // Transient Copy-as-Image Feedback Status: territory -> message
+  const [copyStatus, setCopyStatus] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1907,22 +1912,8 @@ export default function ExecutiveDashboard({
           });
 
           const groups: DistrictGroup[] = Array.from(map.values()).map((g) => {
-            // Sort RTOs within the district
-            g.rtos.sort((a, b) => {
-              if (tableSortField === "rtoName") {
-                return tableSortAsc ? a.rtoName.localeCompare(b.rtoName) : b.rtoName.localeCompare(a.rtoName);
-              }
-              if (tableSortField === "total") {
-                return tableSortAsc ? a.total - b.total : b.total - a.total;
-              }
-              if (tableSortField === "mm") {
-                return tableSortAsc ? a.mm - b.mm : b.mm - a.mm;
-              }
-              if (tableSortField === "ms") {
-                return tableSortAsc ? a.ms - b.ms : b.ms - a.ms;
-              }
-              return b.total - a.total;
-            });
+            // Sort RTOs alphabetically within each district as shown in user specification
+            g.rtos.sort((a, b) => a.rtoName.localeCompare(b.rtoName));
 
             return {
               district: g.district,
@@ -1944,19 +1935,8 @@ export default function ExecutiveDashboard({
               return getNorthDistrictRank(a.district) - getNorthDistrictRank(b.district);
             }
 
-            if (tableSortField === "district") {
-              const comp = a.district.localeCompare(b.district);
-              return tableSortAsc ? comp : -comp;
-            }
-            if (tableSortField === "mm") {
-              return tableSortAsc ? a.districtTotal.mm - b.districtTotal.mm : b.districtTotal.mm - a.districtTotal.mm;
-            }
-            if (tableSortField === "ms") {
-              return tableSortAsc ? a.districtTotal.ms - b.districtTotal.ms : b.districtTotal.ms - a.districtTotal.ms;
-            }
-            return tableSortAsc
-              ? a.districtTotal.total - b.districtTotal.total
-              : b.districtTotal.total - a.districtTotal.total;
+            // South Kerala districts in standard alphabetical order
+            return a.district.localeCompare(b.district);
           });
 
           return groups;
@@ -1973,6 +1953,908 @@ export default function ExecutiveDashboard({
 
         const northTotals = calcTotals(northRows);
         const southTotals = calcTotals(southRows);
+
+        // MULTI-YEAR TERRITORY PERFORMANCE SUMMARY DATA (FY 23, FY 24, FY 25, FY 26 with GOLY%)
+        const multiYearData = useMemo(() => {
+          const getMetrics = (territoryName: "North Kerala" | "South Kerala" | "Total") => {
+            let targetRow: any;
+            if (territoryName === "North Kerala") {
+              targetRow = summaryRowsTemplate.find((r) => r.territory === "North Kerala" && r.type === "territory_total") ||
+                          (summaryDataRaw as any[]).find((r: any) => r.territory === "North Kerala" && r.type === "territory_total");
+            } else if (territoryName === "South Kerala") {
+              targetRow = summaryRowsTemplate.find((r) => r.territory === "South Kerala" && r.type === "territory_total") ||
+                          (summaryDataRaw as any[]).find((r: any) => r.territory === "South Kerala" && r.type === "territory_total");
+            } else {
+              targetRow = summaryRowsTemplate.find((r) => r.type === "grand_total") ||
+                          (summaryDataRaw as any[]).find((r: any) => r.type === "grand_total");
+            }
+
+            const y23 = targetRow?.years?.["2023"] || { total: 0, mm: 0, ms: 0 };
+            const y24 = targetRow?.years?.["2024"] || { total: 0, mm: 0, ms: 0 };
+            const y25 = targetRow?.years?.["2025"] || { total: 0, mm: 0, ms: 0 };
+            const y26 = targetRow?.years?.["2026"] || { total: 0, mm: 0, ms: 0 };
+
+            const goly24_tiv = y23.total > 0 ? ((y24.total - y23.total) / y23.total) * 100 : 0;
+            const goly24_mm  = y23.mm > 0 ? ((y24.mm - y23.mm) / y23.mm) * 100 : 0;
+
+            const goly25_tiv = y24.total > 0 ? ((y25.total - y24.total) / y24.total) * 100 : 0;
+            const goly25_mm  = y24.mm > 0 ? ((y25.mm - y24.mm) / y24.mm) * 100 : 0;
+
+            const goly26_tiv = y25.total > 0 ? ((y26.total - y25.total) / y25.total) * 100 : 0;
+            const goly26_mm  = y25.mm > 0 ? ((y26.mm - y25.mm) / y25.mm) * 100 : 0;
+
+            return {
+              name: territoryName,
+              fy23: { tiv: y23.total, mm: y23.mm, ms: y23.total > 0 ? (y23.mm / y23.total) * 100 : 0 },
+              fy24: { tiv: y24.total, mm: y24.mm, ms: y24.total > 0 ? (y24.mm / y24.total) * 100 : 0 },
+              goly24: { tiv: goly24_tiv, mm: goly24_mm },
+              fy25: { tiv: y25.total, mm: y25.mm, ms: y25.total > 0 ? (y25.mm / y25.total) * 100 : 0 },
+              goly25: { tiv: goly25_tiv, mm: goly25_mm },
+              fy26: { tiv: y26.total, mm: y26.mm, ms: y26.total > 0 ? (y26.mm / y26.total) * 100 : 0 },
+              goly26: { tiv: goly26_tiv, mm: goly26_mm },
+            };
+          };
+
+          return {
+            north: getMetrics("North Kerala"),
+            south: getMetrics("South Kerala"),
+            total: getMetrics("Total"),
+          };
+        }, [summaryRowsTemplate]);
+
+        // Helper to build Multi-Year Styled Excel Worksheet matching the user's uploaded specification
+        const buildMultiYearSheet = (ws: ExcelJS.Worksheet) => {
+          ws.views = [{ showGridLines: true }];
+
+          const titleRow = ws.addRow(["Territory Multi-Year Growth & Market Share Performance Summary (FY 23 - FY 26)"]);
+          titleRow.font = { name: "Arial", size: 13, bold: true, color: { argb: "FF0F172A" } };
+          ws.mergeCells(1, 1, 1, 19);
+
+          const subRow = ws.addRow([
+            `Generated: ${new Date().toLocaleDateString()} | Metrics: TIV, M&M Nos, Market Share (MS%), and Growth Over Last Year (GOLY%)`
+          ]);
+          subRow.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF64748B" } };
+          ws.mergeCells(2, 1, 2, 19);
+
+          ws.addRow([]); // Blank
+
+          // Row 4: Super Headers
+          const r4 = ws.addRow([
+            "Territory",
+            "FY 23", "", "",
+            "FY 24", "", "",
+            "GOLY(%)", "",
+            "FY 25", "", "",
+            "GOLY(%)", "",
+            "FY 26", "", "",
+            "GOLY(%)", ""
+          ]);
+          r4.height = 24;
+
+          // Row 5: Sub Headers
+          const r5 = ws.addRow([
+            "",
+            "TIV", "M&M", "MS",
+            "TIV", "M&M", "MS",
+            "TIV", "M&M",
+            "TIV", "M&M", "MS",
+            "TIV", "M&M",
+            "TIV", "M&M", "MS",
+            "TIV", "M&M"
+          ]);
+          r5.height = 20;
+
+          // Merge Header cells
+          ws.mergeCells(4, 1, 5, 1);   // Territory
+          ws.mergeCells(4, 2, 4, 4);   // FY 23
+          ws.mergeCells(4, 5, 4, 7);   // FY 24
+          ws.mergeCells(4, 8, 4, 9);   // GOLY FY24
+          ws.mergeCells(4, 10, 4, 12); // FY 25
+          ws.mergeCells(4, 13, 4, 14); // GOLY FY25
+          ws.mergeCells(4, 15, 4, 17); // FY 26
+          ws.mergeCells(4, 18, 4, 19); // GOLY FY26
+
+          // Style headers: exact #0070c0 vibrant blue with bold white text
+          [r4, r5].forEach((row) => {
+            row.eachCell((cell) => {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+              cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+              cell.alignment = { vertical: "middle", horizontal: "center" };
+              cell.border = {
+                top: { style: "thin", color: { argb: "FF004C82" } },
+                bottom: { style: "thin", color: { argb: "FF004C82" } },
+                left: { style: "thin", color: { argb: "FF004C82" } },
+                right: { style: "thin", color: { argb: "FF004C82" } },
+              };
+            });
+          });
+
+          const appendRow = (item: typeof multiYearData.north, isTotal: boolean) => {
+            const row = ws.addRow([
+              item.name,
+              item.fy23.tiv, item.fy23.mm, item.fy23.ms / 100,
+              item.fy24.tiv, item.fy24.mm, item.fy24.ms / 100,
+              item.goly24.tiv / 100, item.goly24.mm / 100,
+              item.fy25.tiv, item.fy25.mm, item.fy25.ms / 100,
+              item.goly25.tiv / 100, item.goly25.mm / 100,
+              item.fy26.tiv, item.fy26.mm, item.fy26.ms / 100,
+              item.goly26.tiv / 100, item.goly26.mm / 100,
+            ]);
+            row.height = 22;
+
+            row.eachCell((cell, col) => {
+              if (isTotal) {
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+                cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+                cell.border = {
+                  top: { style: "thin", color: { argb: "FF004C82" } },
+                  bottom: { style: "double", color: { argb: "FF004C82" } },
+                  left: { style: "thin", color: { argb: "FF004C82" } },
+                  right: { style: "thin", color: { argb: "FF004C82" } },
+                };
+              } else {
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFFFF" } };
+                cell.font = { name: "Arial", size: 9.5, bold: col === 1, color: { argb: "FF0F172A" } };
+                cell.border = {
+                  top: { style: "thin", color: { argb: "FFCBD5E1" } },
+                  bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+                  left: { style: "thin", color: { argb: "FFCBD5E1" } },
+                  right: { style: "thin", color: { argb: "FFCBD5E1" } },
+                };
+              }
+
+              cell.alignment = {
+                vertical: "middle",
+                horizontal: col === 1 ? "left" : "center",
+              };
+
+              if (col > 1) {
+                if ([4, 7, 8, 9, 12, 13, 14, 17, 18, 19].includes(col)) {
+                  cell.numFmt = "0.0%";
+                } else {
+                  cell.numFmt = "#,##0";
+                }
+              }
+            });
+          };
+
+          appendRow(multiYearData.north, false);
+          appendRow(multiYearData.south, false);
+          appendRow(multiYearData.total, true);
+
+          ws.getColumn(1).width = 16;
+          for (let c = 2; c <= 19; c++) {
+            ws.getColumn(c).width = 11;
+          }
+        };
+
+        // Export Multi-Year Summary as Standalone Excel Workbook
+        const handleExportMultiYearExcel = async () => {
+          try {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = "Vahan Kerala Live Intelligence";
+            workbook.created = new Date();
+            const ws = workbook.addWorksheet("FY Performance Summary");
+            buildMultiYearSheet(ws);
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+              type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Kerala_Territory_MultiYear_Summary_FY23_FY26.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          } catch (err: any) {
+            console.error("Export multi-year Excel error:", err);
+            alert(`Export Excel error: ${err.message}`);
+          }
+        };
+
+        // Copy Multi-Year Summary Table as High-Resolution Retina Image to Clipboard
+        const handleCopyMultiYearTableAsImage = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const scale = 2;
+            const width = 1260;
+            const height = 180;
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+
+            ctx.scale(scale, scale);
+
+            // Canvas Background
+            ctx.fillStyle = isDark ? "#0f172a" : "#f8fafc";
+            ctx.fillRect(0, 0, width, height);
+
+            const startX = 10;
+            const startY = 10;
+            const colWidths = [140, 58, 54, 54, 58, 54, 54, 64, 64, 58, 54, 54, 64, 64, 58, 54, 54, 64, 64];
+            const colXs: number[] = [];
+            let currX = startX;
+            for (const w of colWidths) {
+              colXs.push(currX);
+              currX += w;
+            }
+            const totalTableWidth = currX - startX;
+
+            const rowH1 = 28;
+            const rowH2 = 24;
+            const dataRowH = 28;
+
+            // Header Row 1 & 2 Background: Exact #0070c0
+            ctx.fillStyle = "#0070c0";
+            ctx.fillRect(startX, startY, totalTableWidth, rowH1 + rowH2);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 11px system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // Territory Cell (merged rows 1 & 2)
+            ctx.fillText("Territory", colXs[0] + colWidths[0] / 2, startY + (rowH1 + rowH2) / 2);
+
+            // Super Headers
+            ctx.fillText("FY 23", colXs[1] + (58 + 54 + 54) / 2, startY + rowH1 / 2);
+            ctx.fillText("FY 24", colXs[4] + (58 + 54 + 54) / 2, startY + rowH1 / 2);
+            ctx.fillText("GOLY(%)", colXs[7] + (64 + 64) / 2, startY + rowH1 / 2);
+            ctx.fillText("FY 25", colXs[9] + (58 + 54 + 54) / 2, startY + rowH1 / 2);
+            ctx.fillText("GOLY(%)", colXs[12] + (64 + 64) / 2, startY + rowH1 / 2);
+            ctx.fillText("FY 26", colXs[14] + (58 + 54 + 54) / 2, startY + rowH1 / 2);
+            ctx.fillText("GOLY(%)", colXs[17] + (64 + 64) / 2, startY + rowH1 / 2);
+
+            // Sub Headers Row 2
+            const subHeaders = [
+              "TIV", "M&M", "MS",
+              "TIV", "M&M", "MS",
+              "TIV", "M&M",
+              "TIV", "M&M", "MS",
+              "TIV", "M&M",
+              "TIV", "M&M", "MS",
+              "TIV", "M&M"
+            ];
+            ctx.font = "bold 10px system-ui, sans-serif";
+            for (let i = 0; i < subHeaders.length; i++) {
+              const cIdx = i + 1;
+              ctx.fillText(subHeaders[i], colXs[cIdx] + colWidths[cIdx] / 2, startY + rowH1 + rowH2 / 2);
+            }
+
+            // Draw Data Rows: North Kerala, South Kerala, Total
+            const items = [
+              { data: multiYearData.north, isTotal: false },
+              { data: multiYearData.south, isTotal: false },
+              { data: multiYearData.total, isTotal: true },
+            ];
+
+            let rowY = startY + rowH1 + rowH2;
+            items.forEach((item) => {
+              const d = item.data;
+              ctx.fillStyle = item.isTotal ? "#0070c0" : isDark ? "#1e293b" : "#ffffff";
+              ctx.fillRect(startX, rowY, totalTableWidth, dataRowH);
+
+              ctx.fillStyle = item.isTotal ? "#ffffff" : isDark ? "#f1f5f9" : "#0f172a";
+              ctx.font = item.isTotal ? "bold 11px system-ui, sans-serif" : "bold 10.5px system-ui, sans-serif";
+
+              // Territory Name
+              ctx.textAlign = "left";
+              ctx.fillText(d.name, colXs[0] + 8, rowY + dataRowH / 2);
+
+              // Row metrics
+              ctx.textAlign = "center";
+              ctx.font = item.isTotal ? "bold 10.5px tabular-nums, sans-serif" : "normal 10px tabular-nums, sans-serif";
+
+              const fmtG = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+
+              const rowVals = [
+                d.fy23.tiv.toLocaleString(), d.fy23.mm.toLocaleString(), `${d.fy23.ms.toFixed(1)}%`,
+                d.fy24.tiv.toLocaleString(), d.fy24.mm.toLocaleString(), `${d.fy24.ms.toFixed(1)}%`,
+                fmtG(d.goly24.tiv), fmtG(d.goly24.mm),
+                d.fy25.tiv.toLocaleString(), d.fy25.mm.toLocaleString(), `${d.fy25.ms.toFixed(1)}%`,
+                fmtG(d.goly25.tiv), fmtG(d.goly25.mm),
+                d.fy26.tiv.toLocaleString(), d.fy26.mm.toLocaleString(), `${d.fy26.ms.toFixed(1)}%`,
+                fmtG(d.goly26.tiv), fmtG(d.goly26.mm),
+              ];
+
+              for (let i = 0; i < rowVals.length; i++) {
+                const cIdx = i + 1;
+                ctx.fillText(rowVals[i], colXs[cIdx] + colWidths[cIdx] / 2, rowY + dataRowH / 2);
+              }
+
+              rowY += dataRowH;
+            });
+
+            // Grid Lines in #005a9e
+            ctx.strokeStyle = "#005a9e";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(startX, startY, totalTableWidth, rowH1 + rowH2 + dataRowH * 3);
+
+            ctx.beginPath();
+            ctx.moveTo(colXs[1], startY + rowH1);
+            ctx.lineTo(startX + totalTableWidth, startY + rowH1);
+
+            ctx.moveTo(startX, startY + rowH1 + rowH2);
+            ctx.lineTo(startX + totalTableWidth, startY + rowH1 + rowH2);
+
+            ctx.moveTo(startX, startY + rowH1 + rowH2 + dataRowH);
+            ctx.lineTo(startX + totalTableWidth, startY + rowH1 + rowH2 + dataRowH);
+
+            ctx.moveTo(startX, startY + rowH1 + rowH2 + dataRowH * 2);
+            ctx.lineTo(startX + totalTableWidth, startY + rowH1 + rowH2 + dataRowH * 2);
+            ctx.stroke();
+
+            // Vertical lines
+            ctx.beginPath();
+            for (let i = 1; i < colXs.length; i++) {
+              ctx.moveTo(colXs[i], startY + (i === 1 ? 0 : rowH1));
+              ctx.lineTo(colXs[i], startY + rowH1 + rowH2 + dataRowH * 3);
+            }
+            // Super header dividing lines
+            [colXs[4], colXs[7], colXs[9], colXs[12], colXs[14], colXs[17]].forEach((xPos) => {
+              ctx.moveTo(xPos, startY);
+              ctx.lineTo(xPos, startY + rowH1);
+            });
+            ctx.stroke();
+
+            // Copy to Clipboard
+            canvas.toBlob(async (blob) => {
+              if (!blob) return;
+              try {
+                if (navigator.clipboard && window.ClipboardItem) {
+                  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                  setCopyStatus((prev) => ({ ...prev, multiyear: "✓ Copied!" }));
+                  setTimeout(() => setCopyStatus((prev) => ({ ...prev, multiyear: "" })), 2500);
+                  return;
+                }
+              } catch (clipErr) {
+                console.warn("ClipboardItem write warning:", clipErr);
+              }
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `Kerala_Territory_MultiYear_Summary_FY23_FY26.png`;
+              a.click();
+              setCopyStatus((prev) => ({ ...prev, multiyear: "✓ Saved PNG!" }));
+              setTimeout(() => setCopyStatus((prev) => ({ ...prev, multiyear: "" })), 2500);
+            }, "image/png", 1.0);
+          } catch (err: any) {
+            console.error("Copy multi-year image error:", err);
+            alert(`Copy Image error: ${err.message}`);
+          }
+        };
+
+        // Helper to render Multi-Year Data Row in JSX
+        const renderMultiYearDataRow = (rowItem: typeof multiYearData.north, isTotal: boolean) => {
+          const cellBase = `border px-2 py-1.5 text-center tabular-nums whitespace-nowrap text-xs ${
+            isTotal
+              ? "bg-[#0070c0] text-white font-bold border-[#005a9e]"
+              : isDark
+              ? "bg-[#1e293b] text-slate-200 border-slate-700/80"
+              : "bg-white text-slate-800 border-slate-200"
+          }`;
+
+          const territoryCell = `border px-3 py-1.5 text-left font-bold whitespace-nowrap text-xs ${
+            isTotal
+              ? "bg-[#0070c0] text-white font-bold border-[#005a9e]"
+              : isDark
+              ? "bg-[#1e293b] text-slate-100 border-slate-700/80"
+              : "bg-white text-slate-900 border-slate-200"
+          }`;
+
+          const fmtGoly = (val: number) => {
+            if (isNaN(val) || !isFinite(val)) return "0.0%";
+            return `${val >= 0 ? "+" : ""}${val.toFixed(1)}%`;
+          };
+
+          return (
+            <tr key={rowItem.name} className={isTotal ? "font-bold" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"}>
+              <td className={territoryCell}>{rowItem.name}</td>
+              {/* FY 23 */}
+              <td className={cellBase}>{rowItem.fy23.tiv.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy23.mm.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy23.ms.toFixed(1)}%</td>
+              {/* FY 24 */}
+              <td className={cellBase}>{rowItem.fy24.tiv.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy24.mm.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy24.ms.toFixed(1)}%</td>
+              {/* GOLY FY24 */}
+              <td className={cellBase}>{fmtGoly(rowItem.goly24.tiv)}</td>
+              <td className={cellBase}>{fmtGoly(rowItem.goly24.mm)}</td>
+              {/* FY 25 */}
+              <td className={cellBase}>{rowItem.fy25.tiv.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy25.mm.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy25.ms.toFixed(1)}%</td>
+              {/* GOLY FY25 */}
+              <td className={cellBase}>{fmtGoly(rowItem.goly25.tiv)}</td>
+              <td className={cellBase}>{fmtGoly(rowItem.goly25.mm)}</td>
+              {/* FY 26 */}
+              <td className={cellBase}>{rowItem.fy26.tiv.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy26.mm.toLocaleString()}</td>
+              <td className={cellBase}>{rowItem.fy26.ms.toFixed(1)}%</td>
+              {/* GOLY FY26 */}
+              <td className={cellBase}>{fmtGoly(rowItem.goly26.tiv)}</td>
+              <td className={cellBase}>{fmtGoly(rowItem.goly26.mm)}</td>
+            </tr>
+          );
+        };
+
+        // Styled Excel Export matching the table UI, colors, merged cells, and borders
+        const handleExportStyledExcel = async (exportTarget: "North Kerala" | "South Kerala" | "ALL") => {
+          try {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = "Vahan Kerala Live Intelligence";
+            workbook.created = new Date();
+
+            const buildSheet = (
+              sheetName: string,
+              territoryName: "North Kerala" | "South Kerala",
+              tRows: typeof combatTableRows,
+              tTotals: ReturnType<typeof calcTotals>
+            ) => {
+              const ws = workbook.addWorksheet(sheetName, {
+                views: [{ showGridLines: true }]
+              });
+
+              const isN = territoryName === "North Kerala";
+              const groups = groupRowsByDistrict(tRows, isN);
+
+              // 1. Title Banner
+              const titleRow = ws.addRow([`${territoryName} Registration Summary Table`]);
+              titleRow.font = { name: "Arial", size: 14, bold: true, color: { argb: "FF0F172A" } };
+              ws.mergeCells(1, 1, 1, 5);
+
+              // 2. Subtitle Banner
+              const subRow = ws.addRow([
+                `Period: ${currentPeriod.label} (${currentPeriod.subLabel}) | Segment: ${selectedSegment} | Total RTOs: ${tTotals.count} | Generated: ${new Date().toLocaleDateString()}`
+              ]);
+              subRow.font = { name: "Arial", size: 9.5, italic: true, color: { argb: "FF64748B" } };
+              ws.mergeCells(2, 1, 2, 5);
+
+              ws.addRow([]); // Blank Row
+
+              // 3. Table Column Header Row
+              const headerRow = ws.addRow(["District", "RTO Name", "Total Reg.", "M&M Nos", "M&M MS"]);
+              headerRow.height = 24;
+              headerRow.eachCell((cell, colNumber) => {
+                cell.fill = {
+                  type: "pattern",
+                  pattern: "solid",
+                  fgColor: { argb: "FF1E293B" } // Slate Navy
+                };
+                cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+                cell.alignment = {
+                  vertical: "middle",
+                  horizontal: colNumber <= 2 ? "left" : "center",
+                  indent: colNumber <= 2 ? 1 : 0
+                };
+                cell.border = {
+                  top: { style: "medium", color: { argb: "FF0F172A" } },
+                  bottom: { style: "medium", color: { argb: "FF0F172A" } },
+                  left: { style: "thin", color: { argb: "FF334155" } },
+                  right: { style: "thin", color: { argb: "FF334155" } }
+                };
+              });
+
+              const thinBorder = {
+                top: { style: "thin" as const, color: { argb: "FFCBD5E1" } },
+                bottom: { style: "thin" as const, color: { argb: "FFCBD5E1" } },
+                left: { style: "thin" as const, color: { argb: "FFCBD5E1" } },
+                right: { style: "thin" as const, color: { argb: "FFCBD5E1" } }
+              };
+
+              const districtFill = isN ? "FFF0FDFA" : "FFEEF2FF";
+              const districtColor = isN ? "FF0F766E" : "FF4338CA";
+
+              // 4. District Groups & RTO Rows
+              groups.forEach((g) => {
+                const displayDist = isN ? formatDistrictDisplayName(g.district) : g.district;
+                const startRowIdx = ws.rowCount + 1;
+
+                g.rtos.forEach((r, rIdx) => {
+                  const row = ws.addRow([
+                    rIdx === 0 ? displayDist : "",
+                    r.rtoName,
+                    r.total,
+                    r.mm,
+                    r.total > 0 ? (r.mm / r.total) : 0
+                  ]);
+                  row.height = 20;
+
+                  row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                    cell.border = thinBorder;
+                    cell.alignment = {
+                      vertical: "middle",
+                      horizontal: colNumber === 1 || colNumber === 2 ? "left" : "center",
+                      indent: colNumber <= 2 ? 1 : 0
+                    };
+                    cell.font = { name: "Arial", size: 9.5 };
+
+                    if (colNumber === 3) {
+                      cell.numFmt = "#,##0";
+                      cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FF0284C7" } };
+                    } else if (colNumber === 4) {
+                      cell.numFmt = "#,##0";
+                      cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFE11D48" } };
+                    } else if (colNumber === 5) {
+                      cell.numFmt = "0.0%";
+                      const msVal = r.ms;
+                      if (msVal >= 15) {
+                        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD1FAE5" } };
+                        cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FF065F46" } };
+                      } else if (msVal >= 10) {
+                        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFCFFAFE" } };
+                        cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FF155E75" } };
+                      }
+                    }
+                  });
+                });
+
+                const endRowIdx = ws.rowCount;
+
+                // Merge District Cell Vertically
+                if (endRowIdx >= startRowIdx) {
+                  ws.mergeCells(startRowIdx, 1, endRowIdx, 1);
+                  const mergedCell = ws.getCell(startRowIdx, 1);
+                  mergedCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: districtFill } };
+                  mergedCell.font = { name: "Arial", size: 10, bold: true, color: { argb: districtColor } };
+                  mergedCell.alignment = { vertical: "middle", horizontal: "center" };
+                }
+
+                // Subtotal Row: ∑ [District] Total
+                const subtotalRow = ws.addRow([
+                  `∑ ${displayDist} Total`,
+                  "",
+                  g.districtTotal.total,
+                  g.districtTotal.mm,
+                  g.districtTotal.total > 0 ? (g.districtTotal.mm / g.districtTotal.total) : 0
+                ]);
+                const subtotalIdx = ws.rowCount;
+                subtotalRow.height = 21;
+                ws.mergeCells(subtotalIdx, 1, subtotalIdx, 2);
+
+                subtotalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
+                  cell.border = {
+                    top: { style: "thin", color: { argb: "FF94A3B8" } },
+                    bottom: { style: "thin", color: { argb: "FF94A3B8" } },
+                    left: thinBorder.left,
+                    right: thinBorder.right
+                  };
+                  cell.alignment = {
+                    vertical: "middle",
+                    horizontal: colNumber === 1 ? "left" : "center",
+                    indent: colNumber === 1 ? 1 : 0
+                  };
+
+                  if (colNumber === 1) {
+                    cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FF1E293B" } };
+                  } else if (colNumber === 3) {
+                    cell.numFmt = "#,##0";
+                    cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF0284C7" } };
+                  } else if (colNumber === 4) {
+                    cell.numFmt = "#,##0";
+                    cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFE11D48" } };
+                  } else if (colNumber === 5) {
+                    cell.numFmt = "0.0%";
+                    const msVal = g.districtTotal.ms;
+                    if (msVal >= 15) {
+                      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFA7F3D0" } };
+                      cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF064E3B" } };
+                    } else {
+                      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFBAE6FD" } };
+                      cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF0369A1" } };
+                    }
+                  }
+                });
+              });
+
+              // Territory Total Footer Row
+              const footerRow = ws.addRow([
+                `${territoryName} Total`,
+                "",
+                tTotals.total,
+                tTotals.mm,
+                tTotals.total > 0 ? (tTotals.mm / tTotals.total) : 0
+              ]);
+              const footerIdx = ws.rowCount;
+              footerRow.height = 25;
+              ws.mergeCells(footerIdx, 1, footerIdx, 2);
+
+              footerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+                cell.border = {
+                  top: { style: "medium", color: { argb: "FF0284C7" } },
+                  bottom: { style: "double", color: { argb: "FF0284C7" } },
+                  left: { style: "thin", color: { argb: "FF334155" } },
+                  right: { style: "thin", color: { argb: "FF334155" } }
+                };
+                cell.alignment = {
+                  vertical: "middle",
+                  horizontal: colNumber === 1 ? "left" : "center",
+                  indent: colNumber === 1 ? 1 : 0
+                };
+
+                if (colNumber === 1) {
+                  cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+                } else if (colNumber === 3) {
+                  cell.numFmt = "#,##0";
+                  cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FF38BDF8" } };
+                } else if (colNumber === 4) {
+                  cell.numFmt = "#,##0";
+                  cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FFFB7185" } };
+                } else if (colNumber === 5) {
+                  cell.numFmt = "0.0%";
+                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF059669" } };
+                  cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+                }
+              });
+
+              ws.columns = [
+                { width: 18 },
+                { width: 24 },
+                { width: 15 },
+                { width: 14 },
+                { width: 14 }
+              ];
+            };
+
+            if (exportTarget === "ALL") {
+              const wsSummary = workbook.addWorksheet("FY Performance Summary");
+              buildMultiYearSheet(wsSummary);
+            }
+            if (exportTarget === "North Kerala" || exportTarget === "ALL") {
+              buildSheet("North Kerala", "North Kerala", northRows, northTotals);
+            }
+            if (exportTarget === "South Kerala" || exportTarget === "ALL") {
+              buildSheet("South Kerala", "South Kerala", southRows, southTotals);
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const fileName = exportTarget === "ALL"
+              ? `Kerala_Registration_Summary_${currentPeriod.id}_${selectedSegment}.xlsx`
+              : `${exportTarget.replace(/\s+/g, "_")}_Registration_Summary_${currentPeriod.id}.xlsx`;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          } catch (err: any) {
+            console.error("Export styled Excel failed:", err);
+            alert(`Excel Export error: ${err.message}`);
+          }
+        };
+
+        // Copy Table as High-Resolution Retina Image to Clipboard
+        const handleCopyTableAsImage = async (territory: "North Kerala" | "South Kerala") => {
+          try {
+            const isN = territory === "North Kerala";
+            const tRows = isN ? northRows : southRows;
+            const tTotals = isN ? northTotals : southTotals;
+            const groups = groupRowsByDistrict(tRows, isN);
+
+            const scale = 2;
+            const width = 640;
+
+            let rowCount = 0;
+            groups.forEach((g) => {
+              rowCount += g.rtos.length + 1;
+            });
+            const headerHeight = 52;
+            const colHeaderHeight = 30;
+            const rowHeight = 25;
+            const footerHeight = 36;
+            const totalHeight = headerHeight + colHeaderHeight + (rowCount * rowHeight) + footerHeight + 16;
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width * scale;
+            canvas.height = totalHeight * scale;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+
+            ctx.scale(scale, scale);
+
+            // Canvas Background
+            ctx.fillStyle = isDark ? "#0f172a" : "#f8fafc";
+            ctx.fillRect(0, 0, width, totalHeight);
+
+            // Card Outer Background
+            ctx.fillStyle = isDark ? "#1e293b" : "#ffffff";
+            ctx.strokeStyle = isDark ? "#334155" : "#cbd5e1";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(8, 8, width - 16, totalHeight - 16, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Top Title Bar Gradient
+            const titleGrad = ctx.createLinearGradient(8, 8, width - 16, 48);
+            if (isN) {
+              titleGrad.addColorStop(0, "#0d9488");
+              titleGrad.addColorStop(1, "#0891b2");
+            } else {
+              titleGrad.addColorStop(0, "#4f46e5");
+              titleGrad.addColorStop(1, "#7c3aed");
+            }
+            ctx.fillStyle = titleGrad;
+            ctx.beginPath();
+            ctx.roundRect(8, 8, width - 16, 42, [4, 4, 0, 0]);
+            ctx.fill();
+
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "left";
+            ctx.font = "bold 13px system-ui, -apple-system, sans-serif";
+            ctx.fillText(`${territory} Registration Summary`, 20, 34);
+
+            ctx.font = "normal 10px system-ui, sans-serif";
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            const metaStr = `${groups.length} Districts • ${tTotals.count} RTOs • ${currentPeriod.label}`;
+            ctx.textAlign = "right";
+            ctx.fillText(metaStr, width - 20, 34);
+
+            const cols = [
+              { name: "District", x: 8, w: 130, align: "left" },
+              { name: "RTO Name", x: 138, w: 200, align: "left" },
+              { name: "Total Reg.", x: 338, w: 100, align: "center" },
+              { name: "M&M Nos", x: 438, w: 94, align: "center" },
+              { name: "M&M MS", x: 532, w: 100, align: "center" },
+            ];
+
+            let curY = 50;
+
+            // Column Header Row
+            ctx.fillStyle = isDark ? "#141f33" : "#f1f5f9";
+            ctx.fillRect(8, curY, width - 16, colHeaderHeight);
+            ctx.strokeStyle = isDark ? "#334155" : "#cbd5e1";
+            ctx.strokeRect(8, curY, width - 16, colHeaderHeight);
+
+            ctx.font = "bold 10px system-ui, sans-serif";
+            ctx.fillStyle = isDark ? "#94a3b8" : "#475569";
+            cols.forEach((col) => {
+              const textX = col.align === "left" ? col.x + 10 : col.x + col.w / 2;
+              ctx.textAlign = col.align as CanvasTextAlign;
+              ctx.fillText(col.name, textX, curY + 19);
+            });
+
+            curY += colHeaderHeight;
+
+            // Render Rows
+            groups.forEach((g) => {
+              const displayDist = isN ? formatDistrictDisplayName(g.district) : g.district;
+              const distStartY = curY;
+              const distHeight = g.rtos.length * rowHeight;
+
+              g.rtos.forEach((r, idx) => {
+                const rowY = curY;
+                ctx.fillStyle = idx % 2 === 0
+                  ? (isDark ? "#1e293b" : "#ffffff")
+                  : (isDark ? "#182438" : "#f8fafc");
+                ctx.fillRect(cols[1].x, rowY, width - 16 - cols[0].w, rowHeight);
+
+                ctx.strokeStyle = isDark ? "#334155" : "#e2e8f0";
+                ctx.strokeRect(cols[1].x, rowY, cols[1].w, rowHeight);
+                ctx.strokeRect(cols[2].x, rowY, cols[2].w, rowHeight);
+                ctx.strokeRect(cols[3].x, rowY, cols[3].w, rowHeight);
+                ctx.strokeRect(cols[4].x, rowY, cols[4].w, rowHeight);
+
+                ctx.textAlign = "left";
+                ctx.font = "normal 10px system-ui, sans-serif";
+                ctx.fillStyle = isDark ? "#e2e8f0" : "#1e293b";
+                ctx.fillText(r.rtoName, cols[1].x + 8, rowY + 16);
+
+                ctx.textAlign = "center";
+                ctx.font = "bold 10px tabular-nums, sans-serif";
+                ctx.fillStyle = "#38bdf8";
+                ctx.fillText(r.total.toLocaleString(), cols[2].x + cols[2].w / 2, rowY + 16);
+
+                ctx.fillStyle = "#fb7185";
+                ctx.fillText(r.mm.toLocaleString(), cols[3].x + cols[3].w / 2, rowY + 16);
+
+                const msColor = r.ms >= 15 ? "#10b981" : r.ms >= 10 ? "#06b6d4" : "#64748b";
+                ctx.fillStyle = msColor;
+                ctx.font = "bold 9.5px tabular-nums, sans-serif";
+                ctx.fillText(`${r.ms.toFixed(1)}%`, cols[4].x + cols[4].w / 2, rowY + 16);
+
+                curY += rowHeight;
+              });
+
+              // Merged District Block
+              ctx.fillStyle = isDark ? "#152238" : (isN ? "#f0fdfa" : "#eef2ff");
+              ctx.fillRect(cols[0].x, distStartY, cols[0].w, distHeight);
+              ctx.strokeStyle = isDark ? "#334155" : (isN ? "#99f6e4" : "#c7d2fe");
+              ctx.strokeRect(cols[0].x, distStartY, cols[0].w, distHeight);
+
+              ctx.textAlign = "center";
+              ctx.fillStyle = isDark ? "#38bdf8" : (isN ? "#0f766e" : "#4338ca");
+              ctx.font = "bold 11px system-ui, sans-serif";
+              ctx.fillText(displayDist, cols[0].x + cols[0].w / 2, distStartY + distHeight / 2 - 4);
+
+              ctx.font = "normal 9px system-ui, sans-serif";
+              ctx.fillStyle = "#94a3b8";
+              ctx.fillText(`(${g.rtos.length} RTOs)`, cols[0].x + cols[0].w / 2, distStartY + distHeight / 2 + 10);
+
+              // District Subtotal Row
+              const subY = curY;
+              ctx.fillStyle = isDark ? "#18263e" : "#f1f5f9";
+              ctx.fillRect(8, subY, width - 16, rowHeight);
+              ctx.strokeStyle = isDark ? "#334155" : "#cbd5e1";
+              ctx.strokeRect(8, subY, width - 16, rowHeight);
+
+              ctx.textAlign = "left";
+              ctx.font = "bold 10px system-ui, sans-serif";
+              ctx.fillStyle = isDark ? "#cbd5e1" : "#1e293b";
+              ctx.fillText(`∑ ${displayDist} Total`, 16, subY + 16);
+
+              ctx.textAlign = "center";
+              ctx.fillStyle = "#38bdf8";
+              ctx.fillText(g.districtTotal.total.toLocaleString(), cols[2].x + cols[2].w / 2, subY + 16);
+
+              ctx.fillStyle = "#fb7185";
+              ctx.fillText(g.districtTotal.mm.toLocaleString(), cols[3].x + cols[3].w / 2, subY + 16);
+
+              ctx.fillStyle = g.districtTotal.ms >= 15 ? "#10b981" : "#06b6d4";
+              ctx.fillText(`${g.districtTotal.ms.toFixed(1)}%`, cols[4].x + cols[4].w / 2, subY + 16);
+
+              curY += rowHeight;
+            });
+
+            // Territory Total Footer
+            const footY = curY;
+            ctx.fillStyle = isDark ? "#0f172a" : "#1e293b";
+            ctx.fillRect(8, footY, width - 16, footerHeight);
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(8, footY, width - 16, footerHeight);
+
+            ctx.textAlign = "left";
+            ctx.font = "bold 11.5px system-ui, sans-serif";
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(`${territory} Total`, 18, footY + 22);
+
+            ctx.textAlign = "center";
+            ctx.font = "bold 12px tabular-nums, sans-serif";
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillText(tTotals.total.toLocaleString(), cols[2].x + cols[2].w / 2, footY + 22);
+
+            ctx.fillStyle = "#fb7185";
+            ctx.fillText(tTotals.mm.toLocaleString(), cols[3].x + cols[3].w / 2, footY + 22);
+
+            ctx.fillStyle = "#34d399";
+            ctx.fillText(`${tTotals.ms.toFixed(2)}%`, cols[4].x + cols[4].w / 2, footY + 22);
+
+            // Copy to Clipboard
+            canvas.toBlob(async (blob) => {
+              if (!blob) return;
+              try {
+                if (navigator.clipboard && window.ClipboardItem) {
+                  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                  setCopyStatus((prev) => ({ ...prev, [territory]: "✓ Copied!" }));
+                  setTimeout(() => setCopyStatus((prev) => ({ ...prev, [territory]: "" })), 2500);
+                  return;
+                }
+              } catch (clipErr) {
+                console.warn("ClipboardItem write warning, downloading file:", clipErr);
+              }
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `${territory.replace(/\s+/g, "_")}_Registration_Summary.png`;
+              a.click();
+              setCopyStatus((prev) => ({ ...prev, [territory]: "✓ Saved PNG!" }));
+              setTimeout(() => setCopyStatus((prev) => ({ ...prev, [territory]: "" })), 2500);
+            }, "image/png", 1.0);
+          } catch (err: any) {
+            console.error("Copy image error:", err);
+            alert(`Copy Image error: ${err.message}`);
+          }
+        };
 
         const renderTable = (
           rows: typeof combatTableRows,
@@ -2037,14 +2919,14 @@ export default function ExecutiveDashboard({
                   </span>
                 </div>
 
-                {/* Table Actions: Expand/Collapse All + Focus Mode */}
-                <div className="flex items-center gap-2">
+                {/* Table Actions: Expand/Collapse All + Copy Image + Export Excel + Focus Mode */}
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => toggleAllDistrictsInTerritory(districtGroups.map((g) => g.district), !allExpanded)}
                     title={allExpanded ? "Collapse All Districts in table" : "Expand All Districts in table"}
                     className={`flex items-center gap-1 rounded-[2px] font-semibold border transition-all shadow-xs ${
-                      isFocused ? "px-3 py-1 text-xs" : "px-2.5 py-0.5 text-[11px]"
+                      isFocused ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-[10px]"
                     } ${
                       isDark
                         ? "bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700"
@@ -2062,6 +2944,40 @@ export default function ExecutiveDashboard({
                         <span>Expand All</span>
                       </>
                     )}
+                  </button>
+
+                  {/* Copy Table as Image */}
+                  <button
+                    type="button"
+                    onClick={() => handleCopyTableAsImage(territory)}
+                    title={`Copy ${territory} table as high-resolution image to clipboard`}
+                    className={`flex items-center gap-1 rounded-[2px] font-semibold border transition-all shadow-xs ${
+                      isFocused ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-[10px]"
+                    } ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-sky-300 hover:text-white hover:bg-slate-700"
+                        : "bg-white border-slate-200 text-sky-700 hover:bg-sky-50"
+                    }`}
+                  >
+                    <Camera className={isFocused ? "w-3.5 h-3.5 text-sky-400" : "w-3 h-3 text-sky-500"} />
+                    <span>{copyStatus[territory] || "Copy Image"}</span>
+                  </button>
+
+                  {/* Export Styled Excel */}
+                  <button
+                    type="button"
+                    onClick={() => handleExportStyledExcel(territory)}
+                    title={`Export ${territory} to formatted Excel with exact UI colors`}
+                    className={`flex items-center gap-1 rounded-[2px] font-semibold border transition-all shadow-xs ${
+                      isFocused ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-[10px]"
+                    } ${
+                      isDark
+                        ? "bg-emerald-950/60 border-emerald-600/70 text-emerald-300 hover:bg-emerald-900/80"
+                        : "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
+                    }`}
+                  >
+                    <Download className={isFocused ? "w-3.5 h-3.5" : "w-3 h-3"} />
+                    <span>Excel</span>
                   </button>
 
                   <button
@@ -2099,59 +3015,39 @@ export default function ExecutiveDashboard({
                   } ${isDark ? "bg-[#182338] text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"}`}>
                     <tr>
                       <th
-                        onClick={() => handleTableSort("district")}
-                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder} ${
-                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
-                        }`}
+                        className={`border text-left font-bold select-none ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-2 px-3"
+                        } w-[24%]`}
                       >
-                        <div className="flex items-center gap-1">
-                          <span>District</span>
-                          {renderSortIcon("district")}
-                        </div>
+                        District
                       </th>
                       <th
-                        onClick={() => handleTableSort("rtoName")}
-                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder} ${
-                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
-                        }`}
+                        className={`border text-left font-bold select-none ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-2 px-3"
+                        } w-[30%]`}
                       >
-                        <div className="flex items-center gap-1">
-                          <span>RTO Name</span>
-                          {renderSortIcon("rtoName")}
-                        </div>
+                        RTO Name
                       </th>
                       <th
-                        onClick={() => handleTableSort("total")}
-                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder} ${
-                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
-                        }`}
+                        className={`border text-center font-bold select-none ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-2 px-3"
+                        } w-[16%]`}
                       >
-                        <div className="flex items-center justify-center gap-1">
-                          <span>Total Reg.</span>
-                          {renderSortIcon("total")}
-                        </div>
+                        Total Reg.
                       </th>
                       <th
-                        onClick={() => handleTableSort("mm")}
-                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder} ${
-                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
-                        }`}
+                        className={`border text-center font-bold select-none ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-2 px-3"
+                        } w-[15%]`}
                       >
-                        <div className="flex items-center justify-center gap-1">
-                          <span>M&M Nos</span>
-                          {renderSortIcon("mm")}
-                        </div>
+                        M&M Nos
                       </th>
                       <th
-                        onClick={() => handleTableSort("ms")}
-                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder} ${
-                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
-                        }`}
+                        className={`border text-center font-bold select-none ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-2 px-3"
+                        } w-[15%]`}
                       >
-                        <div className="flex items-center justify-center gap-1">
-                          <span>M&M MS</span>
-                          {renderSortIcon("ms")}
-                        </div>
+                        M&M MS
                       </th>
                     </tr>
                   </thead>
@@ -2477,6 +3373,131 @@ export default function ExecutiveDashboard({
                       }`}
                     />
                   </div>
+
+                  {/* Main Export Excel Button (Exports All Kerala with Exact Table UI & Colors) */}
+                  <button
+                    type="button"
+                    onClick={() => handleExportStyledExcel("ALL")}
+                    title="Export All Kerala Summary Table to Excel (styled with exact UI colors, merged cells & borders)"
+                    className="h-7 px-3 py-1 flex items-center gap-1.5 text-xs font-semibold rounded-[2px] shadow-xs transition bg-[#00a86b] hover:bg-[#00925d] text-white border border-[#008f5a]"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export Excel</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* MULTI-YEAR TERRITORY PERFORMANCE SUMMARY TABLE (FY 23 - FY 26) */}
+            {!focusedTable && (
+              <div className="mt-2.5 rounded-[2px] border border-slate-200 dark:border-slate-700/80 shadow-md bg-white dark:bg-[#1e293b] overflow-hidden">
+                {/* HUD Header */}
+                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 rounded-[2px] bg-[#0070c0] text-white shadow-xs">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-bold text-xs tracking-wide text-slate-800 dark:text-slate-100">
+                      Multi-Year Territory Performance Summary (FY 23 - FY 26)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800">
+                      TIV • M&M • MS • GOLY(%)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {/* Copy Image Button */}
+                    <button
+                      type="button"
+                      onClick={handleCopyMultiYearTableAsImage}
+                      title="Copy Multi-Year Summary Table as High-Resolution Image to Clipboard"
+                      className="flex items-center gap-1 px-2.5 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sky-700 dark:text-sky-300 hover:bg-sky-50 shadow-xs"
+                    >
+                      <Camera className="w-3 h-3 text-sky-500" />
+                      <span>{copyStatus["multiyear"] || "Copy Image"}</span>
+                    </button>
+
+                    {/* Export Excel Button */}
+                    <button
+                      type="button"
+                      onClick={handleExportMultiYearExcel}
+                      title="Export Multi-Year Summary Table to Styled Excel"
+                      className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-[#0070c0] hover:bg-[#005fa3] text-white border-[#005a9e] shadow-xs"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Excel</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Table matching the exact UI specification from the user */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      {/* Row 1 Super-Headers: Exact #0070c0 vibrant blue with bold white text */}
+                      <tr className="bg-[#0070c0] text-white font-bold text-center border-b border-[#005a9e]">
+                        <th rowSpan={2} className="border border-[#005a9e] px-3 py-2 text-left font-bold w-[120px] whitespace-nowrap bg-[#0070c0]">
+                          Territory
+                        </th>
+                        <th colSpan={3} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          FY 23
+                        </th>
+                        <th colSpan={3} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          FY 24
+                        </th>
+                        <th colSpan={2} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          GOLY(%)
+                        </th>
+                        <th colSpan={3} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          FY 25
+                        </th>
+                        <th colSpan={2} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          GOLY(%)
+                        </th>
+                        <th colSpan={3} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          FY 26
+                        </th>
+                        <th colSpan={2} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          GOLY(%)
+                        </th>
+                      </tr>
+
+                      {/* Row 2 Sub-Headers */}
+                      <tr className="bg-[#0070c0] text-white font-bold text-center border-b border-[#005a9e]">
+                        {/* FY 23 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">MS</th>
+                        {/* FY 24 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">MS</th>
+                        {/* GOLY FY24 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        {/* FY 25 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">MS</th>
+                        {/* GOLY FY25 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        {/* FY 26 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">MS</th>
+                        {/* GOLY FY26 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 font-semibold">
+                      {renderMultiYearDataRow(multiYearData.north, false)}
+                      {renderMultiYearDataRow(multiYearData.south, false)}
+                      {renderMultiYearDataRow(multiYearData.total, true)}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
