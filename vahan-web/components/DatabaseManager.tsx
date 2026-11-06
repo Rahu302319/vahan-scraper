@@ -17,8 +17,6 @@ import {
   Save,
   AlertCircle
 } from "lucide-react";
-import defaultOemDb from "@/lib/oem-db.json";
-import defaultRtoDt from "@/lib/rto-dt.json";
 
 export interface OEMRecord {
   oemName: string;
@@ -119,49 +117,29 @@ export default function DatabaseManager({
     setTimeout(() => setStatusMsg(null), 3500);
   };
 
-  // 1. Initial Load from LocalStorage or default JSON
+  // 1. Initial Load directly from live database tables (Zero JSON fallbacks)
   useEffect(() => {
-    // Load OEM DB
-    try {
-      const savedOem = localStorage.getItem("vahan_custom_oem_db");
-      if (savedOem) {
-        const parsed = JSON.parse(savedOem);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setOemList(parsed);
-          onOemDbChange?.(parsed);
-        } else {
-          setOemList(defaultOemDb as OEMRecord[]);
-          onOemDbChange?.(defaultOemDb as OEMRecord[]);
+    // Load OEM DB from MariaDB oem_master table
+    fetch("/api/db?type=oem")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setOemList(json.data);
+          onOemDbChange?.(json.data);
         }
-      } else {
-        setOemList(defaultOemDb as OEMRecord[]);
-        onOemDbChange?.(defaultOemDb as OEMRecord[]);
-      }
-    } catch {
-      setOemList(defaultOemDb as OEMRecord[]);
-      onOemDbChange?.(defaultOemDb as OEMRecord[]);
-    }
+      })
+      .catch((err) => console.warn("OEM DB fetch warning:", err));
 
-    // Load RTO DT
-    try {
-      const savedRto = localStorage.getItem("vahan_custom_rto_dt");
-      if (savedRto) {
-        const parsed = JSON.parse(savedRto);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setRtoList(parsed);
-          onRtoDtChange?.(parsed);
-        } else {
-          setRtoList(defaultRtoDt as RTORecord[]);
-          onRtoDtChange?.(defaultRtoDt as RTORecord[]);
+    // Load RTO DT from MariaDB rto_master table
+    fetch("/api/db?type=rto")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setRtoList(json.data);
+          onRtoDtChange?.(json.data);
         }
-      } else {
-        setRtoList(defaultRtoDt as RTORecord[]);
-        onRtoDtChange?.(defaultRtoDt as RTORecord[]);
-      }
-    } catch {
-      setRtoList(defaultRtoDt as RTORecord[]);
-      onRtoDtChange?.(defaultRtoDt as RTORecord[]);
-    }
+      })
+      .catch((err) => console.warn("RTO DT fetch warning:", err));
   }, []);
 
   // Sync to LocalStorage & parent callback
@@ -192,19 +170,29 @@ export default function DatabaseManager({
     }).catch(() => {});
   };
 
-  // Reset to original defaults
-  const handleResetOem = () => {
-    if (confirm("Reset OEM Database to default 105 entries from 'New RTO working file - 2024.xlsx'?")) {
-      saveOemList(defaultOemDb as OEMRecord[]);
-      showStatus("OEM Database restored to original 105 entries.");
-    }
+  // Reset to database tables
+  const handleResetOem = async () => {
+    try {
+      const res = await fetch("/api/db?type=oem");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setOemList(json.data);
+        onOemDbChange?.(json.data);
+        showStatus("OEM Database reloaded from MariaDB oem_master.");
+      }
+    } catch {}
   };
 
-  const handleResetRto = () => {
-    if (confirm("Reset RTO Database to default 165 entries from 'New RTO working file - 2024.xlsx'?")) {
-      saveRtoList(defaultRtoDt as RTORecord[]);
-      showStatus("RTO Database restored to original 165 entries.");
-    }
+  const handleResetRto = async () => {
+    try {
+      const res = await fetch("/api/db?type=rto");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setRtoList(json.data);
+        onRtoDtChange?.(json.data);
+        showStatus("RTO Database reloaded from MariaDB rto_master.");
+      }
+    } catch {}
   };
 
   // Add OEM
