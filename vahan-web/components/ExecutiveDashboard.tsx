@@ -356,7 +356,7 @@ function MultiSelectDropdown({
   const themeStyles = {
     amber: {
       trigger: isDark
-        ? "bg-amber-950/40 border-amber-500/80 text-amber-300 focus:border-amber-400"
+        ? "bg-amber-500/15 border-amber-500/80 text-amber-300 focus:border-amber-400"
         : "bg-amber-50/80 border-amber-400 text-amber-900 focus:border-amber-600",
       activeCheck: "bg-amber-500 border-amber-500 text-slate-950",
       badge: isDark ? "bg-amber-900/60 text-amber-300" : "bg-amber-100 text-amber-900",
@@ -364,7 +364,7 @@ function MultiSelectDropdown({
     },
     indigo: {
       trigger: isDark
-        ? "bg-indigo-950/40 border-indigo-500/80 text-indigo-300 focus:border-indigo-400"
+        ? "bg-indigo-500/15 border-indigo-500/80 text-indigo-300 focus:border-indigo-400"
         : "bg-indigo-50/80 border-indigo-400 text-indigo-900 focus:border-indigo-600",
       activeCheck: "bg-indigo-600 border-indigo-600 text-white",
       badge: isDark ? "bg-indigo-900/60 text-indigo-300" : "bg-indigo-100 text-indigo-900",
@@ -372,7 +372,7 @@ function MultiSelectDropdown({
     },
     rose: {
       trigger: isDark
-        ? "bg-rose-950/40 border-rose-500/80 text-rose-300 focus:border-rose-400"
+        ? "bg-rose-500/15 border-rose-500/80 text-rose-300 focus:border-rose-400"
         : "bg-rose-50/80 border-rose-400 text-rose-900 focus:border-rose-600",
       activeCheck: "bg-rose-500 border-rose-500 text-white",
       badge: isDark ? "bg-rose-900/60 text-rose-300" : "bg-rose-100 text-rose-900",
@@ -380,7 +380,7 @@ function MultiSelectDropdown({
     },
     sky: {
       trigger: isDark
-        ? "bg-sky-950/40 border-sky-500/80 text-sky-300 focus:border-sky-400"
+        ? "bg-sky-500/15 border-sky-500/80 text-sky-300 focus:border-sky-400"
         : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600",
       activeCheck: "bg-sky-500 border-sky-500 text-white",
       badge: isDark ? "bg-sky-900/60 text-sky-300" : "bg-sky-100 text-sky-900",
@@ -388,7 +388,7 @@ function MultiSelectDropdown({
     },
     teal: {
       trigger: isDark
-        ? "bg-teal-950/40 border-teal-500/80 text-teal-300 focus:border-teal-400"
+        ? "bg-teal-500/15 border-teal-500/80 text-teal-300 focus:border-teal-400"
         : "bg-teal-50/80 border-teal-400 text-teal-900 focus:border-teal-600",
       activeCheck: "bg-teal-500 border-teal-500 text-white",
       badge: isDark ? "bg-teal-900/60 text-teal-300" : "bg-teal-100 text-teal-900",
@@ -459,11 +459,11 @@ function MultiSelectDropdown({
       {isOpen && (
         <div
           className={`absolute left-0 top-full mt-1 w-64 max-h-72 flex flex-col rounded-[2px] border shadow-2xl z-50 overflow-hidden ${
-            isDark ? "bg-[#0b1322] border-[#1f2d48] text-slate-200" : "bg-white border-slate-300 text-slate-800"
+            isDark ? "bg-[#1e293b] border-slate-600 text-slate-100 shadow-2xl" : "bg-white border-slate-300 text-slate-800"
           }`}
         >
           {/* Quick Header: Search & Select All / Clear */}
-          <div className={`p-2 border-b flex flex-col gap-1.5 ${isDark ? "border-[#19263e] bg-[#080e19]" : "border-slate-100 bg-slate-50"}`}>
+          <div className={`p-2 border-b flex flex-col gap-1.5 ${isDark ? "border-slate-700 bg-slate-900/90" : "border-slate-100 bg-slate-50"}`}>
             {options.length > 5 && (
               <div className="relative">
                 <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
@@ -473,7 +473,7 @@ function MultiSelectDropdown({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className={`w-full pl-6 pr-2 py-0.5 text-xs font-semibold rounded-[2px] border focus:outline-none ${
-                    isDark ? "bg-[#0f172a] border-[#243555] text-slate-100 placeholder-slate-500" : "bg-white border-slate-200 text-slate-800"
+                    isDark ? "bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-400" : "bg-white border-slate-200 text-slate-800"
                   }`}
                 />
               </div>
@@ -511,10 +511,10 @@ function MultiSelectDropdown({
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-semibold rounded-[2px] text-left transition ${
                       isSelected
                         ? isDark
-                          ? "bg-slate-800/80 text-white"
+                          ? "bg-slate-700 text-white"
                           : "bg-sky-50 text-sky-900"
                         : isDark
-                        ? "text-slate-300 hover:bg-slate-800/40"
+                        ? "text-slate-200 hover:bg-slate-700/50"
                         : "text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -1467,22 +1467,22 @@ export default function ExecutiveDashboard({
   const statusBadgesContent = (
     <div className="flex flex-wrap items-center gap-1.5 ml-1">
       <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-emerald-950/30 border-emerald-800 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700"
+        isDark ? "bg-emerald-500/15 border-emerald-500/80 text-emerald-300" : "bg-emerald-50 border-emerald-200 text-emerald-700"
       }`}>
         🟢 {activeDatasetRows.length.toLocaleString()} Records
       </span>
       <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-sky-950/30 border-sky-800 text-sky-400" : "bg-sky-50 border-sky-200 text-sky-700"
+        isDark ? "bg-sky-500/15 border-sky-500/80 text-sky-300" : "bg-sky-50 border-sky-200 text-sky-700"
       }`}>
         ⚡ {selectedSegment === "ALL" ? "All Segments" : `${selectedSegment} Segment`}
       </span>
       <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-purple-950/30 border-purple-800 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-700"
+        isDark ? "bg-purple-500/15 border-purple-500/80 text-purple-300" : "bg-purple-50 border-purple-200 text-purple-700"
       }`}>
         📍 {activeDatasetRtoCount} RTOs
       </span>
       <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border ${
-        isDark ? "bg-amber-950/30 border-amber-800 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-800"
+        isDark ? "bg-amber-500/15 border-amber-500/80 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-800"
       }`}>
         📅 {timeframeLabel}
       </span>
@@ -1492,7 +1492,7 @@ export default function ExecutiveDashboard({
         title="Refresh latest data from database"
         className={`p-1.5 rounded-[2px] border transition-all duration-150 shadow-xs ${
           isDark
-            ? "bg-[#0e172a] border-[#243555] text-sky-400 hover:text-white hover:bg-[#16233b]"
+            ? "bg-slate-800 border-slate-600 text-sky-400 hover:text-white hover:bg-slate-700"
             : "bg-white border-slate-200 text-sky-600 hover:text-sky-800 hover:bg-sky-50"
         }`}
       >
@@ -1508,7 +1508,7 @@ export default function ExecutiveDashboard({
 
       <div className={`rounded-2xl border transition-all duration-300 shadow-md ${
         isDark
-          ? "bg-[#0a101d] border-[#1d2d4d] text-slate-200 shadow-black/40"
+          ? "bg-[#1e293b] border-slate-700/80 text-slate-100 shadow-md"
           : "bg-white border-slate-200/90 text-slate-800 shadow-slate-200/40"
       }`}>
         {/* If slot is not available yet, show status badges here as fallback */}
@@ -1532,7 +1532,7 @@ export default function ExecutiveDashboard({
             <div className="flex flex-wrap items-center gap-2">
               {/* FY / CY Mode Switch - Radius 2 */}
               <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
-                isDark ? "bg-[#070d18] border-[#1d2d4d]" : "bg-slate-100 border-slate-200"
+                isDark ? "bg-slate-900/80 border-slate-700" : "bg-slate-100 border-slate-200"
               }`}>
                 <button
                   type="button"
@@ -1578,7 +1578,7 @@ export default function ExecutiveDashboard({
                   }}
                   className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
                     isDark
-                      ? "bg-sky-950/40 border-sky-500/80 text-sky-300 focus:border-sky-400"
+                      ? "bg-sky-500/15 border-sky-500/80 text-sky-300 focus:border-sky-400"
                       : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
                   }`}
                 >
@@ -1597,7 +1597,7 @@ export default function ExecutiveDashboard({
                   }}
                   className={`h-7.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border focus:outline-none transition-all shadow-xs ${
                     isDark
-                      ? "bg-sky-950/40 border-sky-500/80 text-sky-300 focus:border-sky-400"
+                      ? "bg-sky-500/15 border-sky-500/80 text-sky-300 focus:border-sky-400"
                       : "bg-sky-50/80 border-sky-400 text-sky-900 focus:border-sky-600"
                   }`}
                 >
@@ -1626,7 +1626,7 @@ export default function ExecutiveDashboard({
 
               {/* Segment Selector Colorful Pills - Radius 2 */}
               <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
-                isDark ? "bg-[#070d18] border-[#1d2d4d]" : "bg-slate-100 border-slate-200"
+                isDark ? "bg-slate-900/80 border-slate-700" : "bg-slate-100 border-slate-200"
               }`}>
                 <button
                   type="button"
@@ -1687,7 +1687,7 @@ export default function ExecutiveDashboard({
 
           {/* ROW 2: Geographic Drill-Down + Scope */}
           <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${
-            isDark ? "border-[#16233b]" : "border-slate-100"
+            isDark ? "border-slate-700/60" : "border-slate-100"
           }`}>
             <div className="flex flex-wrap items-center gap-2.5">
               {/* Territory Dropdown - Vibrant Teal with Radius 2 */}
@@ -1700,7 +1700,7 @@ export default function ExecutiveDashboard({
                   onChange={(e) => handleTerritoryChange(e.target.value)}
                   className={`h-7.5 px-2.5 py-1 text-xs font-semibold rounded-[2px] border focus:outline-none transition-all shadow-xs ${
                     isDark
-                      ? "bg-teal-950/40 border-teal-500/80 text-teal-300 focus:border-teal-400"
+                      ? "bg-teal-500/15 border-teal-500/80 text-teal-300 focus:border-teal-400"
                       : "bg-teal-50/80 border-teal-400 text-teal-900 focus:border-teal-600"
                   }`}
                 >
@@ -1769,7 +1769,7 @@ export default function ExecutiveDashboard({
             {/* Right Status Badge in Row 2 - Radius 2 */}
             <div className="flex items-center gap-1.5 ml-auto">
               <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border shadow-2xs ${
-                isDark ? "bg-indigo-950/40 border-indigo-700 text-indigo-300" : "bg-sky-50/80 border-sky-200 text-sky-800"
+                isDark ? "bg-indigo-500/15 border-indigo-500/80 text-indigo-300" : "bg-sky-50/80 border-sky-200 text-sky-800"
               }`}>
                 📍 Scope: <span className="font-semibold text-sky-600 dark:text-sky-300">
                   {selectedRtos.length > 0

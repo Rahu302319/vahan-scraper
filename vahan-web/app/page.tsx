@@ -853,14 +853,14 @@ export default function VahanDashboardPage() {
   return (
     <div
       className={`flex flex-col min-h-screen p-2 sm:p-3 gap-2.5 max-w-[1750px] mx-auto transition-colors duration-200 ${
-        isDark ? "bg-[#060911] text-[#cbd5e1]" : "bg-slate-100 text-slate-800"
+        isDark ? "bg-[#0f172a] text-slate-100" : "bg-slate-100 text-slate-800"
       }`}
     >
       {/* 1. Tactical Compact Header Bar with Global Navigation & Theme Toggle */}
       <header
         className={`flex flex-wrap items-center justify-between p-2.5 px-3.5 border rounded-lg shadow-md transition-colors gap-2.5 ${
           isDark
-            ? "bg-gradient-to-r from-[#0a1120] to-[#0f1a30] border-[#1e2c47]"
+            ? "bg-[#1e293b] border-slate-700/80"
             : "bg-white border-slate-200 shadow-sm"
         }`}
       >
@@ -884,7 +884,7 @@ export default function VahanDashboardPage() {
         {/* 2. Top-Level Main Navigation Pills */}
         <nav
           className={`flex items-center gap-1 p-1 rounded-lg border ${
-            isDark ? "bg-[#070d18] border-[#1f2f4c]" : "bg-slate-100 border-slate-300"
+            isDark ? "bg-[#0f172a] border-slate-700" : "bg-slate-100 border-slate-300"
           }`}
         >
           <button
@@ -948,7 +948,7 @@ export default function VahanDashboardPage() {
             onClick={toggleTheme}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold border transition ${
               isDark
-                ? "bg-[#111c33] border-[#1e2e4f] text-[#cbd5e1] hover:bg-[#1a2b4c]"
+                ? "bg-[#0f172a] border-slate-700 text-slate-200 hover:bg-slate-800"
                 : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
             }`}
             title={`Switch to ${isDark ? "Light" : "Dark"} Mode`}
@@ -968,7 +968,7 @@ export default function VahanDashboardPage() {
 
           <span className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-[2px] text-xs font-semibold border transition-all shadow-xs ${
             isDark
-              ? "bg-[#032e23] border-emerald-500 text-emerald-300"
+              ? "bg-emerald-500/15 border-emerald-500/80 text-emerald-300"
               : "bg-emerald-100 border-emerald-500 text-emerald-900"
           }`}>
             <span className="relative flex h-2 w-2">
@@ -995,7 +995,7 @@ export default function VahanDashboardPage() {
         <>
       {/* 2. Combat Control Deck (Two-Tier High-Density HUD) */}
       <section className={`flex flex-col gap-2 p-2.5 border rounded-lg shadow-md transition-colors ${
-        isDark ? "bg-[#0b1222] border-[#1c2a44]" : "bg-white border-slate-200 shadow-sm"
+        isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-white border-slate-200 shadow-sm"
       }`}>
         {/* Tier 1: Parameters + OUTPUT PATH SELECTION OPTION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 items-end">
@@ -1892,7 +1892,7 @@ export default function VahanDashboardPage() {
       {isFilterOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className={`border rounded-xl max-w-3xl w-full p-4 shadow-2xl flex flex-col gap-3 max-h-[88vh] ${
-            isDark ? "bg-[#0b1222] border-[#1c2a44]" : "bg-white border-slate-200"
+            isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-white border-slate-200"
           }`}>
             <div className={`flex items-center justify-between border-b pb-2 ${
               isDark ? "border-[#162238]" : "border-slate-200"
@@ -1913,7 +1913,7 @@ export default function VahanDashboardPage() {
 
             {/* Quick Segment Presets Toolbar */}
             <div className={`p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-2 text-xs ${
-              isDark ? "bg-[#0b1222] border-[#1c2a44]" : "bg-slate-50 border-slate-200"
+              isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-slate-50 border-slate-200"
             }`}>
               <div className="flex items-center gap-1.5 font-bold">
                 <Zap className="w-4 h-4 text-amber-400" />
