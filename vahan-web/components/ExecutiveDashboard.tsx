@@ -1815,19 +1815,39 @@ export default function ExecutiveDashboard({
           </div>
         </div>
       </div>
-      {/* NORTH & SOUTH KERALA DISTRICT-WISE TABLES */}
+      {/* NORTH & SOUTH KERALA DISTRICT-WISE HIERARCHICAL TABLES */}
       {(() => {
         const northRows = combatTableRows.filter(r => r.territory === "North Kerala");
         const southRows = combatTableRows.filter(r => r.territory === "South Kerala");
 
-        const aggregateDistrictRows = (rows: typeof combatTableRows) => {
-          const map = new Map<string, {
-            district: string;
-            territory: string;
+        interface DistrictGroup {
+          district: string;
+          territory: string;
+          rtos: Array<{
+            rtoName: string;
             total: number;
             mm: number;
             ms: number;
-            rtoCount: number;
+          }>;
+          districtTotal: {
+            total: number;
+            mm: number;
+            ms: number;
+          };
+        }
+
+        const groupRowsByDistrict = (rows: typeof combatTableRows): DistrictGroup[] => {
+          const map = new Map<string, {
+            district: string;
+            territory: string;
+            rtos: Array<{
+              rtoName: string;
+              total: number;
+              mm: number;
+              ms: number;
+            }>;
+            total: number;
+            mm: number;
           }>();
 
           rows.forEach((r) => {
@@ -1836,38 +1856,70 @@ export default function ExecutiveDashboard({
               map.set(key, {
                 district: r.district,
                 territory: r.territory,
+                rtos: [],
                 total: 0,
                 mm: 0,
-                ms: 0,
-                rtoCount: 0,
               });
             }
-            const item = map.get(key)!;
-            item.total += r.total;
-            item.mm += r.mm;
-            item.rtoCount += 1;
+            const group = map.get(key)!;
+            group.rtos.push({
+              rtoName: r.rtoName,
+              total: r.total,
+              mm: r.mm,
+              ms: r.ms,
+            });
+            group.total += r.total;
+            group.mm += r.mm;
           });
 
-          const list = Array.from(map.values()).map((item) => ({
-            ...item,
-            ms: item.total > 0 ? (item.mm / item.total) * 100 : 0,
-          }));
+          const groups: DistrictGroup[] = Array.from(map.values()).map((g) => {
+            // Sort RTOs within the district
+            g.rtos.sort((a, b) => {
+              if (tableSortField === "rtoName") {
+                return tableSortAsc ? a.rtoName.localeCompare(b.rtoName) : b.rtoName.localeCompare(a.rtoName);
+              }
+              if (tableSortField === "total") {
+                return tableSortAsc ? a.total - b.total : b.total - a.total;
+              }
+              if (tableSortField === "mm") {
+                return tableSortAsc ? a.mm - b.mm : b.mm - a.mm;
+              }
+              if (tableSortField === "ms") {
+                return tableSortAsc ? a.ms - b.ms : b.ms - a.ms;
+              }
+              return b.total - a.total;
+            });
 
-          // Sort by active sort field
-          list.sort((a, b) => {
-            let valA: any = a[tableSortField as keyof typeof a];
-            let valB: any = b[tableSortField as keyof typeof b];
-            if (valA === undefined) valA = a.total;
-            if (valB === undefined) valB = b.total;
+            return {
+              district: g.district,
+              territory: g.territory,
+              rtos: g.rtos,
+              districtTotal: {
+                total: g.total,
+                mm: g.mm,
+                ms: g.total > 0 ? (g.mm / g.total) * 100 : 0,
+              },
+            };
+          });
 
-            if (typeof valA === "string") {
-              const comp = valA.localeCompare(valB);
+          // Sort district groups
+          groups.sort((a, b) => {
+            if (tableSortField === "district") {
+              const comp = a.district.localeCompare(b.district);
               return tableSortAsc ? comp : -comp;
             }
-            return tableSortAsc ? valA - valB : valB - valA;
+            if (tableSortField === "mm") {
+              return tableSortAsc ? a.districtTotal.mm - b.districtTotal.mm : b.districtTotal.mm - a.districtTotal.mm;
+            }
+            if (tableSortField === "ms") {
+              return tableSortAsc ? a.districtTotal.ms - b.districtTotal.ms : b.districtTotal.ms - a.districtTotal.ms;
+            }
+            return tableSortAsc
+              ? a.districtTotal.total - b.districtTotal.total
+              : b.districtTotal.total - a.districtTotal.total;
           });
 
-          return list;
+          return groups;
         };
 
         const calcTotals = (rows: typeof combatTableRows) => ({
@@ -1901,11 +1953,11 @@ export default function ExecutiveDashboard({
             ? "bg-teal-50 border-teal-300 text-teal-800"
             : "bg-indigo-50 border-indigo-300 text-indigo-800";
 
-          const districtRows = aggregateDistrictRows(rows);
+          const districtGroups = groupRowsByDistrict(rows);
           const gridBorder = isDark ? "border-slate-700/80" : "border-slate-200";
 
           return (
-            <div className={`rounded-[2px] border transition-all duration-300 shadow-md overflow-hidden flex-1 min-w-[360px] ${
+            <div className={`rounded-[2px] border transition-all duration-300 shadow-md overflow-hidden flex-1 min-w-[420px] ${
               isDark ? "bg-[#1e293b] border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-800"
             }`}>
               {/* Table Header HUD */}
@@ -1920,7 +1972,7 @@ export default function ExecutiveDashboard({
                   <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
                     isDark ? badgeDark : badgeLight
                   }`}>
-                    {districtRows.length} Districts ({totals.count} RTOs)
+                    {districtGroups.length} Districts ({totals.count} RTOs)
                   </span>
                   <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
                     isDark ? "bg-sky-500/15 border-sky-500/60 text-sky-300" : "bg-sky-50 border-sky-200 text-sky-800"
@@ -1931,7 +1983,7 @@ export default function ExecutiveDashboard({
               </div>
 
               {/* Table Body with Complete Gridlines (Vertical & Horizontal) */}
-              <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
+              <div className="overflow-x-auto max-h-[340px] overflow-y-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead className={`sticky top-0 z-10 text-[10px] font-semibold uppercase tracking-wider border-b shadow-xs ${
                     isDark ? "bg-[#182338] text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
@@ -1944,6 +1996,15 @@ export default function ExecutiveDashboard({
                         <div className="flex items-center gap-1">
                           <span>District</span>
                           {renderSortIcon("district")}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleTableSort("rtoName")}
+                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder}`}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>RTO Name</span>
+                          {renderSortIcon("rtoName")}
                         </div>
                       </th>
                       <th
@@ -1976,51 +2037,102 @@ export default function ExecutiveDashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30 font-semibold">
-                    {districtRows.map((row, idx) => (
-                      <tr
-                        key={`${row.district}-${idx}`}
-                        className={`transition-colors ${
-                          isDark
-                            ? idx % 2 === 0 ? "bg-[#1e293b]/60 hover:bg-slate-700/50" : "bg-slate-900/30 hover:bg-slate-700/50"
-                            : idx % 2 === 0 ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/70"
-                        }`}
-                      >
-                        {/* 1. District Name */}
-                        <td className={`py-1.5 px-3 whitespace-nowrap text-sm border ${gridBorder}`}>
-                          <span className="flex items-center gap-1.5">
-                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
-                            <span className={isDark ? accentDark : accentLight}>{row.district}</span>
-                            <span className="text-[10px] text-slate-400 font-normal">({row.rtoCount} RTOs)</span>
-                          </span>
-                        </td>
+                    {districtGroups.map((group) => (
+                      <React.Fragment key={group.district}>
+                        {group.rtos.map((rto, rtoIdx) => (
+                          <tr
+                            key={`${group.district}-${rto.rtoName}-${rtoIdx}`}
+                            className={`transition-colors ${
+                              isDark
+                                ? rtoIdx % 2 === 0 ? "bg-[#1e293b]/60 hover:bg-slate-700/50" : "bg-slate-900/30 hover:bg-slate-700/50"
+                                : rtoIdx % 2 === 0 ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/70"
+                            }`}
+                          >
+                            {/* 1. Merged District Cell (rowSpan across all RTOs in this district) */}
+                            {rtoIdx === 0 && (
+                              <td
+                                rowSpan={group.rtos.length}
+                                className={`py-2 px-3 align-middle text-center font-bold text-sm border ${gridBorder} ${
+                                  isDark ? "bg-[#152238]/70 text-slate-100" : "bg-slate-50/95 text-slate-900"
+                                }`}
+                              >
+                                <div className="flex flex-col items-center justify-center gap-1">
+                                  <span className={`flex items-center gap-1.5 font-bold ${isDark ? accentDark : accentLight}`}>
+                                    <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                                    <span>{group.district}</span>
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-normal">
+                                    ({group.rtos.length} RTOs)
+                                  </span>
+                                </div>
+                              </td>
+                            )}
 
-                        {/* 2. Total Registration - Centered under heading */}
-                        <td className={`py-1.5 px-3 text-center font-semibold text-sky-400 dark:text-sky-300 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
-                          {row.total.toLocaleString()}
-                        </td>
+                            {/* 2. RTO Name */}
+                            <td className={`py-1.5 px-3 whitespace-nowrap text-sm font-semibold border ${gridBorder} text-left`}>
+                              {rto.rtoName}
+                            </td>
 
-                        {/* 3. M&M Nos - Centered under heading */}
-                        <td className={`py-1.5 px-3 text-center font-semibold text-rose-500 dark:text-rose-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
-                          {row.mm.toLocaleString()}
-                        </td>
+                            {/* 3. Total Registration - Centered */}
+                            <td className={`py-1.5 px-3 text-center font-semibold text-sky-400 dark:text-sky-300 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
+                              {rto.total.toLocaleString()}
+                            </td>
 
-                        {/* 4. M&M MS % - Centered under heading */}
-                        <td className={`py-1.5 px-3 text-center whitespace-nowrap tabular-nums border ${gridBorder}`}>
-                          <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-semibold border ${
-                            row.ms >= 15
-                              ? isDark ? "bg-emerald-500/15 border-emerald-500/60 text-emerald-300" : "bg-emerald-50 border-emerald-400 text-emerald-800"
-                              : row.ms >= 10
-                              ? isDark ? "bg-cyan-500/15 border-cyan-500/60 text-cyan-300" : "bg-cyan-50 border-cyan-400 text-cyan-800"
-                              : isDark ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-300 text-slate-700"
-                          }`}>
-                            {row.ms.toFixed(1)}%
-                          </span>
-                        </td>
-                      </tr>
+                            {/* 4. M&M Nos - Centered */}
+                            <td className={`py-1.5 px-3 text-center font-semibold text-rose-500 dark:text-rose-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
+                              {rto.mm.toLocaleString()}
+                            </td>
+
+                            {/* 5. M&M MS % - Centered */}
+                            <td className={`py-1.5 px-3 text-center whitespace-nowrap tabular-nums border ${gridBorder}`}>
+                              <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-semibold border ${
+                                rto.ms >= 15
+                                  ? isDark ? "bg-emerald-500/15 border-emerald-500/60 text-emerald-300" : "bg-emerald-50 border-emerald-400 text-emerald-800"
+                                  : rto.ms >= 10
+                                  ? isDark ? "bg-cyan-500/15 border-cyan-500/60 text-cyan-300" : "bg-cyan-50 border-cyan-400 text-cyan-800"
+                                  : isDark ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-300 text-slate-700"
+                              }`}>
+                                {rto.ms.toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+
+                        {/* District Subtotal Row: e.g. "Kannur Total" spanning colSpan 2 */}
+                        <tr className={`font-bold transition-colors ${
+                          isDark ? "bg-[#18263e] text-slate-200" : "bg-slate-100 text-slate-800"
+                        }`}>
+                          <td
+                            colSpan={2}
+                            className={`py-1.5 px-3 text-left font-bold text-xs uppercase tracking-wide border ${gridBorder}`}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-slate-400 font-bold">∑</span>
+                              <span>{group.district} Total</span>
+                            </span>
+                          </td>
+                          <td className={`py-1.5 px-3 text-center font-bold text-sky-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
+                            {group.districtTotal.total.toLocaleString()}
+                          </td>
+                          <td className={`py-1.5 px-3 text-center font-bold text-rose-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
+                            {group.districtTotal.mm.toLocaleString()}
+                          </td>
+                          <td className={`py-1.5 px-3 text-center whitespace-nowrap tabular-nums border ${gridBorder}`}>
+                            <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-bold border ${
+                              group.districtTotal.ms >= 15
+                                ? isDark ? "bg-emerald-500/20 border-emerald-500 text-emerald-300" : "bg-emerald-100 border-emerald-500 text-emerald-900"
+                                : isDark ? "bg-cyan-500/20 border-cyan-500 text-cyan-300" : "bg-cyan-100 border-cyan-500 text-cyan-900"
+                            }`}>
+                              {group.districtTotal.ms.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      </React.Fragment>
                     ))}
-                    {districtRows.length === 0 && (
+
+                    {districtGroups.length === 0 && (
                       <tr>
-                        <td colSpan={4} className={`py-6 text-center text-slate-400 font-semibold text-xs border ${gridBorder}`}>
+                        <td colSpan={5} className={`py-6 text-center text-slate-400 font-semibold text-xs border ${gridBorder}`}>
                           No data for {territory}.
                         </td>
                       </tr>
@@ -2032,7 +2144,7 @@ export default function ExecutiveDashboard({
                     isDark ? "bg-[#141f33] border-slate-700 text-slate-100" : "bg-slate-100 border-slate-300 text-slate-900"
                   }`}>
                     <tr>
-                      <td className={`py-2 px-3 uppercase tracking-wider text-[10px] text-slate-400 border ${gridBorder}`}>
+                      <td colSpan={2} className={`py-2 px-3 uppercase tracking-wider text-[10px] text-slate-400 border ${gridBorder}`}>
                         {territory} Total
                       </td>
                       <td className={`py-2 px-3 text-center tabular-nums font-bold text-sky-400 whitespace-nowrap text-sm border ${gridBorder}`}>
