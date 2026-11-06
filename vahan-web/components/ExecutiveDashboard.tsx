@@ -31,7 +31,10 @@ import {
   Plus,
   Minus,
   Crown,
-  Flame
+  Flame,
+  Maximize2,
+  Minimize2,
+  X
 } from "lucide-react";
 import ExcelJS from "exceljs";
 import summaryDataRaw from "@/lib/summary-data.json";
@@ -167,10 +170,10 @@ export const AVAILABLE_FY_LIST = ALL_FY_OPTIONS;
 
 export const KERALA_TERRITORIES: Record<string, string[]> = {
   "North Kerala": [
+    "Ksaragode",
     "Kannur",
-    "Kasargod",
+    "Calicut",
     "Wayanad",
-    "Kozhikode",
     "Malappuram",
     "Palakkad",
     "Thrissur",
@@ -184,6 +187,35 @@ export const KERALA_TERRITORIES: Record<string, string[]> = {
     "Idukki",
     "Ernakulam",
   ],
+};
+
+export const matchDistrict = (rowDistrict: string, filterDistrict: string): boolean => {
+  if (rowDistrict === filterDistrict) return true;
+  const rd = (rowDistrict || "").toLowerCase().trim();
+  const fd = (filterDistrict || "").toLowerCase().trim();
+  if (rd === fd) return true;
+  if ((rd.includes("kasar") || rd.includes("ksar")) && (fd.includes("kasar") || fd.includes("ksar"))) return true;
+  if ((rd.includes("calicut") || rd.includes("kozhikode")) && (fd.includes("calicut") || fd.includes("kozhikode"))) return true;
+  return false;
+};
+
+export const getNorthDistrictRank = (district: string): number => {
+  const d = (district || "").toLowerCase().trim();
+  if (d.includes("ksar") || d.includes("kasar")) return 1;
+  if (d.includes("kannur")) return 2;
+  if (d.includes("calicut") || d.includes("kozhikode")) return 3;
+  if (d.includes("wayanad")) return 4;
+  if (d.includes("malappuram")) return 5;
+  if (d.includes("palakkad")) return 6;
+  if (d.includes("thrissur")) return 7;
+  return 99;
+};
+
+export const formatDistrictDisplayName = (district: string): string => {
+  const d = (district || "").toLowerCase().trim();
+  if (d.includes("calicut") || d.includes("kozhikode")) return "Calicut";
+  if (d.includes("ksar") || d.includes("kasar")) return "Ksaragode";
+  return district;
 };
 
 const OEM_COLORS: Record<string, string> = {
@@ -324,6 +356,8 @@ interface MultiSelectDropdownProps {
   colorScheme: "sky" | "amber" | "indigo" | "rose" | "teal";
   isDark: boolean;
   allLabel: string;
+  buttonClassName?: string;
+  maxTriggerWidth?: string;
 }
 
 function MultiSelectDropdown({
@@ -334,6 +368,8 @@ function MultiSelectDropdown({
   colorScheme,
   isDark,
   allLabel,
+  buttonClassName,
+  maxTriggerWidth = "max-w-[170px]",
 }: MultiSelectDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -447,15 +483,15 @@ function MultiSelectDropdown({
         onClick={() => setIsOpen((prev) => !prev)}
         className={`h-7.5 flex items-center justify-between gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-[2px] border transition-all shadow-xs ${
           themeStyles.trigger
-        }`}
+        } ${buttonClassName || ""}`}
       >
-        <span className="truncate max-w-[170px]">{triggerText}</span>
+        <span className={`truncate ${maxTriggerWidth}`}>{triggerText}</span>
         {selectedValues.length > 0 && selectedValues.length < options.length && (
           <span className={`px-1 rounded-[2px] text-[10px] font-semibold ${themeStyles.badge}`}>
             {selectedValues.length}
           </span>
         )}
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-3 h-3 transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
@@ -637,6 +673,19 @@ export default function ExecutiveDashboard({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hideZeroRtos, setHideZeroRtos] = useState<boolean>(false);
   const [tableMode, setTableMode] = useState<"summary" | "monthly">("summary");
+
+  // Focus Mode State for Tables: "North Kerala" | "South Kerala" | null
+  const [focusedTable, setFocusedTable] = useState<"North Kerala" | "South Kerala" | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setFocusedTable(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Active Period Definition (Financial Year or Calendar Year)
   const currentPeriod = useMemo<PeriodOption>(() => {
@@ -863,7 +912,7 @@ export default function ExecutiveDashboard({
       rtos = rtos.filter((r) => r.territory === selectedTerritory);
     }
     if (selectedDistricts.length > 0) {
-      rtos = rtos.filter((r) => selectedDistricts.includes(r.district));
+      rtos = rtos.filter((r) => selectedDistricts.some((d) => matchDistrict(r.district, d)));
     }
     return Array.from(new Set(rtos.map((r) => r.rtoName))).sort();
   }, [selectedTerritory, selectedDistricts, summaryRowsTemplate]);
@@ -907,7 +956,7 @@ export default function ExecutiveDashboard({
       // Check District filter (supports multi-selection)
       if (selectedDistricts.length > 0) {
         const rowDist = r.district || r.District || "";
-        if (!selectedDistricts.includes(rowDist)) return;
+        if (!selectedDistricts.some((d) => matchDistrict(rowDist, d))) return;
       }
 
       // Check Territory filter
@@ -1484,7 +1533,7 @@ export default function ExecutiveDashboard({
     }
 
     if (selectedDistricts.length > 0) {
-      rows = rows.filter((r) => selectedDistricts.includes(r.district));
+      rows = rows.filter((r) => selectedDistricts.some((d) => matchDistrict(r.district, d)));
     }
 
     if (selectedRtos.length > 0) {
@@ -1639,7 +1688,7 @@ export default function ExecutiveDashboard({
                 </select>
               )}
 
-              {/* Month MultiSelect Dropdown - Vibrant Amber with Radius 2 */}
+              {/* Month MultiSelect Dropdown - Compact Amber */}
               <MultiSelectDropdown
                 placeholder="Months"
                 options={currentPeriod.months.map((m) => ({
@@ -1651,7 +1700,9 @@ export default function ExecutiveDashboard({
                 onChange={setSelectedMonths}
                 colorScheme="amber"
                 isDark={isDark}
-                allLabel={`All Months (${currentPeriod.type === "FY" ? "Apr-Mar" : "Jan-Dec"})`}
+                allLabel="All Months"
+                buttonClassName="w-[98px]"
+                maxTriggerWidth="max-w-[65px]"
               />
 
               {/* Segment Selector Colorful Pills - Radius 2 */}
@@ -1703,24 +1754,8 @@ export default function ExecutiveDashboard({
                   🌐 All <span className="opacity-80 text-[11px] font-normal">{segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}</span>
                 </button>
               </div>
-            </div>
 
-            {/* Export Button - Vibrant Emerald Gradient with Radius 2 */}
-            <button
-              onClick={handleExportSummaryExcel}
-              className="h-7.5 flex items-center gap-1.5 px-3.5 py-1 rounded-[2px] text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-500/30 transition-all duration-150 hover:-translate-y-0.5 ml-auto shrink-0"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export Excel
-            </button>
-          </div>
-
-          {/* ROW 2: Geographic Drill-Down + Scope */}
-          <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${
-            isDark ? "border-slate-700/60" : "border-slate-100"
-          }`}>
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Territory Dropdown - Vibrant Teal with Radius 2 */}
+              {/* Territory Dropdown - Same Line */}
               <div className="flex items-center gap-1.5">
                 <span className={`text-[11px] font-semibold ${isDark ? "text-teal-400" : "text-teal-700"}`}>
                   Territory:
@@ -1740,7 +1775,7 @@ export default function ExecutiveDashboard({
                 </select>
               </div>
 
-              {/* District MultiSelect Dropdown - Vibrant Indigo with Radius 2 */}
+              {/* District MultiSelect Dropdown - Same Line */}
               <div className="flex items-center gap-1.5">
                 <span className={`text-[11px] font-semibold ${isDark ? "text-indigo-400" : "text-indigo-700"}`}>
                   District:
@@ -1753,10 +1788,12 @@ export default function ExecutiveDashboard({
                   colorScheme="indigo"
                   isDark={isDark}
                   allLabel={selectedTerritory === "ALL" ? "All 14 Districts" : `All ${selectedTerritory} Districts`}
+                  buttonClassName="max-w-[140px]"
+                  maxTriggerWidth="max-w-[95px]"
                 />
               </div>
 
-              {/* RTO MultiSelect Dropdown - Vibrant Rose with Radius 2 */}
+              {/* RTO MultiSelect Dropdown - Same Line */}
               <div className="flex items-center gap-1.5">
                 <span className={`text-[11px] font-semibold ${isDark ? "text-rose-400" : "text-rose-700"}`}>
                   RTO:
@@ -1775,10 +1812,12 @@ export default function ExecutiveDashboard({
                       ? `All 87 RTOs`
                       : `All ${selectedTerritory} RTOs (${availableRtos.length})`
                   }
+                  buttonClassName="max-w-[150px]"
+                  maxTriggerWidth="max-w-[105px]"
                 />
               </div>
 
-              {/* Reset Filters Shortcut - Radius 2 */}
+              {/* Reset Filters Shortcut - Same Line */}
               {(selectedMonths.length > 0 || selectedTerritory !== "ALL" || selectedDistricts.length > 0 || selectedRtos.length > 0) && (
                 <button
                   type="button"
@@ -1796,8 +1835,8 @@ export default function ExecutiveDashboard({
               )}
             </div>
 
-            {/* Right Status Badge in Row 2 - Radius 2 */}
-            <div className="flex items-center gap-1.5 ml-auto">
+            {/* Right Side: Scope Badge + Export Button */}
+            <div className="flex items-center gap-2 ml-auto shrink-0">
               <span className={`px-2.5 py-1 rounded-[2px] text-xs font-semibold border shadow-2xs ${
                 isDark ? "bg-indigo-500/15 border-indigo-500/80 text-indigo-300" : "bg-sky-50/80 border-sky-200 text-sky-800"
               }`}>
@@ -1811,6 +1850,15 @@ export default function ExecutiveDashboard({
                     : "All Kerala"}
                 </span>
               </span>
+
+              {/* Export Button - Vibrant Emerald Gradient with Radius 2 */}
+              <button
+                onClick={handleExportSummaryExcel}
+                className="h-7.5 flex items-center gap-1.5 px-3.5 py-1 rounded-[2px] text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-sm shadow-emerald-500/30 transition-all duration-150 hover:-translate-y-0.5"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export Excel
+              </button>
             </div>
           </div>
         </div>
@@ -1836,7 +1884,7 @@ export default function ExecutiveDashboard({
           };
         }
 
-        const groupRowsByDistrict = (rows: typeof combatTableRows): DistrictGroup[] => {
+        const groupRowsByDistrict = (rows: typeof combatTableRows, isNorth: boolean): DistrictGroup[] => {
           const map = new Map<string, {
             district: string;
             territory: string;
@@ -1904,6 +1952,26 @@ export default function ExecutiveDashboard({
 
           // Sort district groups
           groups.sort((a, b) => {
+            if (isNorth) {
+              if (tableSortField === "district") {
+                const rankA = getNorthDistrictRank(a.district);
+                const rankB = getNorthDistrictRank(b.district);
+                return tableSortAsc ? rankA - rankB : rankB - rankA;
+              }
+              if (tableSortField === "total") {
+                return tableSortAsc ? a.districtTotal.total - b.districtTotal.total : b.districtTotal.total - a.districtTotal.total;
+              }
+              if (tableSortField === "mm") {
+                return tableSortAsc ? a.districtTotal.mm - b.districtTotal.mm : b.districtTotal.mm - a.districtTotal.mm;
+              }
+              if (tableSortField === "ms") {
+                return tableSortAsc ? a.districtTotal.ms - b.districtTotal.ms : b.districtTotal.ms - a.districtTotal.ms;
+              }
+              // Default for North Kerala: strict sequence requested by user:
+              // Ksaragode, Kannur, Calicut, Wayanad, Malappuram, Palakkad, Thrissur
+              return getNorthDistrictRank(a.district) - getNorthDistrictRank(b.district);
+            }
+
             if (tableSortField === "district") {
               const comp = a.district.localeCompare(b.district);
               return tableSortAsc ? comp : -comp;
@@ -1940,6 +2008,11 @@ export default function ExecutiveDashboard({
           territory: "North Kerala" | "South Kerala"
         ) => {
           const isNorth = territory === "North Kerala";
+          const isFocused = focusedTable === territory;
+
+          // If another table is in focus mode, hide this one
+          if (focusedTable !== null && !isFocused) return null;
+
           const accentDark = isNorth ? "text-teal-300" : "text-indigo-300";
           const accentLight = isNorth ? "text-teal-700" : "text-indigo-700";
           const dotColor = isNorth ? "bg-teal-400" : "bg-indigo-400";
@@ -1953,45 +2026,85 @@ export default function ExecutiveDashboard({
             ? "bg-teal-50 border-teal-300 text-teal-800"
             : "bg-indigo-50 border-indigo-300 text-indigo-800";
 
-          const districtGroups = groupRowsByDistrict(rows);
+          const districtGroups = groupRowsByDistrict(rows, isNorth);
           const gridBorder = isDark ? "border-slate-700/80" : "border-slate-200";
 
           return (
-            <div className={`rounded-[2px] border transition-all duration-300 shadow-md overflow-hidden flex-1 min-w-[420px] ${
-              isDark ? "bg-[#1e293b] border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-800"
+            <div className={`rounded-[2px] border transition-all duration-300 shadow-md flex flex-col overflow-hidden ${
+              isFocused
+                ? `fixed inset-2 sm:inset-4 z-50 shadow-2xl ${
+                    isDark ? "bg-[#0f172a] border-slate-600 text-slate-100" : "bg-white border-slate-300 text-slate-800"
+                  }`
+                : `flex-1 min-w-[420px] ${
+                    isDark ? "bg-[#1e293b] border-slate-700/80 text-slate-100" : "bg-white border-slate-200 text-slate-800"
+                  }`
             }`}>
               {/* Table Header HUD */}
-              <div className={`flex items-center justify-between gap-2 px-3 py-2 border-b ${
-                isDark ? "border-slate-700/80 bg-slate-900/60" : "border-slate-100 bg-slate-50"
-              }`}>
+              <div className={`flex items-center justify-between gap-2 border-b ${
+                isFocused ? "px-4 py-3" : "px-3 py-2"
+              } ${isDark ? "border-slate-700/80 bg-slate-900/60" : "border-slate-100 bg-slate-50"}`}>
                 <div className="flex items-center gap-2">
-                  <div className={`p-1 rounded-[2px] bg-gradient-to-br ${headerGrad} text-white shadow-xs`}>
-                    <Table className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{territory}</span>
-                  <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
-                    isDark ? badgeDark : badgeLight
+                  <div className={`rounded-[2px] bg-gradient-to-br ${headerGrad} text-white shadow-xs ${
+                    isFocused ? "p-1.5" : "p-1"
                   }`}>
+                    <Table className={isFocused ? "w-4 h-4" : "w-3.5 h-3.5"} />
+                  </div>
+                  <span className={`font-semibold tracking-wide ${isFocused ? "text-sm sm:text-base font-bold" : "text-xs"}`}>
+                    {territory}
+                  </span>
+                  <span className={`rounded-[2px] font-semibold border ${
+                    isFocused ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-[10px]"
+                  } ${isDark ? badgeDark : badgeLight}`}>
                     {districtGroups.length} Districts ({totals.count} RTOs)
                   </span>
-                  <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
-                    isDark ? "bg-sky-500/15 border-sky-500/60 text-sky-300" : "bg-sky-50 border-sky-200 text-sky-800"
-                  }`}>
+                  <span className={`rounded-[2px] font-semibold border ${
+                    isFocused ? "px-2.5 py-1 text-xs" : "px-2 py-0.5 text-[10px]"
+                  } ${isDark ? "bg-sky-500/15 border-sky-500/60 text-sky-300" : "bg-sky-50 border-sky-200 text-sky-800"}`}>
                     {timeframeLabel}
                   </span>
+                </div>
+
+                {/* Focus Mode Toggle Button */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFocusedTable(isFocused ? null : territory)}
+                    title={isFocused ? "Exit Focus Mode (Esc)" : "Focus Mode (Full Screen)"}
+                    className={`flex items-center gap-1.5 rounded-[2px] font-semibold border transition-all shadow-xs ${
+                      isFocused
+                        ? "px-3 py-1 text-xs bg-rose-500/20 border-rose-500 text-rose-300 hover:bg-rose-500/30"
+                        : isDark
+                        ? "px-2.5 py-0.5 text-[11px] bg-slate-800 border-slate-700 text-sky-400 hover:bg-sky-500/20 hover:border-sky-500"
+                        : "px-2.5 py-0.5 text-[11px] bg-white border-slate-200 text-sky-700 hover:bg-sky-50 hover:border-sky-400"
+                    }`}
+                  >
+                    {isFocused ? (
+                      <>
+                        <Minimize2 className="w-3.5 h-3.5" />
+                        <span>Exit Focus</span>
+                      </>
+                    ) : (
+                      <>
+                        <Maximize2 className="w-3.5 h-3.5" />
+                        <span>Focus Mode</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
               {/* Table Body with Complete Gridlines (Vertical & Horizontal) */}
-              <div className="overflow-x-auto max-h-[340px] overflow-y-auto">
-                <table className="w-full text-left border-collapse text-sm">
-                  <thead className={`sticky top-0 z-10 text-[10px] font-semibold uppercase tracking-wider border-b shadow-xs ${
-                    isDark ? "bg-[#182338] text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
-                  }`}>
+              <div className={`overflow-x-auto ${isFocused ? "flex-1 overflow-y-auto" : "max-h-[340px] overflow-y-auto"}`}>
+                <table className={`w-full text-left border-collapse ${isFocused ? "text-base" : "text-sm"}`}>
+                  <thead className={`sticky top-0 z-10 font-semibold uppercase tracking-wider border-b shadow-xs ${
+                    isFocused ? "text-xs sm:text-sm" : "text-[10px]"
+                  } ${isDark ? "bg-[#182338] text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"}`}>
                     <tr>
                       <th
                         onClick={() => handleTableSort("district")}
-                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder}`}
+                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
+                        }`}
                       >
                         <div className="flex items-center gap-1">
                           <span>District</span>
@@ -2000,7 +2113,9 @@ export default function ExecutiveDashboard({
                       </th>
                       <th
                         onClick={() => handleTableSort("rtoName")}
-                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder}`}
+                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-left ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
+                        }`}
                       >
                         <div className="flex items-center gap-1">
                           <span>RTO Name</span>
@@ -2009,7 +2124,9 @@ export default function ExecutiveDashboard({
                       </th>
                       <th
                         onClick={() => handleTableSort("total")}
-                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder}`}
+                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
+                        }`}
                       >
                         <div className="flex items-center justify-center gap-1">
                           <span>Total Reg.</span>
@@ -2018,7 +2135,9 @@ export default function ExecutiveDashboard({
                       </th>
                       <th
                         onClick={() => handleTableSort("mm")}
-                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder}`}
+                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
+                        }`}
                       >
                         <div className="flex items-center justify-center gap-1">
                           <span>M&M Nos</span>
@@ -2027,7 +2146,9 @@ export default function ExecutiveDashboard({
                       </th>
                       <th
                         onClick={() => handleTableSort("ms")}
-                        className={`py-1.5 px-3 border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder}`}
+                        className={`border cursor-pointer select-none hover:text-sky-400 transition text-center ${gridBorder} ${
+                          isFocused ? "py-3 px-4" : "py-1.5 px-3"
+                        }`}
                       >
                         <div className="flex items-center justify-center gap-1">
                           <span>M&M MS</span>
@@ -2037,102 +2158,127 @@ export default function ExecutiveDashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30 font-semibold">
-                    {districtGroups.map((group) => (
-                      <React.Fragment key={group.district}>
-                        {group.rtos.map((rto, rtoIdx) => (
-                          <tr
-                            key={`${group.district}-${rto.rtoName}-${rtoIdx}`}
-                            className={`transition-colors ${
-                              isDark
-                                ? rtoIdx % 2 === 0 ? "bg-[#1e293b]/60 hover:bg-slate-700/50" : "bg-slate-900/30 hover:bg-slate-700/50"
-                                : rtoIdx % 2 === 0 ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/70"
-                            }`}
-                          >
-                            {/* 1. Merged District Cell (rowSpan across all RTOs in this district) */}
-                            {rtoIdx === 0 && (
-                              <td
-                                rowSpan={group.rtos.length}
-                                className={`py-2 px-3 align-middle text-center font-bold text-sm border ${gridBorder} ${
-                                  isDark ? "bg-[#152238]/70 text-slate-100" : "bg-slate-50/95 text-slate-900"
-                                }`}
-                              >
-                                <div className="flex flex-col items-center justify-center gap-1">
-                                  <span className={`flex items-center gap-1.5 font-bold ${isDark ? accentDark : accentLight}`}>
-                                    <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-                                    <span>{group.district}</span>
-                                  </span>
-                                  <span className="text-[10px] text-slate-400 font-normal">
-                                    ({group.rtos.length} RTOs)
-                                  </span>
-                                </div>
-                              </td>
-                            )}
+                    {districtGroups.map((group) => {
+                      const displayDist = isNorth ? formatDistrictDisplayName(group.district) : group.district;
+                      return (
+                        <React.Fragment key={group.district}>
+                          {group.rtos.map((rto, rtoIdx) => (
+                            <tr
+                              key={`${group.district}-${rto.rtoName}-${rtoIdx}`}
+                              className={`transition-colors ${
+                                isDark
+                                  ? rtoIdx % 2 === 0 ? "bg-[#1e293b]/60 hover:bg-slate-700/50" : "bg-slate-900/30 hover:bg-slate-700/50"
+                                  : rtoIdx % 2 === 0 ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/70"
+                              }`}
+                            >
+                              {/* 1. Merged District Cell (rowSpan across all RTOs in this district) */}
+                              {rtoIdx === 0 && (
+                                <td
+                                  rowSpan={group.rtos.length}
+                                  className={`align-middle text-center font-bold border ${gridBorder} ${
+                                    isFocused ? "py-3 px-4 text-base sm:text-lg" : "py-2 px-3 text-sm"
+                                  } ${isDark ? "bg-[#152238]/70 text-slate-100" : "bg-slate-50/95 text-slate-900"}`}
+                                >
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <span className={`flex items-center gap-1.5 font-bold ${isDark ? accentDark : accentLight}`}>
+                                      <span className={`rounded-full ${dotColor} ${isFocused ? "w-3 h-3" : "w-2 h-2"}`} />
+                                      <span>{displayDist}</span>
+                                    </span>
+                                    <span className={`text-slate-400 font-normal ${isFocused ? "text-xs" : "text-[10px]"}`}>
+                                      ({group.rtos.length} RTOs)
+                                    </span>
+                                  </div>
+                                </td>
+                              )}
 
-                            {/* 2. RTO Name */}
-                            <td className={`py-1.5 px-3 whitespace-nowrap text-sm font-semibold border ${gridBorder} text-left`}>
-                              {rto.rtoName}
-                            </td>
-
-                            {/* 3. Total Registration - Centered */}
-                            <td className={`py-1.5 px-3 text-center font-semibold text-sky-400 dark:text-sky-300 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
-                              {rto.total.toLocaleString()}
-                            </td>
-
-                            {/* 4. M&M Nos - Centered */}
-                            <td className={`py-1.5 px-3 text-center font-semibold text-rose-500 dark:text-rose-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
-                              {rto.mm.toLocaleString()}
-                            </td>
-
-                            {/* 5. M&M MS % - Centered */}
-                            <td className={`py-1.5 px-3 text-center whitespace-nowrap tabular-nums border ${gridBorder}`}>
-                              <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-semibold border ${
-                                rto.ms >= 15
-                                  ? isDark ? "bg-emerald-500/15 border-emerald-500/60 text-emerald-300" : "bg-emerald-50 border-emerald-400 text-emerald-800"
-                                  : rto.ms >= 10
-                                  ? isDark ? "bg-cyan-500/15 border-cyan-500/60 text-cyan-300" : "bg-cyan-50 border-cyan-400 text-cyan-800"
-                                  : isDark ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-300 text-slate-700"
+                              {/* 2. RTO Name */}
+                              <td className={`whitespace-nowrap font-semibold border ${gridBorder} text-left ${
+                                isFocused ? "py-3 px-4 text-base" : "py-1.5 px-3 text-sm"
                               }`}>
-                                {rto.ms.toFixed(1)}%
+                                {rto.rtoName}
+                              </td>
+
+                              {/* 3. Total Registration - Centered */}
+                              <td className={`text-center font-semibold text-sky-400 dark:text-sky-300 whitespace-nowrap tabular-nums border ${gridBorder} ${
+                                isFocused ? "py-3 px-4 text-base sm:text-lg font-bold" : "py-1.5 px-3 text-sm"
+                              }`}>
+                                {rto.total.toLocaleString()}
+                              </td>
+
+                              {/* 4. M&M Nos - Centered */}
+                              <td className={`text-center font-semibold text-rose-500 dark:text-rose-400 whitespace-nowrap tabular-nums border ${gridBorder} ${
+                                isFocused ? "py-3 px-4 text-base sm:text-lg font-bold" : "py-1.5 px-3 text-sm"
+                              }`}>
+                                {rto.mm.toLocaleString()}
+                              </td>
+
+                              {/* 5. M&M MS % - Centered */}
+                              <td className={`text-center whitespace-nowrap tabular-nums border ${gridBorder} ${
+                                isFocused ? "py-3 px-4" : "py-1.5 px-3"
+                              }`}>
+                                <span className={`inline-block rounded-[2px] font-semibold border ${
+                                  isFocused ? "px-3 py-1 text-sm sm:text-base font-bold" : "px-2 py-0.5 text-xs"
+                                } ${
+                                  rto.ms >= 15
+                                    ? isDark ? "bg-emerald-500/15 border-emerald-500/60 text-emerald-300" : "bg-emerald-50 border-emerald-400 text-emerald-800"
+                                    : rto.ms >= 10
+                                    ? isDark ? "bg-cyan-500/15 border-cyan-500/60 text-cyan-300" : "bg-cyan-50 border-cyan-400 text-cyan-800"
+                                    : isDark ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-300 text-slate-700"
+                                }`}>
+                                  {rto.ms.toFixed(1)}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+
+                          {/* District Subtotal Row: e.g. "Kannur Total" spanning colSpan 2 */}
+                          <tr className={`font-bold transition-colors ${
+                            isDark ? "bg-[#18263e] text-slate-200" : "bg-slate-100 text-slate-800"
+                          }`}>
+                            <td
+                              colSpan={2}
+                              className={`text-left font-bold uppercase tracking-wide border ${gridBorder} ${
+                                isFocused ? "py-3 px-4 text-sm sm:text-base font-extrabold" : "py-1.5 px-3 text-xs"
+                              }`}
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-slate-400 font-bold">∑</span>
+                                <span>{displayDist} Total</span>
+                              </span>
+                            </td>
+                            <td className={`text-center font-bold text-sky-400 whitespace-nowrap tabular-nums border ${gridBorder} ${
+                              isFocused ? "py-3 px-4 text-base sm:text-lg font-extrabold" : "py-1.5 px-3 text-sm"
+                            }`}>
+                              {group.districtTotal.total.toLocaleString()}
+                            </td>
+                            <td className={`text-center font-bold text-rose-400 whitespace-nowrap tabular-nums border ${gridBorder} ${
+                              isFocused ? "py-3 px-4 text-base sm:text-lg font-extrabold" : "py-1.5 px-3 text-sm"
+                            }`}>
+                              {group.districtTotal.mm.toLocaleString()}
+                            </td>
+                            <td className={`text-center whitespace-nowrap tabular-nums border ${gridBorder} ${
+                              isFocused ? "py-3 px-4" : "py-1.5 px-3"
+                            }`}>
+                              <span className={`inline-block rounded-[2px] font-bold border ${
+                                isFocused ? "px-3 py-1 text-sm sm:text-base font-extrabold" : "px-2 py-0.5 text-xs"
+                              } ${
+                                group.districtTotal.ms >= 15
+                                  ? isDark ? "bg-emerald-500/20 border-emerald-500 text-emerald-300" : "bg-emerald-100 border-emerald-500 text-emerald-900"
+                                  : isDark ? "bg-cyan-500/20 border-cyan-500 text-cyan-300" : "bg-cyan-100 border-cyan-500 text-cyan-900"
+                              }`}>
+                                {group.districtTotal.ms.toFixed(1)}%
                               </span>
                             </td>
                           </tr>
-                        ))}
-
-                        {/* District Subtotal Row: e.g. "Kannur Total" spanning colSpan 2 */}
-                        <tr className={`font-bold transition-colors ${
-                          isDark ? "bg-[#18263e] text-slate-200" : "bg-slate-100 text-slate-800"
-                        }`}>
-                          <td
-                            colSpan={2}
-                            className={`py-1.5 px-3 text-left font-bold text-xs uppercase tracking-wide border ${gridBorder}`}
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <span className="text-slate-400 font-bold">∑</span>
-                              <span>{group.district} Total</span>
-                            </span>
-                          </td>
-                          <td className={`py-1.5 px-3 text-center font-bold text-sky-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
-                            {group.districtTotal.total.toLocaleString()}
-                          </td>
-                          <td className={`py-1.5 px-3 text-center font-bold text-rose-400 whitespace-nowrap tabular-nums text-sm border ${gridBorder}`}>
-                            {group.districtTotal.mm.toLocaleString()}
-                          </td>
-                          <td className={`py-1.5 px-3 text-center whitespace-nowrap tabular-nums border ${gridBorder}`}>
-                            <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-bold border ${
-                              group.districtTotal.ms >= 15
-                                ? isDark ? "bg-emerald-500/20 border-emerald-500 text-emerald-300" : "bg-emerald-100 border-emerald-500 text-emerald-900"
-                                : isDark ? "bg-cyan-500/20 border-cyan-500 text-cyan-300" : "bg-cyan-100 border-cyan-500 text-cyan-900"
-                            }`}>
-                              {group.districtTotal.ms.toFixed(1)}%
-                            </span>
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    ))}
+                        </React.Fragment>
+                      );
+                    })}
 
                     {districtGroups.length === 0 && (
                       <tr>
-                        <td colSpan={5} className={`py-6 text-center text-slate-400 font-semibold text-xs border ${gridBorder}`}>
+                        <td colSpan={5} className={`text-center text-slate-400 font-semibold border ${gridBorder} ${
+                          isFocused ? "py-12 text-sm" : "py-6 text-xs"
+                        }`}>
                           No data for {territory}.
                         </td>
                       </tr>
@@ -2140,21 +2286,31 @@ export default function ExecutiveDashboard({
                   </tbody>
 
                   {/* Sticky Territory Total Footer */}
-                  <tfoot className={`sticky bottom-0 z-10 font-bold border-t text-xs ${
-                    isDark ? "bg-[#141f33] border-slate-700 text-slate-100" : "bg-slate-100 border-slate-300 text-slate-900"
-                  }`}>
+                  <tfoot className={`sticky bottom-0 z-10 font-bold border-t ${
+                    isFocused ? "text-sm sm:text-base" : "text-xs"
+                  } ${isDark ? "bg-[#141f33] border-slate-700 text-slate-100" : "bg-slate-100 border-slate-300 text-slate-900"}`}>
                     <tr>
-                      <td colSpan={2} className={`py-2 px-3 uppercase tracking-wider text-[10px] text-slate-400 border ${gridBorder}`}>
+                      <td colSpan={2} className={`uppercase tracking-wider text-slate-400 border ${gridBorder} ${
+                        isFocused ? "py-3.5 px-4 text-sm sm:text-base font-extrabold" : "py-2 px-3 text-[10px]"
+                      }`}>
                         {territory} Total
                       </td>
-                      <td className={`py-2 px-3 text-center tabular-nums font-bold text-sky-400 whitespace-nowrap text-sm border ${gridBorder}`}>
+                      <td className={`text-center tabular-nums font-bold text-sky-400 whitespace-nowrap border ${gridBorder} ${
+                        isFocused ? "py-3.5 px-4 text-lg sm:text-xl font-extrabold" : "py-2 px-3 text-sm"
+                      }`}>
                         {totals.total.toLocaleString()}
                       </td>
-                      <td className={`py-2 px-3 text-center tabular-nums font-bold text-rose-400 whitespace-nowrap text-sm border ${gridBorder}`}>
+                      <td className={`text-center tabular-nums font-bold text-rose-400 whitespace-nowrap border ${gridBorder} ${
+                        isFocused ? "py-3.5 px-4 text-lg sm:text-xl font-extrabold" : "py-2 px-3 text-sm"
+                      }`}>
                         {totals.mm.toLocaleString()}
                       </td>
-                      <td className={`py-2 px-3 text-center tabular-nums font-bold border ${gridBorder}`}>
-                        <span className={`inline-block px-2 py-0.5 rounded-[2px] text-xs font-bold border ${
+                      <td className={`text-center tabular-nums font-bold border ${gridBorder} ${
+                        isFocused ? "py-3.5 px-4" : "py-2 px-3"
+                      }`}>
+                        <span className={`inline-block rounded-[2px] font-bold border ${
+                          isFocused ? "px-3.5 py-1.5 text-base font-extrabold" : "px-2 py-0.5 text-xs"
+                        } ${
                           isDark ? "bg-emerald-500/20 border-emerald-500 text-emerald-300" : "bg-emerald-100 border-emerald-500 text-emerald-900"
                         }`}>
                           {totals.ms.toFixed(2)}%
@@ -2169,10 +2325,18 @@ export default function ExecutiveDashboard({
         };
 
         return (
-          <div className="mt-3 flex gap-3 flex-wrap">
-            {renderTable(northRows, northTotals, "North Kerala")}
-            {renderTable(southRows, southTotals, "South Kerala")}
-          </div>
+          <>
+            {focusedTable && (
+              <div
+                className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm transition-opacity"
+                onClick={() => setFocusedTable(null)}
+              />
+            )}
+            <div className="mt-3 flex gap-3 flex-wrap">
+              {renderTable(northRows, northTotals, "North Kerala")}
+              {renderTable(southRows, southTotals, "South Kerala")}
+            </div>
+          </>
         );
       })()}
 
