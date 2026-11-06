@@ -3161,8 +3161,8 @@ export default function ExecutiveDashboard({
               "RTO Name",
               "District",
               "Territory",
-              "TIV",
-              ...oemShareData.oemList.map((o) => `${o.label} Share %`),
+              "Total TIV",
+              ...oemShareData.oemList.map((o) => o.label),
             ];
             const r4 = ws.addRow(headerVals);
             r4.height = 24;
@@ -4744,7 +4744,7 @@ export default function ExecutiveDashboard({
                                 : ""
                             }`}
                           >
-                            {o.label} {oemShareMetric === "percentage" ? "Share %" : "Nos"}
+                            {o.label}
                           </th>
                         ))}
                       </tr>
