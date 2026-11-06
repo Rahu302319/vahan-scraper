@@ -731,6 +731,9 @@ export default function ExecutiveDashboard({
   // Month-on-Month Table View Mode: "territory" | "district"
   const [momViewMode, setMomViewMode] = useState<"territory" | "district">("district");
 
+  // OEM Share % Table View Mode: "percentage" (MS %) vs "volume" (Units)
+  const [oemShareMetric, setOemShareMetric] = useState<"percentage" | "volume">("percentage");
+
   // Transient Copy-as-Image Feedback Status: territory -> message
   const [copyStatus, setCopyStatus] = useState<Record<string, string>>({});
 
@@ -2288,6 +2291,148 @@ export default function ExecutiveDashboard({
           };
         }, [allDatasetRows, selectedSegment, currentPeriod]);
 
+        // RTO-WISE OEM MARKET SHARE % PERFORMANCE SUMMARY (Computed dynamically from MariaDB vahan_registrations)
+        const oemShareData = useMemo(() => {
+          const OEM_KEYS = [
+            { key: "Maruti", label: "Maruti" },
+            { key: "Hyundai", label: "Hyundai" },
+            { key: "Tata", label: "Tata" },
+            { key: "Mahindra", label: "Mahindra" },
+            { key: "Toyota", label: "Toyota" },
+            { key: "Kia", label: "Kia" },
+            { key: "Honda", label: "Honda" },
+            { key: "MG", label: "MG" },
+            { key: "Premium", label: "Premium" },
+            { key: "Others", label: "Others" },
+          ];
+
+          const periodYearSet = new Set(currentPeriod.months.map((m) => m.calYear));
+          const activeMonthCols = selectedMonths.length > 0
+            ? selectedMonths.map((mStr) => {
+                const parts = mStr.split("-");
+                return parts[0].toUpperCase();
+              })
+            : null;
+
+          // Resolve grouping for a registration row
+          const getRowGrouping = (row: any): string => {
+            const rawMaker = String(row.Maker || row.oemFinal || row["OEM Name"] || "").trim().toUpperCase();
+            if (rawMaker.includes("MAHINDRA") && !rawMaker.includes("CHETAK")) return "Mahindra";
+            if (rawMaker.includes("MARUTI")) return "Maruti";
+            if (rawMaker.includes("TATA")) return "Tata";
+            if (rawMaker.includes("HYUNDAI")) return "Hyundai";
+            if (rawMaker.includes("TOYOTA")) return "Toyota";
+            if (rawMaker.includes("KIA")) return "Kia";
+            if (rawMaker.includes("HONDA") && !rawMaker.includes("MOTORCYCLE")) return "Honda";
+            if (rawMaker.includes("MG") || rawMaker.includes("JSW")) return "MG";
+            if (/MERCEDES|BMW|AUDI|VOLVO|JAGUAR|LAND ROVER|PORSCHE/.test(rawMaker)) return "Premium";
+            return "Others";
+          };
+
+          // Aggregate per RTO code
+          const rtoMap: Record<string, {
+            code: string;
+            name: string;
+            district: string;
+            territory: string;
+            tiv: number;
+            oems: Record<string, number>;
+          }> = {};
+
+          allDatasetRows.forEach((r) => {
+            if (selectedSegment !== "ALL") {
+              const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+              if (s !== selectedSegment) return;
+            }
+
+            const rowYr = Number(r.Year || r.year || r.FY || 0);
+            if (!periodYearSet.has(rowYr)) return;
+
+            const code = String(r.RTO_Code || r.rto_code || "").trim();
+            if (!code) return;
+
+            if (!rtoMap[code]) {
+              const name = String(r.final_rto_name || r.finalRtoName || r.RTO_Name || code).trim();
+              const district = String(r.district || "").trim();
+              const territory = String(r.territory || "").trim();
+              const oemsInit: Record<string, number> = {};
+              OEM_KEYS.forEach((o) => { oemsInit[o.key] = 0; });
+
+              rtoMap[code] = {
+                code,
+                name,
+                district,
+                territory,
+                tiv: 0,
+                oems: oemsInit,
+              };
+            }
+
+            // Calculate registration count based on active months or entire year
+            let rowVol = 0;
+            if (activeMonthCols && activeMonthCols.length > 0) {
+              activeMonthCols.forEach((colName) => {
+                const v = colName === "DEC"
+                  ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
+                  : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
+                rowVol += Number(v) || 0;
+              });
+            } else {
+              rowVol = Number(r.TOTAL || r.total || 0);
+            }
+
+            if (rowVol > 0) {
+              const g = getRowGrouping(r);
+              rtoMap[code].tiv += rowVol;
+              rtoMap[code].oems[g] = (rtoMap[code].oems[g] || 0) + rowVol;
+            }
+          });
+
+          // Build sorted list of RTO rows
+          const rows = Object.values(rtoMap)
+            .filter((r) => {
+              if (selectedTerritory !== "ALL" && r.territory !== selectedTerritory) return false;
+              if (selectedDistricts.length > 0 && !selectedDistricts.includes(r.district)) return false;
+              if (selectedRtos.length > 0 && !selectedRtos.includes(r.name) && !selectedRtos.includes(r.code)) return false;
+              if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                return (
+                  r.name.toLowerCase().includes(q) ||
+                  r.code.toLowerCase().includes(q) ||
+                  r.district.toLowerCase().includes(q) ||
+                  r.territory.toLowerCase().includes(q)
+                );
+              }
+              return true;
+            })
+            .sort((a, b) => {
+              // Natural RTO Code sort (e.g. KL1, KL2 ... KL86)
+              const numA = parseInt(a.code.replace(/\D/g, ""), 10) || 0;
+              const numB = parseInt(b.code.replace(/\D/g, ""), 10) || 0;
+              return numA - numB;
+            });
+
+          // Totals calculation
+          const totalOems: Record<string, number> = {};
+          OEM_KEYS.forEach((o) => { totalOems[o.key] = 0; });
+          let grandTiv = 0;
+
+          rows.forEach((r) => {
+            grandTiv += r.tiv;
+            OEM_KEYS.forEach((o) => {
+              totalOems[o.key] += r.oems[o.key] || 0;
+            });
+          });
+
+          return {
+            oemList: OEM_KEYS,
+            rows,
+            grandTiv,
+            totalOems,
+            timeframe: timeframeLabel,
+          };
+        }, [allDatasetRows, selectedSegment, currentPeriod, selectedMonths, selectedTerritory, selectedDistricts, selectedRtos, searchQuery, timeframeLabel]);
+
                 const buildMultiYearSheet = (ws: ExcelJS.Worksheet) => {
           ws.views = [{ showGridLines: true }];
 
@@ -2906,6 +3051,128 @@ export default function ExecutiveDashboard({
             window.URL.revokeObjectURL(url);
           } catch (err: any) {
             alert(`Export MoM Excel error: ${err.message}`);
+          }
+        };
+
+        // Export RTO OEM Share Table as Excel Workbook
+        const handleExportOemShareExcel = async () => {
+          try {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = "Vahan Kerala Live Intelligence";
+            workbook.created = new Date();
+            const ws = workbook.addWorksheet("RTO OEM Share Summary", { views: [{ showGridLines: true }] });
+
+            const title = ws.addRow([`Kerala RTO-Wise OEM Market Share (%) Performance Summary (${oemShareData.timeframe})`]);
+            title.font = { name: "Arial", size: 12, bold: true, color: { argb: "FF0F172A" } };
+
+            const sub = ws.addRow([`Segment: ${selectedSegment} | Generated: ${new Date().toLocaleDateString()} | Total Industry Volume (TIV) & OEM Market Share %`]);
+            sub.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF64748B" } };
+            ws.addRow([]); // Blank
+
+            // Row 4: Headers
+            const headerVals = [
+              "RTO Code",
+              "RTO Name",
+              "District",
+              "Territory",
+              "TIV",
+              ...oemShareData.oemList.map((o) => `${o.label} Share %`),
+            ];
+            const r4 = ws.addRow(headerVals);
+            r4.height = 24;
+
+            r4.eachCell((cell) => {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+              cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFFFFFFF" } };
+              cell.alignment = { vertical: "middle", horizontal: "center" };
+              cell.border = {
+                top: { style: "thin", color: { argb: "FF004C82" } },
+                bottom: { style: "thin", color: { argb: "FF004C82" } },
+                left: { style: "thin", color: { argb: "FF004C82" } },
+                right: { style: "thin", color: { argb: "FF004C82" } },
+              };
+            });
+
+            // Data Rows
+            oemShareData.rows.forEach((r) => {
+              const rowVals: any[] = [
+                r.code,
+                r.name,
+                r.district,
+                r.territory,
+                r.tiv,
+              ];
+              oemShareData.oemList.forEach((o) => {
+                const vol = r.oems[o.key] || 0;
+                rowVals.push(r.tiv > 0 ? vol / r.tiv : 0);
+              });
+
+              const row = ws.addRow(rowVals);
+              row.height = 19;
+              row.eachCell((cell, col) => {
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFFFF" } };
+                cell.font = { name: "Arial", size: 8.5, color: { argb: "FF0F172A" } };
+                cell.border = {
+                  top: { style: "thin", color: { argb: "FFE2E8F0" } },
+                  bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+                  left: { style: "thin", color: { argb: "FFE2E8F0" } },
+                  right: { style: "thin", color: { argb: "FFE2E8F0" } },
+                };
+                cell.alignment = { vertical: "middle", horizontal: col <= 2 ? "left" : "center" };
+                if (col === 5) cell.numFmt = "#,##0";
+                if (col > 5) cell.numFmt = "0.0%";
+              });
+            });
+
+            // Grand Total Row
+            const totVals: any[] = [
+              "TOTAL",
+              "All Kerala Total",
+              "",
+              "",
+              oemShareData.grandTiv,
+            ];
+            oemShareData.oemList.forEach((o) => {
+              const vol = oemShareData.totalOems[o.key] || 0;
+              totVals.push(oemShareData.grandTiv > 0 ? vol / oemShareData.grandTiv : 0);
+            });
+            const totRow = ws.addRow(totVals);
+            totRow.height = 24;
+            totRow.eachCell((cell, col) => {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+              cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFFFFFFF" } };
+              cell.border = {
+                top: { style: "thin", color: { argb: "FF004C82" } },
+                bottom: { style: "double", color: { argb: "FF004C82" } },
+                left: { style: "thin", color: { argb: "FF004C82" } },
+                right: { style: "thin", color: { argb: "FF004C82" } },
+              };
+              cell.alignment = { vertical: "middle", horizontal: col <= 2 ? "left" : "center" };
+              if (col === 5) cell.numFmt = "#,##0";
+              if (col > 5) cell.numFmt = "0.0%";
+            });
+
+            ws.getColumn(1).width = 11;
+            ws.getColumn(2).width = 22;
+            ws.getColumn(3).width = 16;
+            ws.getColumn(4).width = 14;
+            ws.getColumn(5).width = 12;
+            for (let c = 6; c <= headerVals.length; c++) {
+              ws.getColumn(c).width = 12;
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Kerala_RTO_OEM_Market_Share_${oemShareData.timeframe.replace(/[\s():/]+/g, "_")}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          } catch (err: any) {
+            alert(`Export OEM Share Excel error: ${err.message}`);
           }
         };
 
@@ -4242,6 +4509,240 @@ export default function ExecutiveDashboard({
                         );
                       })()}
                     </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* RTO-WISE OEM MARKET SHARE (%) PERFORMANCE TABLE */}
+            {!focusedTable && (
+              <div className="mt-2.5 rounded-[2px] border border-slate-200 dark:border-slate-700/80 shadow-md bg-white dark:bg-[#1e293b] overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="p-1 rounded-[2px] bg-[#0070c0] text-white shadow-xs">
+                      <Layers className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-bold text-xs tracking-wide text-slate-800 dark:text-slate-100">
+                      RTO-Wise OEM Market Share (%) Matrix ({oemShareData.timeframe})
+                    </span>
+                    <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800">
+                      {oemShareData.rows.length} RTOs • TIV • Maruti • Hyundai • Tata • Mahindra • Toyota • Kia • Honda • MG
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Metric Toggle: Share % vs Volume Nos */}
+                    <div className="flex items-center bg-slate-200 dark:bg-slate-800 p-0.5 rounded-[2px] border border-slate-300 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setOemShareMetric("percentage")}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-[2px] transition ${
+                          oemShareMetric === "percentage"
+                            ? "bg-[#0070c0] text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                        }`}
+                      >
+                        Share %
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOemShareMetric("volume")}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-[2px] transition ${
+                          oemShareMetric === "volume"
+                            ? "bg-[#0070c0] text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                        }`}
+                      >
+                        Volume (Nos)
+                      </button>
+                    </div>
+
+                    {/* Export Excel */}
+                    <button
+                      type="button"
+                      onClick={handleExportOemShareExcel}
+                      title="Export RTO OEM Market Share table to formatted Excel"
+                      className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-[#0070c0] hover:bg-[#005fa3] text-white border-[#005a9e] shadow-xs"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Export OEM Share Excel</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grid Table */}
+                <div className="overflow-x-auto max-h-[550px] overflow-y-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="sticky top-0 z-20">
+                      <tr className="bg-[#0070c0] text-white font-bold text-center border-b border-[#005a9e]">
+                        <th className="border border-[#005a9e] px-2 py-2 text-center font-bold w-[70px] whitespace-nowrap bg-[#0070c0]">
+                          RTO Code
+                        </th>
+                        <th className="border border-[#005a9e] px-3 py-2 text-left font-bold w-[180px] whitespace-nowrap bg-[#0070c0]">
+                          RTO Name
+                        </th>
+                        <th className="border border-[#005a9e] px-2 py-2 text-left font-bold w-[120px] whitespace-nowrap bg-[#0070c0]">
+                          District
+                        </th>
+                        <th className="border border-[#005a9e] px-2 py-2 text-center font-bold w-[90px] whitespace-nowrap bg-[#0070c0]">
+                          Total TIV
+                        </th>
+                        {oemShareData.oemList.map((o) => (
+                          <th
+                            key={o.key}
+                            className={`border border-[#005a9e] px-2 py-2 text-center font-bold tracking-wide whitespace-nowrap ${
+                              o.key === "Mahindra"
+                                ? "bg-[#005fa3] text-amber-200"
+                                : o.key === "Maruti"
+                                ? "bg-[#0066b3]"
+                                : ""
+                            }`}
+                          >
+                            {o.label} {oemShareMetric === "percentage" ? "Share %" : "Nos"}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 font-semibold">
+                      {oemShareData.rows.map((r, rIdx) => {
+                        const isEven = rIdx % 2 === 0;
+                        return (
+                          <tr
+                            key={r.code}
+                            className={`transition-colors ${
+                              isDark
+                                ? isEven ? "bg-[#1e293b] hover:bg-[#27354f]" : "bg-[#182438] hover:bg-[#27354f]"
+                                : isEven ? "bg-white hover:bg-slate-50" : "bg-slate-50/70 hover:bg-slate-100/70"
+                            }`}
+                          >
+                            {/* RTO Code */}
+                            <td className="border border-slate-200 dark:border-slate-700/60 px-2 py-1 text-center font-mono font-bold text-[11px] text-sky-600 dark:text-sky-400">
+                              {r.code}
+                            </td>
+
+                            {/* RTO Name */}
+                            <td className="border border-slate-200 dark:border-slate-700/60 px-3 py-1 text-left font-bold text-xs text-slate-800 dark:text-slate-100 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  r.territory === "North Kerala" ? "bg-teal-400" : "bg-indigo-400"
+                                }`} />
+                                <span className="truncate max-w-[170px]" title={r.name}>
+                                  {r.name}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* District */}
+                            <td className="border border-slate-200 dark:border-slate-700/60 px-2 py-1 text-left text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                              {r.district}
+                            </td>
+
+                            {/* Total TIV */}
+                            <td className="border border-slate-200 dark:border-slate-700/60 px-2 py-1 text-center font-bold text-xs tabular-nums text-sky-600 dark:text-sky-300 bg-sky-50/30 dark:bg-sky-950/20">
+                              {r.tiv.toLocaleString()}
+                            </td>
+
+                            {/* OEM Share % or Volume */}
+                            {oemShareData.oemList.map((o) => {
+                              const vol = r.oems[o.key] || 0;
+                              const share = r.tiv > 0 ? (vol / r.tiv) * 100 : 0;
+                              const isMM = o.key === "Mahindra";
+
+                              if (oemShareMetric === "volume") {
+                                return (
+                                  <td
+                                    key={o.key}
+                                    className={`border border-slate-200 dark:border-slate-700/60 px-2 py-1 text-center font-bold text-xs tabular-nums ${
+                                      isMM
+                                        ? "text-rose-500 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/20"
+                                        : "text-slate-700 dark:text-slate-200"
+                                    }`}
+                                  >
+                                    {vol.toLocaleString()}
+                                  </td>
+                                );
+                              }
+
+                              // Share % Badge
+                              let badgeCls = isDark
+                                ? "bg-slate-800 text-slate-300 border-slate-700"
+                                : "bg-slate-100 text-slate-700 border-slate-300";
+
+                              if (isMM) {
+                                if (share >= 7) {
+                                  badgeCls = isDark
+                                    ? "bg-rose-500/20 text-rose-300 border-rose-500/60 font-black"
+                                    : "bg-rose-100 text-rose-800 border-rose-300 font-black";
+                                } else if (share >= 4) {
+                                  badgeCls = isDark
+                                    ? "bg-amber-500/20 text-amber-300 border-amber-500/60"
+                                    : "bg-amber-100 text-amber-800 border-amber-300";
+                                }
+                              } else if (share >= 25) {
+                                badgeCls = isDark
+                                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
+                                  : "bg-emerald-50 text-emerald-800 border-emerald-300";
+                              } else if (share >= 10) {
+                                badgeCls = isDark
+                                  ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
+                                  : "bg-cyan-50 text-cyan-800 border-cyan-300";
+                              }
+
+                              return (
+                                <td
+                                  key={o.key}
+                                  className={`border border-slate-200 dark:border-slate-700/60 px-1 py-1 text-center ${
+                                    isMM ? "bg-rose-500/5 dark:bg-rose-500/10" : ""
+                                  }`}
+                                >
+                                  <span className={`inline-block px-1.5 py-0.5 rounded-[2px] font-bold text-[10px] tabular-nums border ${badgeCls}`}>
+                                    {share.toFixed(1)}%
+                                  </span>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+
+                    {/* Grand Total Footer */}
+                    <tfoot className="sticky bottom-0 z-20">
+                      <tr className="bg-[#0070c0] text-white font-extrabold text-xs border-t-2 border-[#004c82] shadow-inner">
+                        <td colSpan={3} className="border border-[#005a9e] px-3 py-2 text-left font-black uppercase tracking-wider bg-[#0070c0]">
+                          <div className="flex items-center gap-2">
+                            <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                            <span>All Kerala Total ({oemShareData.rows.length} RTOs)</span>
+                          </div>
+                        </td>
+                        <td className="border border-[#005a9e] px-2 py-2 text-center font-black text-xs tabular-nums text-white bg-[#005fa3]">
+                          {oemShareData.grandTiv.toLocaleString()}
+                        </td>
+                        {oemShareData.oemList.map((o) => {
+                          const totVol = oemShareData.totalOems[o.key] || 0;
+                          const totShare = oemShareData.grandTiv > 0 ? (totVol / oemShareData.grandTiv) * 100 : 0;
+                          return (
+                            <td key={o.key} className="border border-[#005a9e] px-1 py-2 text-center bg-[#0070c0]">
+                              {oemShareMetric === "volume" ? (
+                                <span className="font-bold tabular-nums text-white text-xs">
+                                  {totVol.toLocaleString()}
+                                </span>
+                              ) : (
+                                <span className={`inline-block px-1.5 py-0.5 rounded-[2px] font-black text-xs tabular-nums ${
+                                  o.key === "Mahindra"
+                                    ? "bg-amber-300 text-slate-950 shadow-xs"
+                                    : "bg-white text-[#0070c0]"
+                                }`}>
+                                  {totShare.toFixed(1)}%
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </div>
