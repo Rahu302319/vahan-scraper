@@ -2133,6 +2133,83 @@ export default function ExecutiveDashboard({
           };
         }, [allDatasetRows, selectedSegment]);
 
+        // MONTH-ON-MONTH (MoM) PERFORMANCE SUMMARY DATA (Computed dynamically from MariaDB vahan_registrations)
+        const momData = useMemo(() => {
+          const resolveRowOem = (row: any) => {
+            const rawOem = String(row.oemFinal || row.Maker || row.maker || "").trim().toUpperCase();
+            const isMahindra = rawOem.includes("MAHINDRA") && !rawOem.includes("CHETAK");
+            return { isMahindra };
+          };
+
+          const periodMonths = currentPeriod.months.map((m) => {
+            const col = m.code.toUpperCase();
+            const yr = m.calYear;
+            return { id: m.code, label: m.mmmYy, col, yr };
+          });
+
+          const terrs: Array<"North Kerala" | "South Kerala" | "Total"> = ["North Kerala", "South Kerala", "Total"];
+
+          const results = terrs.map((terr) => {
+            let prevTiv: number | null = null;
+            let prevMm: number | null = null;
+
+            const months = periodMonths.map((m) => {
+              let tiv = 0;
+              let mm = 0;
+
+              allDatasetRows.forEach((r) => {
+                if (terr !== "Total" && r.territory !== terr) return;
+                if (selectedSegment !== "ALL") {
+                  const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+                  if (s !== selectedSegment) return;
+                }
+                const rowYr = Number(r.Year || r.year || r.FY || 0);
+                if (rowYr !== m.yr) return;
+
+                const colName = m.col;
+                const v = colName === "DEC"
+                  ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
+                  : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
+                const num = Number(v) || 0;
+                if (num > 0) {
+                  tiv += num;
+                  const { isMahindra } = resolveRowOem(r);
+                  if (isMahindra) mm += num;
+                }
+              });
+
+              const ms = tiv > 0 ? (mm / tiv) * 100 : 0;
+              const momTiv = prevTiv !== null && prevTiv > 0 ? ((tiv - prevTiv) / prevTiv) * 100 : null;
+              const momMm = prevMm !== null && prevMm > 0 ? ((mm - prevMm) / prevMm) * 100 : null;
+
+              prevTiv = tiv;
+              prevMm = mm;
+
+              return {
+                label: m.label,
+                tiv,
+                mm,
+                ms,
+                momTiv,
+                momMm,
+              };
+            });
+
+            return {
+              name: terr,
+              months,
+            };
+          });
+
+          return {
+            periodLabel: currentPeriod.label,
+            monthsList: periodMonths.map((m) => m.label),
+            north: results[0],
+            south: results[1],
+            total: results[2],
+          };
+        }, [allDatasetRows, selectedSegment, currentPeriod]);
+
                 const buildMultiYearSheet = (ws: ExcelJS.Worksheet) => {
           ws.views = [{ showGridLines: true }];
 
@@ -2621,6 +2698,126 @@ export default function ExecutiveDashboard({
               </td>
             </tr>
           );
+        };
+
+        // Export MoM Summary as Excel Workbook
+        const handleExportMomExcel = async () => {
+          try {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = "Vahan Kerala Live Intelligence";
+            workbook.created = new Date();
+            const ws = workbook.addWorksheet("Month on Month Summary", { views: [{ showGridLines: true }] });
+
+            const title = ws.addRow([`Kerala Month-on-Month (MoM) Registration & Market Share Performance Summary (${momData.periodLabel})`]);
+            title.font = { name: "Arial", size: 12, bold: true, color: { argb: "FF0F172A" } };
+
+            const sub = ws.addRow([`Segment: ${selectedSegment} | Generated: ${new Date().toLocaleDateString()} | Metrics: TIV, M&M Nos, Market Share (MS%), MoM Growth (%)`]);
+            sub.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF64748B" } };
+            ws.addRow([]); // Blank
+
+            // Row 4: Super Headers (Territory + 12 Months)
+            const r4Vals = ["Territory"];
+            momData.monthsList.forEach((m) => {
+              r4Vals.push(m, "", "", "", "");
+            });
+            const r4 = ws.addRow(r4Vals);
+            r4.height = 24;
+
+            // Row 5: Sub Headers
+            const r5Vals = [""];
+            momData.monthsList.forEach(() => {
+              r5Vals.push("TIV", "M&M", "MS%", "MoM TIV", "MoM M&M");
+            });
+            const r5 = ws.addRow(r5Vals);
+            r5.height = 20;
+
+            ws.mergeCells(4, 1, 5, 1);
+            let cIdx = 2;
+            momData.monthsList.forEach(() => {
+              ws.mergeCells(4, cIdx, 4, cIdx + 4);
+              cIdx += 5;
+            });
+
+            [r4, r5].forEach((row) => {
+              row.eachCell((cell) => {
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+                cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFFFFFFF" } };
+                cell.alignment = { vertical: "middle", horizontal: "center" };
+                cell.border = {
+                  top: { style: "thin", color: { argb: "FF004C82" } },
+                  bottom: { style: "thin", color: { argb: "FF004C82" } },
+                  left: { style: "thin", color: { argb: "FF004C82" } },
+                  right: { style: "thin", color: { argb: "FF004C82" } },
+                };
+              });
+            });
+
+            const appendMomRow = (item: typeof momData.north, isTotal: boolean) => {
+              const rowVals: any[] = [item.name];
+              item.months.forEach((m) => {
+                rowVals.push(
+                  m.tiv,
+                  m.mm,
+                  m.ms / 100,
+                  m.momTiv !== null ? m.momTiv / 100 : "-",
+                  m.momMm !== null ? m.momMm / 100 : "-"
+                );
+              });
+              const row = ws.addRow(rowVals);
+              row.height = 22;
+
+              row.eachCell((cell, col) => {
+                if (isTotal) {
+                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+                  cell.font = { name: "Arial", size: 9.5, bold: true, color: { argb: "FFFFFFFF" } };
+                  cell.border = {
+                    top: { style: "thin", color: { argb: "FF004C82" } },
+                    bottom: { style: "double", color: { argb: "FF004C82" } },
+                    left: { style: "thin", color: { argb: "FF004C82" } },
+                    right: { style: "thin", color: { argb: "FF004C82" } },
+                  };
+                } else {
+                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFFFF" } };
+                  cell.font = { name: "Arial", size: 9, bold: col === 1, color: { argb: "FF0F172A" } };
+                  cell.border = {
+                    top: { style: "thin", color: { argb: "FFCBD5E1" } },
+                    bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+                    left: { style: "thin", color: { argb: "FFCBD5E1" } },
+                    right: { style: "thin", color: { argb: "FFCBD5E1" } },
+                  };
+                }
+                cell.alignment = { vertical: "middle", horizontal: col === 1 ? "left" : "center" };
+
+                if (col > 1) {
+                  const rem = (col - 2) % 5;
+                  if (rem === 0 || rem === 1) cell.numFmt = "#,##0";
+                  else cell.numFmt = "0.0%";
+                }
+              });
+            };
+
+            appendMomRow(momData.north, false);
+            appendMomRow(momData.south, false);
+            appendMomRow(momData.total, true);
+
+            ws.getColumn(1).width = 16;
+            for (let c = 2; c <= r4Vals.length; c++) {
+              ws.getColumn(c).width = 10;
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Kerala_Month_on_Month_Summary_${momData.periodLabel.replace(/\s+/g, "_")}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          } catch (err: any) {
+            alert(`Export MoM Excel error: ${err.message}`);
+          }
         };
 
         // Styled Excel Export matching the table UI, colors, merged cells, and borders
@@ -3686,6 +3883,176 @@ export default function ExecutiveDashboard({
                       {renderMultiYearDataRow(multiYearData.north, false)}
                       {renderMultiYearDataRow(multiYearData.south, false)}
                       {renderMultiYearDataRow(multiYearData.total, true)}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* MONTH-ON-MONTH (MoM) PERFORMANCE SUMMARY TABLE */}
+            {!focusedTable && (
+              <div className="mt-2.5 rounded-[2px] border border-slate-200 dark:border-slate-700/80 shadow-md bg-white dark:bg-[#1e293b] overflow-hidden">
+                {/* HUD Header */}
+                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="p-1 rounded-[2px] bg-[#0070c0] text-white shadow-xs">
+                      <Calendar className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-bold text-xs tracking-wide text-slate-800 dark:text-slate-100">
+                      Month-on-Month (MoM) Performance Summary ({momData.periodLabel})
+                    </span>
+                    <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800">
+                      TIV • M&M • MS% • MoM Growth (%)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {/* Export Excel Button */}
+                    <button
+                      type="button"
+                      onClick={handleExportMomExcel}
+                      title="Export Month-on-Month Summary Table to Excel"
+                      className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-[#0070c0] hover:bg-[#005fa3] text-white border-[#005a9e] shadow-xs"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Export MoM Excel</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* MoM Grid Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      {/* Row 1 Super-Headers */}
+                      <tr className="bg-[#0070c0] text-white font-bold text-center border-b border-[#005a9e]">
+                        <th rowSpan={2} className="border border-[#005a9e] px-3 py-2 text-left font-bold w-[130px] whitespace-nowrap bg-[#0070c0]">
+                          Territory
+                        </th>
+                        {momData.monthsList.map((m) => (
+                          <th key={m} colSpan={5} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                            {m}
+                          </th>
+                        ))}
+                      </tr>
+
+                      {/* Row 2 Sub-Headers */}
+                      <tr className="bg-[#0070c0] text-white font-bold text-center border-b border-[#005a9e]">
+                        {momData.monthsList.map((m) => (
+                          <React.Fragment key={`${m}-sub`}>
+                            <th className="border border-[#005a9e] px-1.5 py-1 text-center font-bold text-[10.5px]">TIV</th>
+                            <th className="border border-[#005a9e] px-1.5 py-1 text-center font-bold text-[10.5px]">M&M</th>
+                            <th className="border border-[#005a9e] px-1.5 py-1 text-center font-bold text-[10.5px]">MS%</th>
+                            <th className="border border-[#005a9e] px-1 py-1 text-center font-bold text-[10px]">MoM TIV</th>
+                            <th className="border border-[#005a9e] px-1 py-1 text-center font-bold text-[10px]">MoM M&M</th>
+                          </React.Fragment>
+                        ))}
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 font-semibold">
+                      {[momData.north, momData.south, momData.total].map((rowItem) => {
+                        const isTotal = rowItem.name === "Total";
+                        const gridBrd = isTotal ? "border-[#005a9e]" : isDark ? "border-slate-700/80" : "border-slate-200";
+
+                        return (
+                          <tr
+                            key={rowItem.name}
+                            className={`transition-colors ${
+                              isTotal
+                                ? "bg-[#0070c0] text-white font-extrabold shadow-inner"
+                                : isDark
+                                ? "bg-[#1e293b] hover:bg-[#27354f] text-slate-100"
+                                : "bg-white hover:bg-slate-50/80 text-slate-800"
+                            }`}
+                          >
+                            {/* Territory Label */}
+                            <td className={`border px-3 py-2 text-left font-bold whitespace-nowrap text-xs ${gridBrd} ${
+                              isTotal ? "bg-[#0070c0] text-white font-black" : isDark ? "bg-slate-900/40" : "bg-slate-50/70"
+                            }`}>
+                              <div className="flex items-center gap-2">
+                                {!isTotal ? (
+                                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ring-2 ${
+                                    rowItem.name === "North Kerala" ? "bg-teal-400 ring-teal-400/30" : "bg-indigo-400 ring-indigo-400/30"
+                                  }`} />
+                                ) : (
+                                  <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                                )}
+                                <span className={isTotal ? "font-black tracking-wide text-white uppercase text-xs" : "font-bold"}>
+                                  {rowItem.name}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* 12 Months Metrics */}
+                            {rowItem.months.map((m) => {
+                              const renderMomGrowth = (val: number | null) => {
+                                if (val === null) return <span className="text-slate-400 font-semibold text-[10px]">-</span>;
+                                const isPos = val >= 0;
+                                const text = `${isPos ? "+" : ""}${val.toFixed(1)}%`;
+                                if (isTotal) {
+                                  return (
+                                    <span className="inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10px] bg-white/20 text-white border border-white/30 tabular-nums">
+                                      {text}
+                                    </span>
+                                  );
+                                }
+                                const badge = isPos
+                                  ? isDark ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40" : "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                                  : isDark ? "bg-rose-500/15 text-rose-300 border border-rose-500/40" : "bg-rose-50 text-rose-700 border border-rose-300";
+                                return (
+                                  <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[9.5px] tabular-nums ${badge}`}>
+                                    {text}
+                                  </span>
+                                );
+                              };
+
+                              return (
+                                <React.Fragment key={m.label}>
+                                  {/* TIV */}
+                                  <td className={`border px-1.5 py-1.5 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                                    isTotal ? "text-white" : "text-sky-500 dark:text-sky-400"
+                                  }`}>
+                                    {m.tiv.toLocaleString()}
+                                  </td>
+                                  {/* M&M */}
+                                  <td className={`border px-1.5 py-1.5 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                                    isTotal ? "text-white" : "text-rose-500 dark:text-rose-400"
+                                  }`}>
+                                    {m.mm.toLocaleString()}
+                                  </td>
+                                  {/* MS% */}
+                                  <td className={`border px-1 py-1.5 text-center ${gridBrd}`}>
+                                    {isTotal ? (
+                                      <span className="inline-block px-1.5 py-0.5 rounded-[2px] font-black text-xs bg-white text-[#0070c0]">
+                                        {m.ms.toFixed(1)}%
+                                      </span>
+                                    ) : (
+                                      <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10.5px] tabular-nums ${
+                                        m.ms >= 7
+                                          ? isDark ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50" : "bg-emerald-50 text-emerald-800 border border-emerald-300"
+                                          : m.ms >= 4
+                                          ? isDark ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50" : "bg-cyan-50 text-cyan-800 border border-cyan-300"
+                                          : isDark ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-slate-100 text-slate-700 border border-slate-300"
+                                      }`}>
+                                        {m.ms.toFixed(1)}%
+                                      </span>
+                                    )}
+                                  </td>
+                                  {/* MoM TIV */}
+                                  <td className={`border px-1 py-1 text-center ${gridBrd}`}>
+                                    {renderMomGrowth(m.momTiv)}
+                                  </td>
+                                  {/* MoM M&M */}
+                                  <td className={`border px-1 py-1 text-center ${gridBrd}`}>
+                                    {renderMomGrowth(m.momMm)}
+                                  </td>
+                                </React.Fragment>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
