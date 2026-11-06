@@ -728,6 +728,9 @@ export default function ExecutiveDashboard({
   // Focus Mode State for Tables: "North Kerala" | "South Kerala" | null
   const [focusedTable, setFocusedTable] = useState<"North Kerala" | "South Kerala" | null>(null);
 
+  // Month-on-Month Table View Mode: "territory" | "district"
+  const [momViewMode, setMomViewMode] = useState<"territory" | "district">("district");
+
   // Transient Copy-as-Image Feedback Status: territory -> message
   const [copyStatus, setCopyStatus] = useState<Record<string, string>>({});
 
@@ -2201,12 +2204,87 @@ export default function ExecutiveDashboard({
             };
           });
 
+          // Compute District-Wise MoM
+          const allDistricts = [
+            // North Kerala (7)
+            { name: "Kasargod", territory: "North Kerala" },
+            { name: "Kannur", territory: "North Kerala" },
+            { name: "Wayanad", territory: "North Kerala" },
+            { name: "Kozhikode", territory: "North Kerala" },
+            { name: "Malappuram", territory: "North Kerala" },
+            { name: "Palakkad", territory: "North Kerala" },
+            { name: "Thrissur", territory: "North Kerala" },
+            // South Kerala (7)
+            { name: "Ernakulam", territory: "South Kerala" },
+            { name: "Idukki", territory: "South Kerala" },
+            { name: "Kottayam", territory: "South Kerala" },
+            { name: "Alappuzha", territory: "South Kerala" },
+            { name: "Pathanamthitta", territory: "South Kerala" },
+            { name: "Kollam", territory: "South Kerala" },
+            { name: "Thiruvananthapuram", territory: "South Kerala" },
+          ];
+
+          const districtResults = allDistricts.map((d) => {
+            let prevTiv: number | null = null;
+            let prevMm: number | null = null;
+
+            const months = periodMonths.map((m) => {
+              let tiv = 0;
+              let mm = 0;
+
+              allDatasetRows.forEach((r) => {
+                const rDist = String(r.district || "").trim().toLowerCase();
+                if (rDist !== d.name.toLowerCase()) return;
+                if (selectedSegment !== "ALL") {
+                  const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+                  if (s !== selectedSegment) return;
+                }
+                const rowYr = Number(r.Year || r.year || r.FY || 0);
+                if (rowYr !== m.yr) return;
+
+                const colName = m.col;
+                const v = colName === "DEC"
+                  ? (r["DEC"] ?? r["dec_val"] ?? r["dec"] ?? 0)
+                  : (r[colName] ?? r[colName.toLowerCase()] ?? 0);
+                const num = Number(v) || 0;
+                if (num > 0) {
+                  tiv += num;
+                  const { isMahindra } = resolveRowOem(r);
+                  if (isMahindra) mm += num;
+                }
+              });
+
+              const ms = tiv > 0 ? (mm / tiv) * 100 : 0;
+              const momTiv = prevTiv !== null && prevTiv > 0 ? ((tiv - prevTiv) / prevTiv) * 100 : null;
+              const momMm = prevMm !== null && prevMm > 0 ? ((mm - prevMm) / prevMm) * 100 : null;
+
+              prevTiv = tiv;
+              prevMm = mm;
+
+              return {
+                label: m.label,
+                tiv,
+                mm,
+                ms,
+                momTiv,
+                momMm,
+              };
+            });
+
+            return {
+              name: d.name,
+              territory: d.territory,
+              months,
+            };
+          });
+
           return {
             periodLabel: currentPeriod.label,
             monthsList: periodMonths.map((m) => m.label),
             north: results[0],
             south: results[1],
             total: results[2],
+            districts: districtResults,
           };
         }, [allDatasetRows, selectedSegment, currentPeriod]);
 
@@ -2752,8 +2830,8 @@ export default function ExecutiveDashboard({
               });
             });
 
-            const appendMomRow = (item: typeof momData.north, isTotal: boolean) => {
-              const rowVals: any[] = [item.name];
+            const appendMomRow = (item: { name: string; months: typeof momData.north.months; territory?: string }, isTotal: boolean, isDistrict: boolean = false) => {
+              const rowVals: any[] = [isDistrict ? `   ${item.name}` : item.name];
               item.months.forEach((m) => {
                 rowVals.push(
                   m.tiv,
@@ -2764,7 +2842,7 @@ export default function ExecutiveDashboard({
                 );
               });
               const row = ws.addRow(rowVals);
-              row.height = 22;
+              row.height = isDistrict ? 19 : 22;
 
               row.eachCell((cell, col) => {
                 if (isTotal) {
@@ -2775,6 +2853,15 @@ export default function ExecutiveDashboard({
                     bottom: { style: "double", color: { argb: "FF004C82" } },
                     left: { style: "thin", color: { argb: "FF004C82" } },
                     right: { style: "thin", color: { argb: "FF004C82" } },
+                  };
+                } else if (isDistrict) {
+                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+                  cell.font = { name: "Arial", size: 8.5, bold: col === 1, color: { argb: "FF334155" } };
+                  cell.border = {
+                    top: { style: "thin", color: { argb: "FFE2E8F0" } },
+                    bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+                    left: { style: "thin", color: { argb: "FFE2E8F0" } },
+                    right: { style: "thin", color: { argb: "FFE2E8F0" } },
                   };
                 } else {
                   cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFFFF" } };
@@ -2797,7 +2884,9 @@ export default function ExecutiveDashboard({
             };
 
             appendMomRow(momData.north, false);
+            momData.districts.filter(d => d.territory === "North Kerala").forEach(d => appendMomRow(d, false, true));
             appendMomRow(momData.south, false);
+            momData.districts.filter(d => d.territory === "South Kerala").forEach(d => appendMomRow(d, false, true));
             appendMomRow(momData.total, true);
 
             ws.getColumn(1).width = 16;
@@ -3906,7 +3995,33 @@ export default function ExecutiveDashboard({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
+                    {/* View Mode Toggle: Territory View vs District-Wise View */}
+                    <div className="flex items-center bg-slate-200 dark:bg-slate-800 p-0.5 rounded-[2px] border border-slate-300 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setMomViewMode("district")}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-[2px] transition ${
+                          momViewMode === "district"
+                            ? "bg-[#0070c0] text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                        }`}
+                      >
+                        District-Wise
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMomViewMode("territory")}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-[2px] transition ${
+                          momViewMode === "territory"
+                            ? "bg-[#0070c0] text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                        }`}
+                      >
+                        Territory-Only
+                      </button>
+                    </div>
+
                     {/* Export Excel Button */}
                     <button
                       type="button"
@@ -3926,8 +4041,8 @@ export default function ExecutiveDashboard({
                     <thead>
                       {/* Row 1 Super-Headers */}
                       <tr className="bg-[#0070c0] text-white font-bold text-center border-b border-[#005a9e]">
-                        <th rowSpan={2} className="border border-[#005a9e] px-3 py-2 text-left font-bold w-[130px] whitespace-nowrap bg-[#0070c0]">
-                          Territory
+                        <th rowSpan={2} className="border border-[#005a9e] px-3 py-2 text-left font-bold w-[140px] whitespace-nowrap bg-[#0070c0]">
+                          {momViewMode === "district" ? "District / Territory" : "Territory"}
                         </th>
                         {momData.monthsList.map((m) => (
                           <th key={m} colSpan={5} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
@@ -3951,108 +4066,181 @@ export default function ExecutiveDashboard({
                     </thead>
 
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 font-semibold">
-                      {[momData.north, momData.south, momData.total].map((rowItem) => {
-                        const isTotal = rowItem.name === "Total";
-                        const gridBrd = isTotal ? "border-[#005a9e]" : isDark ? "border-slate-700/80" : "border-slate-200";
+                      {(() => {
+                        const renderRow = (
+                          rowItem: { name: string; months: typeof momData.north.months; territory?: string },
+                          rowType: "total" | "territory" | "district"
+                        ) => {
+                          const isTotal = rowType === "total";
+                          const isTerritory = rowType === "territory";
+                          const isDistrict = rowType === "district";
 
-                        return (
-                          <tr
-                            key={rowItem.name}
-                            className={`transition-colors ${
-                              isTotal
-                                ? "bg-[#0070c0] text-white font-extrabold shadow-inner"
-                                : isDark
-                                ? "bg-[#1e293b] hover:bg-[#27354f] text-slate-100"
-                                : "bg-white hover:bg-slate-50/80 text-slate-800"
-                            }`}
-                          >
-                            {/* Territory Label */}
-                            <td className={`border px-3 py-2 text-left font-bold whitespace-nowrap text-xs ${gridBrd} ${
-                              isTotal ? "bg-[#0070c0] text-white font-black" : isDark ? "bg-slate-900/40" : "bg-slate-50/70"
-                            }`}>
-                              <div className="flex items-center gap-2">
-                                {!isTotal ? (
-                                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ring-2 ${
-                                    rowItem.name === "North Kerala" ? "bg-teal-400 ring-teal-400/30" : "bg-indigo-400 ring-indigo-400/30"
-                                  }`} />
-                                ) : (
-                                  <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                                )}
-                                <span className={isTotal ? "font-black tracking-wide text-white uppercase text-xs" : "font-bold"}>
-                                  {rowItem.name}
-                                </span>
-                              </div>
-                            </td>
+                          const gridBrd = isTotal
+                            ? "border-[#005a9e]"
+                            : isTerritory
+                            ? isDark ? "border-slate-600" : "border-slate-300"
+                            : isDark ? "border-slate-700/60" : "border-slate-200";
 
-                            {/* 12 Months Metrics */}
-                            {rowItem.months.map((m) => {
-                              const renderMomGrowth = (val: number | null) => {
-                                if (val === null) return <span className="text-slate-400 font-semibold text-[10px]">-</span>;
-                                const isPos = val >= 0;
-                                const text = `${isPos ? "+" : ""}${val.toFixed(1)}%`;
-                                if (isTotal) {
+                          return (
+                            <tr
+                              key={`${rowType}-${rowItem.name}`}
+                              className={`transition-colors ${
+                                isTotal
+                                  ? "bg-[#0070c0] text-white font-extrabold shadow-inner"
+                                  : isTerritory
+                                  ? isDark ? "bg-[#152238] font-bold text-sky-200" : "bg-sky-50 font-bold text-sky-950"
+                                  : isDark
+                                  ? "bg-[#1e293b] hover:bg-[#27354f] text-slate-100"
+                                  : "bg-white hover:bg-slate-50/80 text-slate-800"
+                              }`}
+                            >
+                              {/* Label Column */}
+                              <td className={`border px-3 py-1.5 text-left whitespace-nowrap text-xs ${gridBrd} ${
+                                isTotal
+                                  ? "bg-[#0070c0] text-white font-black"
+                                  : isTerritory
+                                  ? isDark ? "bg-[#152238] font-black" : "bg-sky-100/70 font-black"
+                                  : isDark ? "bg-slate-900/30 font-semibold" : "bg-slate-50/50 font-semibold"
+                              }`}>
+                                <div className={`flex items-center gap-2 ${isDistrict ? "pl-3.5" : ""}`}>
+                                  {isTotal ? (
+                                    <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                                  ) : isTerritory ? (
+                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ring-2 ${
+                                      rowItem.name === "North Kerala" ? "bg-teal-400 ring-teal-400/30" : "bg-indigo-400 ring-indigo-400/30"
+                                    }`} />
+                                  ) : (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                                  )}
+                                  <span className={
+                                    isTotal
+                                      ? "font-black tracking-wide text-white uppercase text-xs"
+                                      : isTerritory
+                                      ? "font-extrabold uppercase tracking-wide text-xs"
+                                      : "font-semibold text-xs text-slate-700 dark:text-slate-200"
+                                  }>
+                                    {rowItem.name} {isTerritory && "Total"}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* 12 Months Metrics */}
+                              {rowItem.months.map((m) => {
+                                const renderMomGrowth = (val: number | null) => {
+                                  if (val === null) return <span className="text-slate-400 font-semibold text-[10px]">-</span>;
+                                  const isPos = val >= 0;
+                                  const text = `${isPos ? "+" : ""}${val.toFixed(1)}%`;
+                                  if (isTotal) {
+                                    return (
+                                      <span className="inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10px] bg-white/20 text-white border border-white/30 tabular-nums">
+                                        {text}
+                                      </span>
+                                    );
+                                  }
+                                  const badge = isPos
+                                    ? isDark ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40" : "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                                    : isDark ? "bg-rose-500/15 text-rose-300 border border-rose-500/40" : "bg-rose-50 text-rose-700 border border-rose-300";
                                   return (
-                                    <span className="inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10px] bg-white/20 text-white border border-white/30 tabular-nums">
+                                    <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[9.5px] tabular-nums ${badge}`}>
                                       {text}
                                     </span>
                                   );
-                                }
-                                const badge = isPos
-                                  ? isDark ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40" : "bg-emerald-50 text-emerald-700 border border-emerald-300"
-                                  : isDark ? "bg-rose-500/15 text-rose-300 border border-rose-500/40" : "bg-rose-50 text-rose-700 border border-rose-300";
-                                return (
-                                  <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[9.5px] tabular-nums ${badge}`}>
-                                    {text}
-                                  </span>
-                                );
-                              };
+                                };
 
-                              return (
-                                <React.Fragment key={m.label}>
-                                  {/* TIV */}
-                                  <td className={`border px-1.5 py-1.5 text-center font-bold text-xs tabular-nums ${gridBrd} ${
-                                    isTotal ? "text-white" : "text-sky-500 dark:text-sky-400"
-                                  }`}>
-                                    {m.tiv.toLocaleString()}
-                                  </td>
-                                  {/* M&M */}
-                                  <td className={`border px-1.5 py-1.5 text-center font-bold text-xs tabular-nums ${gridBrd} ${
-                                    isTotal ? "text-white" : "text-rose-500 dark:text-rose-400"
-                                  }`}>
-                                    {m.mm.toLocaleString()}
-                                  </td>
-                                  {/* MS% */}
-                                  <td className={`border px-1 py-1.5 text-center ${gridBrd}`}>
-                                    {isTotal ? (
-                                      <span className="inline-block px-1.5 py-0.5 rounded-[2px] font-black text-xs bg-white text-[#0070c0]">
-                                        {m.ms.toFixed(1)}%
-                                      </span>
-                                    ) : (
-                                      <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10.5px] tabular-nums ${
-                                        m.ms >= 7
-                                          ? isDark ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50" : "bg-emerald-50 text-emerald-800 border border-emerald-300"
-                                          : m.ms >= 4
-                                          ? isDark ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50" : "bg-cyan-50 text-cyan-800 border border-cyan-300"
-                                          : isDark ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-slate-100 text-slate-700 border border-slate-300"
-                                      }`}>
-                                        {m.ms.toFixed(1)}%
-                                      </span>
-                                    )}
-                                  </td>
-                                  {/* MoM TIV */}
-                                  <td className={`border px-1 py-1 text-center ${gridBrd}`}>
-                                    {renderMomGrowth(m.momTiv)}
-                                  </td>
-                                  {/* MoM M&M */}
-                                  <td className={`border px-1 py-1 text-center ${gridBrd}`}>
-                                    {renderMomGrowth(m.momMm)}
-                                  </td>
-                                </React.Fragment>
-                              );
-                            })}
-                          </tr>
+                                return (
+                                  <React.Fragment key={m.label}>
+                                    {/* TIV */}
+                                    <td className={`border px-1.5 py-1 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                                      isTotal
+                                        ? "text-white"
+                                        : isTerritory
+                                        ? "text-sky-600 dark:text-sky-300"
+                                        : "text-sky-500 dark:text-sky-400"
+                                    }`}>
+                                      {m.tiv.toLocaleString()}
+                                    </td>
+                                    {/* M&M */}
+                                    <td className={`border px-1.5 py-1 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                                      isTotal
+                                        ? "text-white"
+                                        : isTerritory
+                                        ? "text-rose-600 dark:text-rose-300"
+                                        : "text-rose-500 dark:text-rose-400"
+                                    }`}>
+                                      {m.mm.toLocaleString()}
+                                    </td>
+                                    {/* MS% */}
+                                    <td className={`border px-1 py-1 text-center ${gridBrd}`}>
+                                      {isTotal ? (
+                                        <span className="inline-block px-1.5 py-0.5 rounded-[2px] font-black text-xs bg-white text-[#0070c0]">
+                                          {m.ms.toFixed(1)}%
+                                        </span>
+                                      ) : (
+                                        <span className={`inline-block px-1 py-0.5 rounded-[2px] font-bold text-[10.5px] tabular-nums ${
+                                          m.ms >= 7
+                                            ? isDark ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50" : "bg-emerald-50 text-emerald-800 border border-emerald-300"
+                                            : m.ms >= 4
+                                            ? isDark ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50" : "bg-cyan-50 text-cyan-800 border border-cyan-300"
+                                            : isDark ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-slate-100 text-slate-700 border border-slate-300"
+                                        }`}>
+                                          {m.ms.toFixed(1)}%
+                                        </span>
+                                      )}
+                                    </td>
+                                    {/* MoM TIV */}
+                                    <td className={`border px-1 py-0.5 text-center ${gridBrd}`}>
+                                      {renderMomGrowth(m.momTiv)}
+                                    </td>
+                                    {/* MoM M&M */}
+                                    <td className={`border px-1 py-0.5 text-center ${gridBrd}`}>
+                                      {renderMomGrowth(m.momMm)}
+                                    </td>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </tr>
+                          );
+                        };
+
+                        if (momViewMode === "territory") {
+                          return (
+                            <>
+                              {renderRow(momData.north, "territory")}
+                              {renderRow(momData.south, "territory")}
+                              {renderRow(momData.total, "total")}
+                            </>
+                          );
+                        }
+
+                        // District-Wise View: Grouped with North Kerala and South Kerala
+                        const northDistricts = momData.districts.filter((d) => d.territory === "North Kerala");
+                        const southDistricts = momData.districts.filter((d) => d.territory === "South Kerala");
+
+                        return (
+                          <>
+                            {/* North Kerala Section */}
+                            <tr className="bg-teal-700 text-white font-extrabold text-xs">
+                              <td colSpan={1 + momData.monthsList.length * 5} className="px-3 py-1 text-left tracking-wider uppercase bg-teal-800 text-teal-100">
+                                North Kerala Region (7 Districts)
+                              </td>
+                            </tr>
+                            {northDistricts.map((d) => renderRow(d, "district"))}
+                            {renderRow(momData.north, "territory")}
+
+                            {/* South Kerala Section */}
+                            <tr className="bg-indigo-700 text-white font-extrabold text-xs">
+                              <td colSpan={1 + momData.monthsList.length * 5} className="px-3 py-1 text-left tracking-wider uppercase bg-indigo-800 text-indigo-100">
+                                South Kerala Region (7 Districts)
+                              </td>
+                            </tr>
+                            {southDistricts.map((d) => renderRow(d, "district"))}
+                            {renderRow(momData.south, "territory")}
+
+                            {/* Grand Total */}
+                            {renderRow(momData.total, "total")}
+                          </>
                         );
-                      })}
+                      })()}
                     </tbody>
                   </table>
                 </div>
