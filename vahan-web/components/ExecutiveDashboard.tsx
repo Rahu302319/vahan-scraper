@@ -3550,61 +3550,6 @@ export default function ExecutiveDashboard({
               />
             )}
 
-            {/* Main Section Heading: Registration Summary Table */}
-            {!focusedTable && (
-              <div className={`mt-3 flex flex-wrap items-center justify-between gap-2.5 px-3 py-2 rounded-[2px] border ${
-                isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-white border-slate-200 shadow-xs"
-              }`}>
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-[2px] bg-gradient-to-br from-indigo-500 to-sky-600 text-white shadow-xs">
-                    <Table className="w-4 h-4" />
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className={`text-xs sm:text-sm font-bold tracking-wide ${isDark ? "text-slate-100" : "text-slate-800"}`}>
-                      Registration Summary Table
-                    </h2>
-                    <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
-                      isDark ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-300 text-slate-700"
-                    }`}>
-                      North & South Kerala
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border ${
-                      isDark ? "bg-sky-500/15 border-sky-500/60 text-sky-300" : "bg-sky-50 border-sky-200 text-sky-800"
-                    }`}>
-                      {combatTableTotals.count} RTOs Total
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search RTO, District..."
-                      value={tableSearch}
-                      onChange={(e) => setTableSearch(e.target.value)}
-                      className={`h-7 pl-6 pr-2 py-0.5 text-xs font-semibold rounded-[2px] border focus:outline-none transition ${
-                        isDark
-                          ? "bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-500 focus:border-sky-500"
-                          : "bg-white border-slate-200 text-slate-800 focus:border-sky-500 shadow-2xs"
-                      }`}
-                    />
-                  </div>
-
-                  {/* Main Export Excel Button (Exports All Kerala with Exact Table UI & Colors) */}
-                  <button
-                    type="button"
-                    onClick={() => handleExportStyledExcel("ALL")}
-                    title="Export All Kerala Summary Table to Excel (styled with exact UI colors, merged cells & borders)"
-                    className="h-7 px-3 py-1 flex items-center gap-1.5 text-xs font-semibold rounded-[2px] shadow-xs transition bg-[#00a86b] hover:bg-[#00925d] text-white border border-[#008f5a]"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Export Excel</span>
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* MULTI-YEAR TERRITORY PERFORMANCE SUMMARY TABLE (FY 23 - FY 26) */}
             {!focusedTable && (
