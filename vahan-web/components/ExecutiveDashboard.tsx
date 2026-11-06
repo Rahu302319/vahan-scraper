@@ -36,7 +36,10 @@ import {
   Minimize2,
   X,
   Camera,
-  Copy
+  Copy,
+  Target,
+  Compass,
+  Briefcase
 } from "lucide-react";
 import ExcelJS from "exceljs";
 
@@ -727,6 +730,9 @@ export default function ExecutiveDashboard({
 
   // Focus Mode State for Tables: "North Kerala" | "South Kerala" | null
   const [focusedTable, setFocusedTable] = useState<"North Kerala" | "South Kerala" | null>(null);
+
+  // Sub-view toggle: 'dashboard' (Power BI Visual Dashboard) vs 'tables' (Detailed Combat Tables)
+  const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "tables">("dashboard");
 
   // Month-on-Month Table View Mode: "territory" | "district"
   const [momViewMode, setMomViewMode] = useState<"territory" | "district">("district");
@@ -1876,102 +1882,48 @@ export default function ExecutiveDashboard({
               )}
             </div>
 
-            {/* COMBAT TELEMETRY KPI CARDS (Vibrant, Sleek & High-Density) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-800/80">
-              {/* Card 1: Total Industry Volume */}
-              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
-                isDark ? "bg-gradient-to-br from-slate-900/90 to-sky-950/40 border-sky-800/40" : "bg-gradient-to-br from-white to-sky-50/60 border-sky-200/80"
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-sky-300" : "text-sky-700"}`}>
-                    State Total (TIV)
-                  </span>
-                  <div className="p-1 rounded bg-sky-500/20 text-sky-400">
-                    <Car className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-sky-500 dark:text-sky-400">
-                    {combatTableTotals.total.toLocaleString()}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    {timeframeLabel}
-                  </span>
-                </div>
+            {/* DASHBOARD VIEW SWITCHER (POWER BI DASHBOARD vs COMBAT TABLES) */}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800/80">
+              <div className="flex items-center gap-1.5 p-0.5 rounded-[3px] border shadow-inner bg-slate-100 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab("dashboard")}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[2px] transition-all ${
+                    activeSubTab === "dashboard"
+                      ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white shadow-sm"
+                      : isDark
+                      ? "text-slate-400 hover:text-slate-200"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span>Power BI Visual Dashboard</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab("tables")}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[2px] transition-all ${
+                    activeSubTab === "tables"
+                      ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white shadow-sm"
+                      : isDark
+                      ? "text-slate-400 hover:text-slate-200"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Table className="w-3.5 h-3.5" />
+                  <span>District & RTO Matrices</span>
+                </button>
               </div>
 
-              {/* Card 2: Mahindra & Mahindra Volume */}
-              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
-                isDark ? "bg-gradient-to-br from-slate-900/90 to-rose-950/40 border-rose-800/40" : "bg-gradient-to-br from-white to-rose-50/60 border-rose-200/80"
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-rose-300" : "text-rose-700"}`}>
-                    Mahindra Volume
-                  </span>
-                  <div className="p-1 rounded bg-rose-500/20 text-rose-400">
-                    <Award className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-rose-500 dark:text-rose-400">
-                    {combatTableTotals.mm.toLocaleString()}
-                  </span>
-                  <span className="text-[10px] font-bold text-rose-400/90">
-                    {selectedSegment} Units
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 3: Mahindra Market Share */}
-              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
-                isDark ? "bg-gradient-to-br from-slate-900/90 to-emerald-950/40 border-emerald-800/40" : "bg-gradient-to-br from-white to-emerald-50/60 border-emerald-200/80"
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-emerald-300" : "text-emerald-700"}`}>
-                    Mahindra Share (MS%)
-                  </span>
-                  <div className="p-1 rounded bg-emerald-500/20 text-emerald-400">
-                    <Zap className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-emerald-500 dark:text-emerald-400">
-                    {combatTableTotals.ms.toFixed(1)}%
-                  </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-extrabold border ${
-                    combatTableTotals.ms >= 10
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                      : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                  }`}>
-                    {combatTableTotals.ms >= 10 ? "High Impact" : "Steady"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 4: Active RTO Coverage */}
-              <div className={`p-2.5 rounded-lg border flex flex-col justify-between shadow-xs transition-transform hover:scale-[1.01] ${
-                isDark ? "bg-gradient-to-br from-slate-900/90 to-purple-950/40 border-purple-800/40" : "bg-gradient-to-br from-white to-purple-50/60 border-purple-200/80"
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-purple-300" : "text-purple-700"}`}>
-                    Active Coverage
-                  </span>
-                  <div className="p-1 rounded bg-purple-500/20 text-purple-400">
-                    <Building2 className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <span className="text-lg sm:text-xl font-black tabular-nums tracking-tight text-purple-500 dark:text-purple-400">
-                    {combatTableTotals.count} RTOs
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    14 Districts
-                  </span>
-                </div>
+              <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Live MariaDB Data
+                </span>
+                <span>•</span>
+                <span>{timeframeLabel}</span>
               </div>
             </div>
-
-
           </div>
         </div>
       </div>
@@ -4236,9 +4188,391 @@ export default function ExecutiveDashboard({
               />
             )}
 
+            {/* ========================================================================= */}
+            {/* POWER BI VISUAL ANALYTICS DASHBOARD (ACTIVE WHEN activeSubTab === 'dashboard') */}
+            {/* ========================================================================= */}
+            {activeSubTab === "dashboard" && !focusedTable && (() => {
+              // Calculate OEM sorted distribution from oemShareData
+              const sortedOems = [...oemShareData.oemList]
+                .map((o) => {
+                  const vol = oemShareData.totalOems[o.key] || 0;
+                  const share = oemShareData.grandTiv > 0 ? (vol / oemShareData.grandTiv) * 100 : 0;
+                  return { ...o, vol, share };
+                })
+                .sort((a, b) => b.vol - a.vol);
 
-            {/* MULTI-YEAR TERRITORY PERFORMANCE SUMMARY TABLE (FY 23 - FY 26) */}
-            {!focusedTable && (
+              // Distinct brand palette for OEMs
+              const oemColors: Record<string, { bar: string; badge: string; text: string }> = {
+                Maruti: { bar: "bg-sky-500", badge: "bg-sky-500/15 text-sky-400 border-sky-500/40", text: "text-sky-500" },
+                Hyundai: { bar: "bg-blue-600", badge: "bg-blue-600/15 text-blue-400 border-blue-600/40", text: "text-blue-500" },
+                Tata: { bar: "bg-indigo-500", badge: "bg-indigo-500/15 text-indigo-400 border-indigo-500/40", text: "text-indigo-500" },
+                Mahindra: { bar: "bg-rose-500", badge: "bg-rose-500/20 text-rose-400 border-rose-500/50 font-black", text: "text-rose-500" },
+                Toyota: { bar: "bg-red-600", badge: "bg-red-600/15 text-red-400 border-red-600/40", text: "text-red-500" },
+                Kia: { bar: "bg-emerald-500", badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40", text: "text-emerald-500" },
+                Honda: { bar: "bg-teal-500", badge: "bg-teal-500/15 text-teal-400 border-teal-500/40", text: "text-teal-500" },
+                MG: { bar: "bg-cyan-500", badge: "bg-cyan-500/15 text-cyan-400 border-cyan-500/40", text: "text-cyan-500" },
+                Premium: { bar: "bg-purple-500", badge: "bg-purple-500/15 text-purple-400 border-purple-500/40", text: "text-purple-500" },
+                Others: { bar: "bg-slate-400", badge: "bg-slate-500/15 text-slate-400 border-slate-500/40", text: "text-slate-400" },
+              };
+
+              // District Ranking by Total TIV and M&M MS
+              const districtAgg = new Map<string, { district: string; territory: string; tiv: number; mm: number }>();
+              combatTableRows.forEach((r) => {
+                const cur = districtAgg.get(r.district) || { district: r.district, territory: r.territory, tiv: 0, mm: 0 };
+                cur.tiv += r.total;
+                cur.mm += r.mm;
+                districtAgg.set(r.district, cur);
+              });
+              const sortedDistricts = Array.from(districtAgg.values())
+                .map((d) => ({
+                  ...d,
+                  ms: d.tiv > 0 ? (d.mm / d.tiv) * 100 : 0,
+                }))
+                .sort((a, b) => b.tiv - a.tiv);
+
+              // Top 6 RTOs by Mahindra Market Share (min 50 TIV)
+              const topMmRtos = [...combatTableRows]
+                .filter((r) => r.total >= 50)
+                .sort((a, b) => b.ms - a.ms)
+                .slice(0, 6);
+
+              // Territory splits
+              const northTiv = northTotals.total;
+              const southTiv = southTotals.total;
+              const totTiv = northTiv + southTiv;
+              const northPct = totTiv > 0 ? (northTiv / totTiv) * 100 : 50;
+              const southPct = totTiv > 0 ? (southTiv / totTiv) * 100 : 50;
+
+              return (
+                <div className="mt-2.5 flex flex-col gap-3">
+                  {/* ROW 1: 4 POWER BI EXECUTIVE HERO KPI CARDS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    {/* Card 1: State Total Industry Volume */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between shadow-sm relative overflow-hidden transition-all hover:shadow-md ${
+                      isDark ? "bg-[#1e293b]/95 border-sky-800/40" : "bg-white border-sky-200"
+                    }`}>
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-xl pointer-events-none" />
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11px] font-black uppercase tracking-wider ${isDark ? "text-sky-300" : "text-sky-700"}`}>
+                          State Total (TIV)
+                        </span>
+                        <div className="p-1.5 rounded-lg bg-sky-500/15 text-sky-400">
+                          <Car className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-sky-500 dark:text-sky-400">
+                          {combatTableTotals.total.toLocaleString()}
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                          <span>{timeframeLabel}</span>
+                          <span className="text-sky-500 font-bold">{selectedSegment} Market</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Mahindra & Mahindra Volume */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between shadow-sm relative overflow-hidden transition-all hover:shadow-md ${
+                      isDark ? "bg-[#1e293b]/95 border-rose-800/40" : "bg-white border-rose-200"
+                    }`}>
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-xl pointer-events-none" />
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11px] font-black uppercase tracking-wider ${isDark ? "text-rose-300" : "text-rose-700"}`}>
+                          Mahindra Volume
+                        </span>
+                        <div className="p-1.5 rounded-lg bg-rose-500/15 text-rose-400">
+                          <Award className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-rose-500 dark:text-rose-400">
+                          {combatTableTotals.mm.toLocaleString()}
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                          <span>Units Registered</span>
+                          <span className="text-rose-500 font-bold">Rank #4 Kerala</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Mahindra Market Share */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between shadow-sm relative overflow-hidden transition-all hover:shadow-md ${
+                      isDark ? "bg-[#1e293b]/95 border-emerald-800/40" : "bg-white border-emerald-200"
+                    }`}>
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11px] font-black uppercase tracking-wider ${isDark ? "text-emerald-300" : "text-emerald-700"}`}>
+                          Mahindra Share (MS%)
+                        </span>
+                        <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400">
+                          <Zap className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-baseline justify-between">
+                        <div className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-emerald-500 dark:text-emerald-400">
+                          {combatTableTotals.ms.toFixed(1)}%
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${
+                          combatTableTotals.ms >= 10
+                            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                            : "bg-cyan-500/20 text-cyan-400 border-cyan-500/40"
+                        }`}>
+                          {combatTableTotals.ms >= 10 ? "High Share" : "Steady Momentum"}
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(combatTableTotals.ms * 4, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card 4: Active RTO Coverage */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between shadow-sm relative overflow-hidden transition-all hover:shadow-md ${
+                      isDark ? "bg-[#1e293b]/95 border-purple-800/40" : "bg-white border-purple-200"
+                    }`}>
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-xl pointer-events-none" />
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11px] font-black uppercase tracking-wider ${isDark ? "text-purple-300" : "text-purple-700"}`}>
+                          Active Coverage
+                        </span>
+                        <div className="p-1.5 rounded-lg bg-purple-500/15 text-purple-400">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-purple-500 dark:text-purple-400">
+                          {combatTableTotals.count} RTOs
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                          <span>14 Districts</span>
+                          <span className="text-purple-500 font-bold">100% Penetration</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ROW 2: OEM MARKET SHARE DISTRIBUTION (HORIZONTAL POWER BI BAR CHART) & TERRITORY DONUT */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                    {/* Left 2 Cols: OEM Market Share Horizontal Visual */}
+                    <div className={`lg:col-span-2 p-3.5 rounded-xl border shadow-sm ${
+                      isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-white border-slate-200"
+                    }`}>
+                      <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-700/80">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1 rounded bg-[#0070c0] text-white">
+                            <BarChart3 className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                            OEM Market Share & Volume Distribution ({timeframeLabel})
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          Total TIV: {oemShareData.grandTiv.toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 space-y-2.5">
+                        {sortedOems.map((o) => {
+                          const maxVol = sortedOems[0]?.vol || 1;
+                          const barWidthPct = Math.max((o.vol / maxVol) * 100, 2);
+                          const isMM = o.key === "Mahindra";
+                          const theme = oemColors[o.key] || oemColors.Others;
+
+                          return (
+                            <div key={o.key} className="flex flex-col gap-1">
+                              <div className="flex items-center justify-between text-xs font-bold">
+                                <div className="flex items-center gap-2">
+                                  <span className={`w-2.5 h-2.5 rounded-full ${theme.bar}`} />
+                                  <span className={isMM ? "font-black text-rose-500 dark:text-rose-400" : "text-slate-700 dark:text-slate-200"}>
+                                    {o.label} {isMM && "★"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-semibold text-slate-400 tabular-nums">
+                                    {o.vol.toLocaleString()} units
+                                  </span>
+                                  <span className={`px-1.5 py-0.2 rounded text-[10.5px] font-black border tabular-nums ${theme.badge}`}>
+                                    {o.share.toFixed(1)}%
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${theme.bar} ${isMM ? "shadow-xs shadow-rose-500/50" : ""}`}
+                                  style={{ width: `${barWidthPct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right 1 Col: Territory Split & High-Growth Leaderboard */}
+                    <div className="flex flex-col gap-3">
+                      {/* Territory Volume Split Visual */}
+                      <div className={`p-3.5 rounded-xl border shadow-sm ${
+                        isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-white border-slate-200"
+                      }`}>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700/80">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1 rounded bg-teal-600 text-white">
+                              <PieChart className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                              Territory Split
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-400">North vs South</span>
+                        </div>
+
+                        <div className="mt-3 flex flex-col gap-2.5">
+                          {/* Visual Ratio Bar */}
+                          <div className="w-full h-3 rounded-full flex overflow-hidden shadow-inner">
+                            <div
+                              style={{ width: `${northPct}%` }}
+                              className="bg-teal-500 h-full transition-all duration-500"
+                              title={`North Kerala: ${northPct.toFixed(1)}%`}
+                            />
+                            <div
+                              style={{ width: `${southPct}%` }}
+                              className="bg-indigo-500 h-full transition-all duration-500"
+                              title={`South Kerala: ${southPct.toFixed(1)}%`}
+                            />
+                          </div>
+
+                          {/* Stats */}
+                          <div className="grid grid-cols-2 gap-2 mt-1">
+                            <div className="p-2 rounded-lg bg-teal-500/10 border border-teal-500/20">
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-teal-600 dark:text-teal-400">
+                                <span className="w-2 h-2 rounded-full bg-teal-500" />
+                                North Kerala
+                              </div>
+                              <div className="text-sm font-black tabular-nums text-teal-700 dark:text-teal-300 mt-0.5">
+                                {northTiv.toLocaleString()} <span className="text-[10px] font-semibold text-teal-500/80">({northPct.toFixed(1)}%)</span>
+                              </div>
+                              <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                M&M: {northTotals.mm.toLocaleString()} ({northTotals.ms.toFixed(1)}%)
+                              </div>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                                South Kerala
+                              </div>
+                              <div className="text-sm font-black tabular-nums text-indigo-700 dark:text-indigo-300 mt-0.5">
+                                {southTiv.toLocaleString()} <span className="text-[10px] font-semibold text-indigo-500/80">({southPct.toFixed(1)}%)</span>
+                              </div>
+                              <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                M&M: {southTotals.mm.toLocaleString()} ({southTotals.ms.toFixed(1)}%)
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Top Mahindra Market Share RTOs Leaderboard */}
+                      <div className={`p-3.5 rounded-xl border shadow-sm flex-1 ${
+                        isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-white border-slate-200"
+                      }`}>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700/80">
+                          <div className="flex items-center gap-1.5">
+                            <Crown className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                              Top Mahindra MS% RTOs
+                            </span>
+                          </div>
+                          <span className="text-[9.5px] font-semibold text-slate-400">High Impact</span>
+                        </div>
+
+                        <div className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
+                          {topMmRtos.map((r, idx) => (
+                            <div key={r.rtoName} className="py-1.5 flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-4 text-center font-black text-[10px] ${
+                                  idx === 0 ? "text-amber-500" : idx === 1 ? "text-slate-400" : idx === 2 ? "text-amber-700" : "text-slate-500"
+                                }`}>
+                                  #{idx + 1}
+                                </span>
+                                <div>
+                                  <div className="font-bold text-slate-800 dark:text-slate-200">{r.rtoName}</div>
+                                  <div className="text-[9.5px] text-slate-400">{r.district} • TIV: {r.total.toLocaleString()}</div>
+                                </div>
+                              </div>
+                              <span className="px-1.5 py-0.5 rounded font-black text-xs tabular-nums bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/30">
+                                {r.ms.toFixed(1)}%
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ROW 3: ALL 14 DISTRICT PERFORMANCE MATRIX VISUAL */}
+                  <div className={`p-3.5 rounded-xl border shadow-sm ${
+                    isDark ? "bg-[#1e293b] border-slate-700/80" : "bg-white border-slate-200"
+                  }`}>
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-700/80">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded bg-[#0070c0] text-white">
+                          <Layers className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                          14 Districts Performance Velocity (TIV & Mahindra MS%)
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        Ranked by Volume
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mt-3">
+                      {sortedDistricts.map((d, idx) => (
+                        <div
+                          key={d.district}
+                          className={`p-2.5 rounded-lg border flex flex-col justify-between transition-all hover:scale-[1.02] shadow-2xs ${
+                            isDark ? "bg-slate-900/60 border-slate-700" : "bg-slate-50/80 border-slate-200"
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9.5px] font-bold text-slate-400">#{idx + 1}</span>
+                              <span className={`w-1.5 h-1.5 rounded-full ${d.territory === "North Kerala" ? "bg-teal-400" : "bg-indigo-400"}`} />
+                            </div>
+                            <div className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate mt-0.5" title={d.district}>
+                              {d.district}
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                              TIV: <span className="font-bold text-sky-500 tabular-nums">{d.tiv.toLocaleString()}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-2 pt-1.5 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                            <span className="text-[9.5px] text-slate-400 font-bold">M&M MS</span>
+                            <span className={`px-1 py-0.2 rounded font-black text-[10px] tabular-nums ${
+                              d.ms >= 5
+                                ? "bg-rose-500/20 text-rose-400 font-black"
+                                : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                            }`}>
+                              {d.ms.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ========================================================================= */}
+            {/* DETAILED COMBAT TABLES (ACTIVE WHEN activeSubTab === 'tables') */}
+            {/* ========================================================================= */}
+            {activeSubTab === "tables" && !focusedTable && (
               <div className="mt-2.5 rounded-[2px] border border-slate-200 dark:border-slate-700/80 shadow-md bg-white dark:bg-[#1e293b] overflow-hidden">
                 {/* HUD Header */}
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60">
@@ -4680,7 +5014,7 @@ export default function ExecutiveDashboard({
             )}
 
             {/* RTO-WISE OEM MARKET SHARE (%) PERFORMANCE TABLE */}
-            {!focusedTable && (
+            {activeSubTab === "tables" && !focusedTable && (
               <div className="mt-2.5 rounded-[2px] border border-slate-200 dark:border-slate-700/80 shadow-md bg-white dark:bg-[#1e293b] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex-wrap">
@@ -4913,10 +5247,12 @@ export default function ExecutiveDashboard({
               </div>
             )}
 
-            <div className="mt-2.5 flex gap-3 flex-wrap">
-              {renderTable(northRows, northTotals, "North Kerala")}
-              {renderTable(southRows, southTotals, "South Kerala")}
-            </div>
+            {activeSubTab === "tables" && (
+              <div className="mt-2.5 flex gap-3 flex-wrap">
+                {renderTable(northRows, northTotals, "North Kerala")}
+                {renderTable(southRows, southTotals, "South Kerala")}
+              </div>
+            )}
           </>
         );
       })()}
