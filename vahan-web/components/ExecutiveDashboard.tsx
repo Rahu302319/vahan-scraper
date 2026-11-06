@@ -1193,81 +1193,77 @@ export default function ExecutiveDashboard({
   };
 
   return (
-    <div className={`flex flex-col gap-3 rounded-3xl border p-3.5 sm:p-4.5 transition-all duration-300 ${
+    <div className={`rounded-2xl border transition-all duration-300 shadow-sm ${
       isDark
-        ? "bg-gradient-to-b from-[#090f1d] via-[#060a14] to-[#04070e] border-[#18263f] text-slate-200 shadow-2xl shadow-black/40"
-        : "bg-gradient-to-b from-slate-50 via-white to-slate-100/70 border-slate-200/90 text-slate-800 shadow-xl shadow-slate-200/50"
+        ? "bg-[#0a101d]/90 border-[#1a2744] text-slate-300"
+        : "bg-white/95 border-slate-200/90 text-slate-700"
     }`}>
-      {/* 1. ULTRA-CUTE & MODERN STATUS HEADER */}
-      <div className={`flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl border transition-all ${
-        isDark
-          ? "bg-gradient-to-r from-[#0c1426]/90 to-[#0e172c]/90 border-[#1f3152]/80 backdrop-blur-md shadow-sm"
-          : "bg-gradient-to-r from-white to-sky-50/50 border-sky-100 shadow-sm"
+      {/* 1. HD STATUS HEADER */}
+      <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b transition-colors ${
+        isDark ? "border-[#16233b] bg-[#0c1424]/60" : "border-slate-100 bg-slate-50/60"
       }`}>
         <div className="flex items-center gap-2.5">
-          <div className="relative flex h-3 w-3">
+          <div className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </div>
-          <div className="p-1.5 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-sky-500/25">
-            <Zap className="w-4 h-4 fill-white" />
+          <div className={`p-1 rounded-md ${isDark ? "bg-sky-500/10 text-sky-400" : "bg-sky-50 text-sky-600"}`}>
+            <Zap className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-center gap-2">
-            <h2 className={`text-xs sm:text-sm font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-              VAHAN 4 LIVE EXECUTIVE COCKPIT
+            <h2 className={`text-xs font-semibold tracking-wide ${isDark ? "text-slate-100" : "text-slate-800"}`}>
+              Executive Analytics Console
             </h2>
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm tracking-wider uppercase">
-              KL • Kerala
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide ${
+              isDark ? "bg-slate-800 text-slate-300" : "bg-slate-200/70 text-slate-600"
+            }`}>
+              Kerala • Live
             </span>
           </div>
         </div>
 
-        {/* Live Scraper Stats Badges & Refresh */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full border text-[11px] font-bold ${
-            isDark ? "bg-[#070d18]/90 border-[#18263e] text-slate-300" : "bg-white/80 border-slate-200 text-slate-700 shadow-xs"
+        {/* Live Scraper Status Metadata & Refresh */}
+        <div className="flex items-center gap-2">
+          <div className={`hidden sm:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-normal border ${
+            isDark ? "bg-[#070d18] border-[#18263e] text-slate-400" : "bg-white border-slate-200 text-slate-600 shadow-2xs"
           }`}>
-            <span className="flex items-center gap-1 text-emerald-500 font-extrabold">
-              <Activity className="w-3.5 h-3.5" />
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <Activity className="w-3 h-3" />
               <span>{activeDatasetRows.length.toLocaleString()} Records</span>
             </span>
-            <span className="text-slate-400">•</span>
-            <span className="text-sky-500 font-extrabold">
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <span className="text-sky-600 dark:text-sky-400">
               {selectedSegment === "ALL" ? "All Segments" : `${selectedSegment} Segment`}
             </span>
-            <span className="text-slate-400">•</span>
-            <span className="text-indigo-400 font-bold">{activeDatasetRtoCount} RTOs Synced</span>
-            <span className="text-slate-400">•</span>
-            <span className="text-amber-500 font-black">{timeframeLabel}</span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <span className="text-slate-500 dark:text-slate-400">{activeDatasetRtoCount} RTOs</span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <span className="text-amber-600 dark:text-amber-400">{timeframeLabel}</span>
           </div>
 
           <button
             type="button"
             onClick={fetchDbRegistrations}
-            title="Refresh latest scraped data from Hostinger MariaDB"
-            className={`p-2 rounded-xl border transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${
+            title="Refresh latest data from database"
+            className={`p-1.5 rounded-lg border transition-all duration-150 ${
               isDark
-                ? "bg-[#0d1628] border-[#1e2f50] text-sky-400 hover:bg-[#14213d] hover:text-white"
-                : "bg-white border-slate-200 text-sky-600 hover:bg-sky-50"
+                ? "bg-[#0e172a] border-[#1f2d48] text-slate-400 hover:text-white hover:bg-[#16233b]"
+                : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-2xs"
             }`}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDb ? "animate-spin text-sky-400" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDb ? "animate-spin text-sky-500" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* 2. CUTE & SLEEK CONTROLS TOOLBAR (2 Perfectly Balanced Rows) */}
-      <div className={`flex flex-col gap-2.5 p-3 rounded-2xl border transition-all ${
-        isDark
-          ? "bg-[#0a1122]/90 border-[#1a2947] shadow-lg shadow-black/20 backdrop-blur-md"
-          : "bg-white/95 border-slate-200/90 shadow-sm"
-      }`}>
-        {/* ROW 1: Period, Year, Month, Segment, and Export Button on the right */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* 2. HD CONTROLS SURFACE */}
+      <div className="p-3 sm:p-4 flex flex-col gap-2.5">
+        {/* ROW 1: Timeframe, Segment, and Export Button */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
             {/* FY / CY Mode Switch */}
-            <div className={`flex items-center rounded-xl border p-0.5 shadow-inner ${
-              isDark ? "bg-[#060b16] border-[#1d2b45]" : "bg-slate-100 border-slate-200"
+            <div className={`flex items-center rounded-lg p-0.5 border ${
+              isDark ? "bg-[#070d18] border-[#1b2844]" : "bg-slate-100 border-slate-200"
             }`}>
               <button
                 type="button"
@@ -1275,14 +1271,14 @@ export default function ExecutiveDashboard({
                   setPeriodType("FY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-all ${
                   periodType === "FY"
-                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 scale-100"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 font-medium shadow-xs"
+                    : isDark ? "text-slate-400 hover:text-slate-200 font-normal" : "text-slate-600 hover:text-slate-900 font-normal"
                 }`}
-                title="Indian Financial Year (Apr to Mar)"
+                title="Financial Year (Apr to Mar)"
               >
-                <Calendar className="w-3 h-3" />
+                <Calendar className="w-3 h-3 opacity-70" />
                 FY
               </button>
               <button
@@ -1291,14 +1287,14 @@ export default function ExecutiveDashboard({
                   setPeriodType("CY");
                   setSelectedMonth("ALL");
                 }}
-                className={`flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-all ${
                   periodType === "CY"
-                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 scale-100"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 font-medium shadow-xs"
+                    : isDark ? "text-slate-400 hover:text-slate-200 font-normal" : "text-slate-600 hover:text-slate-900 font-normal"
                 }`}
                 title="Calendar Year (Jan to Dec)"
               >
-                <Calendar className="w-3 h-3" />
+                <Calendar className="w-3 h-3 opacity-70" />
                 CY
               </button>
             </div>
@@ -1311,10 +1307,10 @@ export default function ExecutiveDashboard({
                   setSelectedFyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`h-8.5 px-3 py-1 rounded-xl text-xs font-extrabold border focus:outline-none transition-all shadow-xs ${
+                className={`h-8 px-2.5 py-1 rounded-lg text-xs font-normal border focus:outline-none transition ${
                   isDark
-                    ? "bg-[#070d1a] border-[#1d2d4a] text-sky-400 hover:border-sky-500/50 focus:border-sky-400"
-                    : "bg-sky-50/50 border-sky-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
+                    ? "bg-[#070d18] border-[#1d2d4a] text-sky-400 focus:border-sky-500"
+                    : "bg-white border-slate-200 text-slate-800 focus:border-sky-500 shadow-2xs"
                 }`}
               >
                 {ALL_FY_OPTIONS.map((f) => (
@@ -1330,10 +1326,10 @@ export default function ExecutiveDashboard({
                   setSelectedCyId(e.target.value);
                   setSelectedMonth("ALL");
                 }}
-                className={`h-8.5 px-3 py-1 rounded-xl text-xs font-extrabold border focus:outline-none transition-all shadow-xs ${
+                className={`h-8 px-2.5 py-1 rounded-lg text-xs font-normal border focus:outline-none transition ${
                   isDark
-                    ? "bg-[#070d1a] border-[#1d2d4a] text-sky-400 hover:border-sky-500/50 focus:border-sky-400"
-                    : "bg-sky-50/50 border-sky-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
+                    ? "bg-[#070d18] border-[#1d2d4a] text-sky-400 focus:border-sky-500"
+                    : "bg-white border-slate-200 text-slate-800 focus:border-sky-500 shadow-2xs"
                 }`}
               >
                 {ALL_CY_OPTIONS.map((c) => (
@@ -1348,10 +1344,10 @@ export default function ExecutiveDashboard({
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className={`h-8.5 px-3 py-1 rounded-xl text-xs font-extrabold border focus:outline-none transition-all shadow-xs ${
+              className={`h-8 px-2.5 py-1 rounded-lg text-xs font-normal border focus:outline-none transition ${
                 isDark
-                  ? "bg-[#070d1a] border-[#1d2d4a] text-amber-400 hover:border-amber-500/50 focus:border-amber-400"
-                  : "bg-amber-50/60 border-amber-200 text-amber-900 hover:border-amber-400 focus:border-amber-500"
+                  ? "bg-[#070d18] border-amber-900/60 text-amber-400 focus:border-amber-500"
+                  : "bg-amber-50/50 border-amber-200 text-amber-900 focus:border-amber-500 shadow-2xs"
               }`}
             >
               <option value="ALL">
@@ -1364,82 +1360,84 @@ export default function ExecutiveDashboard({
               ))}
             </select>
 
-            {/* Segment Selector Chips */}
-            <div className={`flex items-center rounded-xl border p-0.5 shadow-inner ${
-              isDark ? "bg-[#060b16] border-[#1d2b45]" : "bg-slate-100 border-slate-200"
+            {/* Segment Selector Pills */}
+            <div className={`flex items-center rounded-lg p-0.5 border ${
+              isDark ? "bg-[#070d18] border-[#1b2844]" : "bg-slate-100 border-slate-200"
             }`}>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("PV")}
-                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   selectedSegment === "PV"
-                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 font-medium shadow-xs"
+                    : isDark ? "text-slate-400 hover:text-slate-200 font-normal" : "text-slate-600 hover:text-slate-900 font-normal"
                 }`}
               >
-                🚗 PV {segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}
+                PV <span className="opacity-70 text-[11px]">{segmentStats.pv > 0 ? `(${segmentStats.pv.toLocaleString()})` : "(0)"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("CV")}
-                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   selectedSegment === "CV"
-                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 font-medium shadow-xs"
+                    : isDark ? "text-slate-400 hover:text-slate-200 font-normal" : "text-slate-600 hover:text-slate-900 font-normal"
                 }`}
               >
-                🚚 CV {segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}
+                CV <span className="opacity-70 text-[11px]">{segmentStats.cv > 0 ? `(${segmentStats.cv.toLocaleString()})` : "(0)"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("BEV")}
-                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   selectedSegment === "BEV"
-                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 font-medium shadow-xs"
+                    : isDark ? "text-slate-400 hover:text-slate-200 font-normal" : "text-slate-600 hover:text-slate-900 font-normal"
                 }`}
               >
-                ⚡ BEV {segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}
+                ⚡ BEV <span className="opacity-70 text-[11px]">{segmentStats.bev > 0 ? `(${segmentStats.bev.toLocaleString()})` : "(0)"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSegment("ALL")}
-                className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   selectedSegment === "ALL"
-                    ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30"
-                    : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 font-medium shadow-xs"
+                    : isDark ? "text-slate-400 hover:text-slate-200 font-normal" : "text-slate-600 hover:text-slate-900 font-normal"
                 }`}
               >
-                🌐 All {segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}
+                All <span className="opacity-70 text-[11px]">{segmentStats.all > 0 ? `(${segmentStats.all.toLocaleString()})` : ""}</span>
               </button>
             </div>
           </div>
 
-          {/* Export Button - Always anchored right on Row 1 */}
+          {/* Export Button - Clean & Elegant */}
           <button
             onClick={handleExportSummaryExcel}
-            className="h-8.5 flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-md shadow-emerald-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 shrink-0 ml-auto"
+            className="h-8 flex items-center gap-1.5 px-3.5 py-1 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all duration-150 hover:-translate-y-0.5 ml-auto shrink-0"
           >
             <Download className="w-3.5 h-3.5" />
             Export Excel
           </button>
         </div>
 
-        {/* ROW 2: Geographic Drill-Down on the left + Scope badge on the right */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[#1d2d4b]/30">
+        {/* ROW 2: Geographic Drill-Down + Scope */}
+        <div className={`flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t ${
+          isDark ? "border-[#16233b]" : "border-slate-100"
+        }`}>
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Territory Dropdown */}
             <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <span className={`text-[11px] font-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 Territory:
               </span>
               <select
                 value={selectedTerritory}
                 onChange={(e) => handleTerritoryChange(e.target.value)}
-                className={`h-8 px-3 py-1 rounded-xl text-xs font-bold border focus:outline-none transition-all shadow-xs ${
+                className={`h-7.5 px-2.5 text-xs font-normal rounded-lg border focus:outline-none transition ${
                   isDark
-                    ? "bg-[#070d1a] border-[#1d2d4a] text-white hover:border-sky-400 focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
+                    ? "bg-[#070d18] border-[#1d2d4a] text-slate-200 focus:border-sky-500"
+                    : "bg-white border-slate-200 text-slate-800 focus:border-sky-500 shadow-2xs"
                 }`}
               >
                 <option value="ALL">All Kerala</option>
@@ -1450,16 +1448,16 @@ export default function ExecutiveDashboard({
 
             {/* District Dropdown */}
             <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <span className={`text-[11px] font-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 District:
               </span>
               <select
                 value={selectedDistrict}
                 onChange={(e) => handleDistrictChange(e.target.value)}
-                className={`h-8 px-3 py-1 rounded-xl text-xs font-bold border focus:outline-none transition-all shadow-xs ${
+                className={`h-7.5 px-2.5 text-xs font-normal rounded-lg border focus:outline-none transition ${
                   isDark
-                    ? "bg-[#070d1a] border-[#1d2d4a] text-white hover:border-sky-400 focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
+                    ? "bg-[#070d18] border-[#1d2d4a] text-slate-200 focus:border-sky-500"
+                    : "bg-white border-slate-200 text-slate-800 focus:border-sky-500 shadow-2xs"
                 }`}
               >
                 <option value="ALL">
@@ -1475,16 +1473,16 @@ export default function ExecutiveDashboard({
 
             {/* RTO Office Dropdown */}
             <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              <span className={`text-[11px] font-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 RTO:
               </span>
               <select
                 value={selectedRto}
                 onChange={(e) => setSelectedRto(e.target.value)}
-                className={`h-8 px-3 py-1 rounded-xl text-xs font-bold border focus:outline-none max-w-[190px] truncate transition-all shadow-xs ${
+                className={`h-7.5 px-2.5 text-xs font-normal rounded-lg border focus:outline-none max-w-[190px] truncate transition ${
                   isDark
-                    ? "bg-[#070d1a] border-[#1d2d4a] text-white hover:border-sky-400 focus:border-sky-400"
-                    : "bg-slate-50 border-slate-200 text-slate-900 hover:border-sky-400 focus:border-sky-500"
+                    ? "bg-[#070d18] border-[#1d2d4a] text-slate-200 focus:border-sky-500"
+                    : "bg-white border-slate-200 text-slate-800 focus:border-sky-500 shadow-2xs"
                 }`}
               >
                 <option value="ALL">
@@ -1507,32 +1505,32 @@ export default function ExecutiveDashboard({
               <button
                 type="button"
                 onClick={handleResetFilters}
-                title="Reset all filters back to All Kerala Full Year"
-                className={`h-8 flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold border transition-all duration-200 hover:scale-105 ${
+                title="Reset filters back to default"
+                className={`h-7.5 flex items-center gap-1 px-2.5 rounded-lg text-[11px] font-normal border transition ${
                   isDark
-                    ? "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
-                    : "bg-slate-200 text-slate-800 border-slate-300 hover:bg-slate-300"
+                    ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                    : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
                 }`}
               >
-                <RotateCcw className="w-3 h-3 text-sky-400" />
-                Reset Filters
+                <RotateCcw className="w-3 h-3 text-sky-500" />
+                Reset
               </button>
             )}
           </div>
 
           {/* Right Status Badge in Row 2 */}
           <div className="flex items-center gap-1.5 ml-auto">
-            <span className={`px-3 py-1 rounded-xl text-xs font-bold border shadow-xs ${
-              isDark ? "bg-[#060c18] border-[#1a2844] text-slate-300" : "bg-sky-50/60 border-sky-100 text-slate-700"
+            <span className={`px-2.5 py-1 rounded-lg text-xs font-normal border ${
+              isDark ? "bg-[#070d18] border-[#18263e] text-slate-300" : "bg-slate-50 border-slate-200 text-slate-600 shadow-2xs"
             }`}>
-              📍 Scope: <span className="font-black text-sky-400">
+              📍 Scope: <span className="font-medium text-sky-600 dark:text-sky-400">
                 {selectedRto !== "ALL"
                   ? `RTO ${selectedRto}`
                   : selectedDistrict !== "ALL"
                   ? `${selectedDistrict} District`
                   : selectedTerritory !== "ALL"
                   ? selectedTerritory
-                  : "All Kerala (Whole State)"}
+                  : "All Kerala"}
               </span>
             </span>
           </div>
@@ -1541,3 +1539,4 @@ export default function ExecutiveDashboard({
     </div>
   );
 }
+
