@@ -766,6 +766,16 @@ export default function ExecutiveDashboard({
   const [cachedScrapedRows, setCachedScrapedRows] = useState<any[]>([]);
   const [dbScrapedRows, setDbScrapedRows] = useState<any[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
+  const [isSlicerLoading, setIsSlicerLoading] = useState<boolean>(false);
+
+  // Trigger brief colorful spinner feedback whenever slicers/filters change
+  useEffect(() => {
+    setIsSlicerLoading(true);
+    const t = setTimeout(() => {
+      setIsSlicerLoading(false);
+    }, 280);
+    return () => clearTimeout(t);
+  }, [periodType, selectedFyId, selectedCyId, selectedMonths, selectedSegment, tableMode, momViewMode]);
 
   // Load cached scraped rows on mount
   useEffect(() => {
@@ -1671,19 +1681,19 @@ export default function ExecutiveDashboard({
 
   return (
     <>
-      {/* Small, Cute & Colorful Loading Spinner Overlay while Database is Loading */}
-      {isLoadingDb && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-[2px] transition-all">
-          <div className={`flex flex-col items-center p-4 rounded-2xl shadow-2xl border backdrop-blur-md ${
+      {/* Small, Cute & Colorful Loading Spinner Overlay while Database or Slicers are Loading */}
+      {(isLoadingDb || isSlicerLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/20 backdrop-blur-[1.5px] transition-all">
+          <div className={`flex flex-col items-center p-3.5 rounded-2xl shadow-2xl border backdrop-blur-md ${
             isDark ? "bg-[#0f172a]/95 border-slate-700 shadow-cyan-950/40" : "bg-white/95 border-slate-200 shadow-sky-100"
           }`}>
-            <div className="relative w-10 h-10 flex items-center justify-center">
+            <div className="relative w-9 h-9 flex items-center justify-center">
               {/* Outer Colorful Spinning Rainbow Ring */}
               <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-cyan-400 border-r-fuchsia-500 border-b-amber-400 border-l-emerald-400 animate-spin" />
               {/* Inner Reverse Glow Ring */}
-              <div className="absolute w-6.5 h-6.5 rounded-full border-[2.5px] border-transparent border-t-blue-500 border-b-rose-500 animate-[spin_1.5s_linear_infinite_reverse]" />
+              <div className="absolute w-5.5 h-5.5 rounded-full border-[2px] border-transparent border-t-blue-500 border-b-rose-500 animate-[spin_1.5s_linear_infinite_reverse]" />
               {/* Cute Center Pulsing Dot */}
-              <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-cyan-400 via-sky-500 to-indigo-500 animate-pulse shadow-sm shadow-cyan-400" />
+              <div className="w-2 h-2 rounded-full bg-gradient-to-tr from-cyan-400 via-sky-500 to-indigo-500 animate-pulse shadow-sm shadow-cyan-400" />
             </div>
           </div>
         </div>
