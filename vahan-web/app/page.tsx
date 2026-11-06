@@ -966,14 +966,21 @@ export default function VahanDashboardPage() {
             )}
           </button>
 
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-[#064e3b]/60 text-[#34d399] border border-[#059669]">
-            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-            Portal Online ({rtos.length} RTOs)
+          <span className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-[2px] text-xs font-semibold border transition-all shadow-xs ${
+            isDark
+              ? "bg-[#032e23] border-emerald-500 text-emerald-300"
+              : "bg-emerald-100 border-emerald-500 text-emerald-900"
+          }`}>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            </span>
+            <span>Portal Online ({rtos.length} RTOs)</span>
           </span>
 
           <button
             onClick={downloadMasterExcel}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold bg-gradient-to-r from-[#065f46] to-[#047857] hover:from-[#047857] hover:to-[#059669] text-white border border-[#10b981] transition shadow"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[2px] text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-500 transition shadow-sm"
           >
             <Download className="w-3.5 h-3.5" />
             Download Master Excel
