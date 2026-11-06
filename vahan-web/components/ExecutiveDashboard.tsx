@@ -1780,68 +1780,6 @@ export default function ExecutiveDashboard({
                 listMaxHeight="max-h-28"
               />
 
-              {/* Territory Dropdown - Same Line */}
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[11px] font-semibold ${isDark ? "text-teal-400" : "text-teal-700"}`}>
-                  Territory:
-                </span>
-                <select
-                  value={selectedTerritory}
-                  onChange={(e) => handleTerritoryChange(e.target.value)}
-                  className={`h-7.5 px-2.5 py-1 text-xs font-semibold rounded-[2px] border focus:outline-none transition-all shadow-xs ${
-                    isDark
-                      ? "bg-teal-500/15 border-teal-500/80 text-teal-300 focus:border-teal-400"
-                      : "bg-teal-50/80 border-teal-400 text-teal-900 focus:border-teal-600"
-                  }`}
-                >
-                  <option value="ALL">All Kerala</option>
-                  <option value="North Kerala">North Kerala</option>
-                  <option value="South Kerala">South Kerala</option>
-                </select>
-              </div>
-
-              {/* District MultiSelect Dropdown - Same Line */}
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[11px] font-semibold ${isDark ? "text-indigo-400" : "text-indigo-700"}`}>
-                  District:
-                </span>
-                <MultiSelectDropdown
-                  placeholder="Districts"
-                  options={availableDistricts.map((d) => ({ label: d, value: d }))}
-                  selectedValues={selectedDistricts}
-                  onChange={setSelectedDistricts}
-                  colorScheme="indigo"
-                  isDark={isDark}
-                  allLabel={selectedTerritory === "ALL" ? "All 14 Districts" : `All ${selectedTerritory} Districts`}
-                  buttonClassName="max-w-[140px]"
-                  maxTriggerWidth="max-w-[95px]"
-                />
-              </div>
-
-              {/* RTO MultiSelect Dropdown - Same Line */}
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[11px] font-semibold ${isDark ? "text-rose-400" : "text-rose-700"}`}>
-                  RTO:
-                </span>
-                <MultiSelectDropdown
-                  placeholder="RTOs"
-                  options={availableRtos.map((r) => ({ label: r, value: r }))}
-                  selectedValues={selectedRtos}
-                  onChange={setSelectedRtos}
-                  colorScheme="rose"
-                  isDark={isDark}
-                  allLabel={
-                    selectedDistricts.length > 0
-                      ? `All in ${selectedDistricts.length} Districts (${availableRtos.length})`
-                      : selectedTerritory === "ALL"
-                      ? `All 87 RTOs`
-                      : `All ${selectedTerritory} RTOs (${availableRtos.length})`
-                  }
-                  buttonClassName="max-w-[150px]"
-                  maxTriggerWidth="max-w-[105px]"
-                />
-              </div>
-
               {/* Segment Selector Colorful Pills - Radius 2 */}
               <div className={`flex items-center rounded-[2px] p-0.5 border shadow-inner ${
                 isDark ? "bg-slate-900/80 border-slate-700" : "bg-slate-100 border-slate-200"
@@ -1893,7 +1831,7 @@ export default function ExecutiveDashboard({
               </div>
 
               {/* Reset Filters Shortcut - Same Line */}
-              {(selectedMonths.length > 0 || selectedTerritory !== "ALL" || selectedDistricts.length > 0 || selectedRtos.length > 0) && (
+              {selectedMonths.length > 0 && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
