@@ -712,7 +712,7 @@ export default function ExecutiveDashboard({
   const [selectedFyId, setSelectedFyId] = useState<string>("FY27");
   const [selectedCyId, setSelectedCyId] = useState<string>("CY26");
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
-  const [selectedSegment, setSelectedSegment] = useState<"PV" | "CV" | "BEV" | "ALL">("PV");
+  const [selectedSegment, setSelectedSegment] = useState<"PV" | "CV" | "BEV" | "PV+BEV" | "ALL">("PV");
   const [selectedTerritory, setSelectedTerritory] = useState<string>("ALL");
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [selectedRtos, setSelectedRtos] = useState<string[]>([]);
@@ -848,7 +848,7 @@ export default function ExecutiveDashboard({
       else if (s === "CV") cv += vol;
       else if (s === "BEV") bev += vol;
     });
-    return { pv, cv, bev, all: pv + cv + bev };
+    return { pv, cv, bev, pvBev: pv + bev, all: pv + cv + bev };
   }, [allDatasetRows, selectedMonth, currentPeriod]);
 
   // Auto-switch to active segment if current segment has 0 records but another segment has scraped data
@@ -869,6 +869,9 @@ export default function ExecutiveDashboard({
     }
     return allDatasetRows.filter((r) => {
       const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
+      if (selectedSegment === "PV+BEV") {
+        return s === "PV" || s === "BEV";
+      }
       return s === selectedSegment;
     });
   }, [allDatasetRows, selectedSegment]);
@@ -1847,6 +1850,17 @@ export default function ExecutiveDashboard({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setSelectedSegment("PV+BEV")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
+                    selectedSegment === "PV+BEV"
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/30"
+                      : isDark ? "text-emerald-400 hover:text-emerald-200" : "text-emerald-700 hover:bg-emerald-50"
+                  }`}
+                >
+                  🚗⚡ PV+BEV <span className="opacity-80 text-[11px] font-normal">{segmentStats.pvBev > 0 ? `(${segmentStats.pvBev.toLocaleString()})` : "(0)"}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSelectedSegment("ALL")}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-all ${
                     selectedSegment === "ALL"
@@ -2048,7 +2062,11 @@ export default function ExecutiveDashboard({
               if (territoryName !== "Total" && r.territory !== territoryName) return;
               if (selectedSegment !== "ALL") {
                 const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-                if (s !== selectedSegment) return;
+                if (selectedSegment === "PV+BEV") {
+                  if (s !== "PV" && s !== "BEV") return;
+                } else if (s !== selectedSegment) {
+                  return;
+                }
               }
               const { isMahindra } = resolveRowOem(r);
 
@@ -2132,7 +2150,11 @@ export default function ExecutiveDashboard({
           allDatasetRows.forEach((r) => {
             if (selectedSegment !== "ALL") {
               const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-              if (s !== selectedSegment) return;
+              if (selectedSegment === "PV+BEV") {
+                if (s !== "PV" && s !== "BEV") return;
+              } else if (s !== selectedSegment) {
+                return;
+              }
             }
 
             const rowYr = Number(r.Year || r.year || r.FY || 0);
@@ -2353,7 +2375,11 @@ export default function ExecutiveDashboard({
           allDatasetRows.forEach((r) => {
             if (selectedSegment !== "ALL") {
               const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
-              if (s !== selectedSegment) return;
+              if (selectedSegment === "PV+BEV") {
+                if (s !== "PV" && s !== "BEV") return;
+              } else if (s !== selectedSegment) {
+                return;
+              }
             }
 
             const rowYr = Number(r.Year || r.year || r.FY || 0);
