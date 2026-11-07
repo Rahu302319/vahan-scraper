@@ -876,15 +876,25 @@ export default function ExecutiveDashboard({
     });
   }, [allDatasetRows, selectedSegment]);
 
-  // Build RTO Name and Code Lookup Tables from effectiveRtoDt (loaded from MariaDB eramsale_vahan)
-  const { rtoDtLookup, rtoCodeLookup } = useMemo(() => {
+  // Build RTO Name, Code, and Territory Lookup Tables from effectiveRtoDt (loaded from MariaDB eramsale_vahan)
+  const { rtoDtLookup, rtoCodeLookup, rtoTerritoryLookup } = useMemo(() => {
     const nameMap = new Map<string, string>();
     const codeMap = new Map<string, string>();
+    const terrMap = new Map<string, string>();
 
     effectiveRtoDt.forEach((d: any) => {
       const finalName = d.finalRtoName || d.srtOffice;
-      if (d.rtoCode) codeMap.set(String(d.rtoCode).toUpperCase().trim(), finalName);
-      if (d.rto_code) codeMap.set(String(d.rto_code).toUpperCase().trim(), finalName);
+      const terr = d.territory || "";
+      if (d.rtoCode) {
+        const c = String(d.rtoCode).toUpperCase().trim();
+        codeMap.set(c, finalName);
+        if (terr) terrMap.set(c, terr);
+      }
+      if (d.rto_code) {
+        const c = String(d.rto_code).toUpperCase().trim();
+        codeMap.set(c, finalName);
+        if (terr) terrMap.set(c, terr);
+      }
       if (d.srtOffice) nameMap.set(cleanRtoName(d.srtOffice), finalName);
       if (d.finalRtoName) nameMap.set(cleanRtoName(d.finalRtoName), finalName);
     });
@@ -893,9 +903,23 @@ export default function ExecutiveDashboard({
     codeMap.set("KL42", "North Paravur");
     codeMap.set("KL15", "Thiruvananthapuram");
     codeMap.set("KL99", "Thiruvananthapuram");
+    terrMap.set("KL15", "South Kerala");
+    terrMap.set("KL99", "South Kerala");
 
-    return { rtoDtLookup: nameMap, rtoCodeLookup: codeMap };
+    return { rtoDtLookup: nameMap, rtoCodeLookup: codeMap, rtoTerritoryLookup: terrMap };
   }, [effectiveRtoDt]);
+
+  // Helper to safely get territory from a row or RTO code
+  const resolveRowTerritory = (row: any): string => {
+    if (row.territory && (row.territory === "North Kerala" || row.territory === "South Kerala")) {
+      return row.territory;
+    }
+    const code = String(row.RTO_Code || row.rto_code || row.Code || "").toUpperCase().trim();
+    if (rtoTerritoryLookup.has(code)) {
+      return rtoTerritoryLookup.get(code)!;
+    }
+    return "";
+  };
 
   // Helper to resolve row to Final RTO Name
   const resolveRowToFinalRto = (row: any): string => {
@@ -2059,7 +2083,8 @@ export default function ExecutiveDashboard({
             let tiv26 = 0, mm26 = 0;
 
             allDatasetRows.forEach((r) => {
-              if (territoryName !== "Total" && r.territory !== territoryName) return;
+              const rowTerr = resolveRowTerritory(r);
+              if (territoryName !== "Total" && rowTerr !== territoryName) return;
               if (selectedSegment !== "ALL") {
                 const s = String(r.segment || r.Segment || "PV").toUpperCase().trim();
                 if (selectedSegment === "PV+BEV") {
