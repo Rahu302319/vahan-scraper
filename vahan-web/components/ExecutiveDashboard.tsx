@@ -2068,6 +2068,14 @@ export default function ExecutiveDashboard({
             { col: "jan", year: 2026 }, { col: "feb", year: 2026 }, { col: "mar", year: 2026 }
           ];
 
+          // Define months for FY 27 (Apr 2026 to Mar 2027)
+          const fy27_months = [
+            { col: "apr", year: 2026 }, { col: "may", year: 2026 }, { col: "jun", year: 2026 },
+            { col: "jul", year: 2026 }, { col: "aug", year: 2026 }, { col: "sep", year: 2026 },
+            { col: "oct", year: 2026 }, { col: "nov", year: 2026 }, { col: "dec", year: 2026 },
+            { col: "jan", year: 2027 }, { col: "feb", year: 2027 }, { col: "mar", year: 2027 }
+          ];
+
           // Fallback single-year full calendar year months if scraped by calendar year
           const cy25_months = [
             { col: "jan", year: 2025 }, { col: "feb", year: 2025 }, { col: "mar", year: 2025 },
@@ -2081,6 +2089,7 @@ export default function ExecutiveDashboard({
             let tiv24 = 0, mm24 = 0;
             let tiv25 = 0, mm25 = 0;
             let tiv26 = 0, mm26 = 0;
+            let tiv27 = 0, mm27 = 0;
 
             allDatasetRows.forEach((r) => {
               const rowTerr = resolveRowTerritory(r);
@@ -2115,6 +2124,11 @@ export default function ExecutiveDashboard({
               const v26 = getRowMonthsVolume(r, fy26_months);
               tiv26 += v26;
               if (isMahindra) mm26 += v26;
+
+              // 5. Pure Live DB Query for FY 27 (Current FY YTD)
+              const v27 = getRowMonthsVolume(r, fy27_months);
+              tiv27 += v27;
+              if (isMahindra) mm27 += v27;
             });
 
             // 100% Pure live metrics calculated directly from database records (Zero JSON, Zero Hardcoding)
@@ -2122,6 +2136,7 @@ export default function ExecutiveDashboard({
             const y24 = { total: tiv24, mm: mm24 };
             const y25 = { total: tiv25, mm: mm25 };
             const y26 = { total: tiv26, mm: mm26 };
+            const y27 = { total: tiv27, mm: mm27 };
 
             const goly24_tiv = y23.total > 0 ? ((y24.total - y23.total) / y23.total) * 100 : 0;
             const goly24_mm  = y23.mm > 0 ? ((y24.mm - y23.mm) / y23.mm) * 100 : 0;
@@ -2132,6 +2147,9 @@ export default function ExecutiveDashboard({
             const goly26_tiv = y25.total > 0 ? ((y26.total - y25.total) / y25.total) * 100 : 0;
             const goly26_mm  = y25.mm > 0 ? ((y26.mm - y25.mm) / y25.mm) * 100 : 0;
 
+            const goly27_tiv = y26.total > 0 ? ((y27.total - y26.total) / y26.total) * 100 : 0;
+            const goly27_mm  = y26.mm > 0 ? ((y27.mm - y26.mm) / y26.mm) * 100 : 0;
+
             return {
               name: territoryName,
               fy23: { tiv: y23.total, mm: y23.mm, ms: y23.total > 0 ? (y23.mm / y23.total) * 100 : 0 },
@@ -2141,6 +2159,8 @@ export default function ExecutiveDashboard({
               goly25: { tiv: goly25_tiv, mm: goly25_mm },
               fy26: { tiv: y26.total, mm: y26.mm, ms: y26.total > 0 ? (y26.mm / y26.total) * 100 : 0 },
               goly26: { tiv: goly26_tiv, mm: goly26_mm },
+              fy27: { tiv: y27.total, mm: y27.mm, ms: y27.total > 0 ? (y27.mm / y27.total) * 100 : 0 },
+              goly27: { tiv: goly27_tiv, mm: goly27_mm },
             };
           };
 
@@ -2498,15 +2518,15 @@ export default function ExecutiveDashboard({
                 const buildMultiYearSheet = (ws: ExcelJS.Worksheet) => {
           ws.views = [{ showGridLines: true }];
 
-          const titleRow = ws.addRow(["Territory Multi-Year Growth & Market Share Performance Summary (FY 23 - FY 26)"]);
+          const titleRow = ws.addRow(["Territory Multi-Year Growth & Market Share Performance Summary (FY 23 - FY 27)"]);
           titleRow.font = { name: "Arial", size: 13, bold: true, color: { argb: "FF0F172A" } };
-          ws.mergeCells(1, 1, 1, 19);
+          ws.mergeCells(1, 1, 1, 24);
 
           const subRow = ws.addRow([
             `Generated: ${new Date().toLocaleDateString()} | Metrics: TIV, M&M Nos, Market Share (MS%), and Growth Over Last Year (GOLY%)`
           ]);
           subRow.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF64748B" } };
-          ws.mergeCells(2, 1, 2, 19);
+          ws.mergeCells(2, 1, 2, 24);
 
           ws.addRow([]); // Blank
 
@@ -2519,6 +2539,8 @@ export default function ExecutiveDashboard({
             "FY 25", "", "",
             "GOLY(%)", "",
             "FY 26", "", "",
+            "GOLY(%)", "",
+            "FY 27", "", "",
             "GOLY(%)", ""
           ]);
           r4.height = 24;
@@ -2527,6 +2549,8 @@ export default function ExecutiveDashboard({
           const r5 = ws.addRow([
             "",
             "TIV", "M&M", "MS",
+            "TIV", "M&M", "MS",
+            "TIV", "M&M",
             "TIV", "M&M", "MS",
             "TIV", "M&M",
             "TIV", "M&M", "MS",
@@ -2545,6 +2569,8 @@ export default function ExecutiveDashboard({
           ws.mergeCells(4, 13, 4, 14); // GOLY FY25
           ws.mergeCells(4, 15, 4, 17); // FY 26
           ws.mergeCells(4, 18, 4, 19); // GOLY FY26
+          ws.mergeCells(4, 20, 4, 22); // FY 27
+          ws.mergeCells(4, 23, 4, 24); // GOLY FY27
 
           // Style headers: exact #0070c0 vibrant blue with bold white text
           [r4, r5].forEach((row) => {
@@ -2571,6 +2597,8 @@ export default function ExecutiveDashboard({
               item.goly25.tiv / 100, item.goly25.mm / 100,
               item.fy26.tiv, item.fy26.mm, item.fy26.ms / 100,
               item.goly26.tiv / 100, item.goly26.mm / 100,
+              item.fy27.tiv, item.fy27.mm, item.fy27.ms / 100,
+              item.goly27.tiv / 100, item.goly27.mm / 100,
             ]);
             row.height = 22;
 
@@ -2601,7 +2629,7 @@ export default function ExecutiveDashboard({
               };
 
               if (col > 1) {
-                if ([4, 7, 8, 9, 12, 13, 14, 17, 18, 19].includes(col)) {
+                if ([4, 7, 8, 9, 12, 13, 14, 17, 18, 19, 22, 23, 24].includes(col)) {
                   cell.numFmt = "0.0%";
                 } else {
                   cell.numFmt = "#,##0";
@@ -2652,7 +2680,7 @@ export default function ExecutiveDashboard({
           try {
             const canvas = document.createElement("canvas");
             const scale = 2;
-            const width = 1260;
+            const width = 1580;
             const height = 180;
             canvas.width = width * scale;
             canvas.height = height * scale;
@@ -2668,7 +2696,7 @@ export default function ExecutiveDashboard({
 
             const startX = 10;
             const startY = 10;
-            const colWidths = [140, 58, 54, 54, 58, 54, 54, 64, 64, 58, 54, 54, 64, 64, 58, 54, 54, 64, 64];
+            const colWidths = [140, 58, 54, 54, 58, 54, 54, 64, 64, 58, 54, 54, 64, 64, 58, 54, 54, 64, 64, 58, 54, 54, 64, 64];
             const colXs: number[] = [];
             let currX = startX;
             for (const w of colWidths) {
@@ -2701,10 +2729,14 @@ export default function ExecutiveDashboard({
             ctx.fillText("GOLY(%)", colXs[12] + (64 + 64) / 2, startY + rowH1 / 2);
             ctx.fillText("FY 26", colXs[14] + (58 + 54 + 54) / 2, startY + rowH1 / 2);
             ctx.fillText("GOLY(%)", colXs[17] + (64 + 64) / 2, startY + rowH1 / 2);
+            ctx.fillText("FY 27", colXs[19] + (58 + 54 + 54) / 2, startY + rowH1 / 2);
+            ctx.fillText("GOLY(%)", colXs[22] + (64 + 64) / 2, startY + rowH1 / 2);
 
             // Sub Headers Row 2
             const subHeaders = [
               "TIV", "M&M", "MS",
+              "TIV", "M&M", "MS",
+              "TIV", "M&M",
               "TIV", "M&M", "MS",
               "TIV", "M&M",
               "TIV", "M&M", "MS",
@@ -2752,6 +2784,8 @@ export default function ExecutiveDashboard({
                 fmtG(d.goly25.tiv), fmtG(d.goly25.mm),
                 d.fy26.tiv.toLocaleString(), d.fy26.mm.toLocaleString(), `${d.fy26.ms.toFixed(1)}%`,
                 fmtG(d.goly26.tiv), fmtG(d.goly26.mm),
+                d.fy27.tiv.toLocaleString(), d.fy27.mm.toLocaleString(), `${d.fy27.ms.toFixed(1)}%`,
+                fmtG(d.goly27.tiv), fmtG(d.goly27.mm),
               ];
 
               for (let i = 0; i < rowVals.length; i++) {
@@ -2788,7 +2822,7 @@ export default function ExecutiveDashboard({
               ctx.lineTo(colXs[i], startY + rowH1 + rowH2 + dataRowH * 3);
             }
             // Super header dividing lines
-            [colXs[4], colXs[7], colXs[9], colXs[12], colXs[14], colXs[17]].forEach((xPos) => {
+            [colXs[4], colXs[7], colXs[9], colXs[12], colXs[14], colXs[17], colXs[19], colXs[22]].forEach((xPos) => {
               ctx.moveTo(xPos, startY);
               ctx.lineTo(xPos, startY + rowH1);
             });
@@ -2809,7 +2843,7 @@ export default function ExecutiveDashboard({
               }
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
-              a.download = `Kerala_Territory_MultiYear_Summary_FY23_FY26.png`;
+              a.download = `Kerala_Territory_MultiYear_Summary_FY23_FY27.png`;
               a.click();
               setCopyStatus((prev) => ({ ...prev, multiyear: "✓ Saved PNG!" }));
               setTimeout(() => setCopyStatus((prev) => ({ ...prev, multiyear: "" })), 2500);
@@ -2980,6 +3014,29 @@ export default function ExecutiveDashboard({
               </td>
               <td className={`border px-1.5 py-1.5 text-center ${gridBrd}`}>
                 {renderGolyBadge(rowItem.goly26.mm)}
+              </td>
+
+              {/* FY 27 */}
+              <td className={`border px-2 py-1.5 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                isTotal ? "text-white" : "text-sky-500 dark:text-sky-400"
+              }`}>
+                {rowItem.fy27.tiv.toLocaleString()}
+              </td>
+              <td className={`border px-2 py-1.5 text-center font-bold text-xs tabular-nums ${gridBrd} ${
+                isTotal ? "text-white" : "text-rose-500 dark:text-rose-400"
+              }`}>
+                {rowItem.fy27.mm.toLocaleString()}
+              </td>
+              <td className={`border px-1.5 py-1.5 text-center ${gridBrd}`}>
+                {renderMsBadge(rowItem.fy27.ms)}
+              </td>
+
+              {/* GOLY FY27 */}
+              <td className={`border px-1.5 py-1.5 text-center ${gridBrd}`}>
+                {renderGolyBadge(rowItem.goly27.tiv)}
+              </td>
+              <td className={`border px-1.5 py-1.5 text-center ${gridBrd}`}>
+                {renderGolyBadge(rowItem.goly27.mm)}
               </td>
             </tr>
           );
@@ -4203,7 +4260,7 @@ export default function ExecutiveDashboard({
                       <TrendingUp className="w-3.5 h-3.5" />
                     </div>
                     <span className="font-bold text-xs tracking-wide text-slate-800 dark:text-slate-100">
-                      Multi-Year Territory Performance Summary (FY 23 - FY 26)
+                      Multi-Year Territory Performance Summary (FY 23 - FY 27)
                     </span>
                     <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-semibold border bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800">
                       TIV • M&M • MS • GOLY(%)
@@ -4265,6 +4322,12 @@ export default function ExecutiveDashboard({
                         <th colSpan={2} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
                           GOLY(%)
                         </th>
+                        <th colSpan={3} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          FY 27
+                        </th>
+                        <th colSpan={2} className="border border-[#005a9e] px-2 py-1.5 text-center font-bold tracking-wide">
+                          GOLY(%)
+                        </th>
                       </tr>
 
                       {/* Row 2 Sub-Headers */}
@@ -4292,6 +4355,13 @@ export default function ExecutiveDashboard({
                         <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
                         <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">MS</th>
                         {/* GOLY FY26 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        {/* FY 27 */}
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
+                        <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">MS</th>
+                        {/* GOLY FY27 */}
                         <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">TIV</th>
                         <th className="border border-[#005a9e] px-2 py-1 text-center font-bold text-[11px]">M&M</th>
                       </tr>
